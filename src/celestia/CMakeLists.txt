@@ -15,6 +15,8 @@ set(CELESTIA_SOURCES
   execution.h
   favorites.cpp
   favorites.h
+  ffmpegcapture.cpp
+  ffmpegcapture.h
   helper.cpp
   helper.h
   imagecapture.cpp
@@ -82,6 +84,9 @@ set_target_properties(celestia PROPERTIES
 
 add_dependencies(celestia celengine celmath celtxf celutil)
 target_link_libraries(celestia celengine celmath celtxf celutil)
+if(ENABLE_FFMPEG)
+  target_link_libraries(celestia ${FFMPEG_LIBRARIES})
+endif()
 
 cotire(celestia)
 

@@ -3852,7 +3852,7 @@ void CelestiaCore::renderOverlay()
         glTranslatef((float) ((width - movieWidth) / 2),
                      (float) ((height + movieHeight) / 2 + 2), 0.0f);
         overlay->beginText();
-        fmt::fprintf(*overlay, _("%dx%d at %f fps  %s"),
+        fmt::fprintf(*overlay, _("%dx%d at %.2f fps  %s"),
                               movieWidth, movieHeight,
                               movieCapture->getFrameRate(),
                               recording ? _("Recording") : _("Paused"));
