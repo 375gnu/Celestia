@@ -22,7 +22,4 @@ set_target_properties(celmath PROPERTIES
   SOVERSION ${VERSION}
 )
 ]]#
-
-cotire(celmath)
-
 #install(TARGETS celmath LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

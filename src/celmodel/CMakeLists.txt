@@ -22,7 +22,5 @@ set_target_properties(celmodel PROPERTIES
 add_dependencies(celmodel celutil)
 target_link_libraries(celmodel celutil)
 
-cotire(celmodel)
-
 #install(TARGETS celmodel LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 #install(TARGETS celmodel ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

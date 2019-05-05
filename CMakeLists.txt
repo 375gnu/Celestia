@@ -92,12 +92,6 @@ include(CheckIncludeFiles)
 include(CheckIncludeFileCXX)
 include(rpath)
 include(install_to_extras_subdir)
-if (NOT MSVC AND NOT MINGW)
-  include(cotire)
-else()
-  macro(cotire _target)
-  endmacro()
-endif()
 
 #
 # NLS (Gettext) support

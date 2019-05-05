@@ -87,9 +87,6 @@ target_link_libraries(celestia celengine celmath celtxf celutil)
 if(ENABLE_FFMPEG)
   target_link_libraries(celestia ${FFMPEG_LIBRARIES})
 endif()
-
-cotire(celestia)
-
 #install(TARGETS celestia LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # celestia-glut binary
@@ -100,7 +97,6 @@ if(ENABLE_GLUT)
   else()
     set(GLUT_SOURCES glutmain.cpp)
     add_executable(celestia-glut ${GLUT_SOURCES})
-    cotire(celestia-glut)
     target_include_directories(celestia-glut PRIVATE ${GLUT_INCLUDE_DIR})
     target_link_libraries(celestia-glut ${CELESTIA_LIBS} ${GLUT_LIBRARIES})
     install(TARGETS celestia-glut RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

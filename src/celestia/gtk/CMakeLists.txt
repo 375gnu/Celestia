@@ -41,7 +41,6 @@ pkg_check_modules(GTK2 gtk+-2.0 REQUIRED)
 pkg_check_modules(GTK2GLEXT gtkglext-1.0 REQUIRED)
 
 add_executable(celestia-gtk ${GTK_SOURCES})
-cotire(celestia-gtk)
 target_include_directories(celestia-gtk PRIVATE ${GTK2_INCLUDE_DIRS} ${GTK2GLEXT_INCLUDE_DIRS})
 target_link_libraries(celestia-gtk ${CELESTIA_LIBS} ${GTK2_LIBRARIES} ${GTK2GLEXT_LIBRARIES})
 install(TARGETS celestia-gtk RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

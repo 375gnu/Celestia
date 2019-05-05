@@ -66,7 +66,6 @@ if(WIN32)
 endif()
 
 add_executable(celestia-qt WIN32 ${QT_SOURCES} ${RC_SRC} ${RES})
-cotire(celestia-qt)
 qt5_use_modules(celestia-qt ${QT_LIBS})
 target_link_libraries(celestia-qt ${CELESTIA_LIBS})
 if(APPLE)

@@ -19,6 +19,4 @@ set_target_properties(cel3ds PROPERTIES
 add_dependencies(cel3ds celutil)
 target_link_libraries(cel3ds celutil)
 
-cotire(cel3ds)
-
 #install(TARGETS cel3ds LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

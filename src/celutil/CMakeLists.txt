@@ -43,6 +43,4 @@ set_target_properties(celutil PROPERTIES
 add_dependencies(celutil celmath)
 target_link_libraries(celutil celmath)
 
-cotire(celutil)
-
 #install(TARGETS celutil LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
