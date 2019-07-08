@@ -282,10 +282,10 @@ public:
     PointStarVertexBuffer(const Renderer& _renderer, unsigned int _capacity);
     ~PointStarVertexBuffer();
     void startPoints();
-    void startSprites();
+    void startSprites(float, float);
     void render();
     void finish();
-    inline void addStar(const Eigen::Vector3f& pos, const Color&, float);
+    inline void addStar(const Eigen::Vector3f& pos, const Color&, float, float);
     void setTexture(Texture* /*_texture*/);
 
 private:
@@ -294,7 +294,7 @@ private:
         Eigen::Vector3f position;
         float size;
         unsigned char color[4];
-        float pad;
+        float magnitude;
     };
 
     const Renderer& renderer;
@@ -303,6 +303,8 @@ private:
     StarVertex* vertices{ nullptr };
     bool useSprites{ false };
     Texture* texture{ nullptr };
+
+    GLint m_magLoc{ -1 };
 };
 
 PointStarVertexBuffer::PointStarVertexBuffer(const Renderer& _renderer,
@@ -318,14 +320,16 @@ PointStarVertexBuffer::~PointStarVertexBuffer()
     delete[] vertices;
 }
 
-void PointStarVertexBuffer::startSprites()
+void PointStarVertexBuffer::startSprites(float saturationMag, float faintestMag)
 {
-    CelestiaGLProgram* prog = renderer.getShaderManager().getShader("star");
+    CelestiaGLProgram* prog = renderer.getShaderManager().getShader("star_new");
     if (prog == nullptr)
         return;
 
     prog->use();
     prog->samplerParam("starTex") = 0;
+    if (m_magLoc == -1)
+        m_magLoc = prog->attribIndex("magnitude");
 
     unsigned int stride = sizeof(StarVertex);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -333,10 +337,17 @@ void PointStarVertexBuffer::startSprites()
     glEnableClientState(GL_COLOR_ARRAY);
     glColorPointer(4, GL_UNSIGNED_BYTE, stride, &vertices[0].color);
 
-    glEnableVertexAttribArray(CelestiaGLProgram::PointSizeAttributeIndex);
-    glVertexAttribPointer(CelestiaGLProgram::PointSizeAttributeIndex,
+    glEnableVertexAttribArray(m_magLoc);
+    glVertexAttribPointer(m_magLoc,
                           1, GL_FLOAT, GL_FALSE,
-                          stride, &vertices[0].size);
+                          stride, &vertices[0].magnitude);
+
+    prog->floatParam("saturationMagnitude") = saturationMag;
+    prog->floatParam("limitingMagnitude")   = faintestMag;
+    int w, h;
+    renderer.getScreenSize(nullptr, nullptr, &w, &h);
+    prog->vec3Param("viewportSize") = Vector3f(w, h, 0);
+
 
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
@@ -386,11 +397,11 @@ void PointStarVertexBuffer::render()
         glVertexPointer(3, GL_FLOAT, stride, &vertices[0].position);
         glColorPointer(4, GL_UNSIGNED_BYTE, stride, &vertices[0].color);
 
-        if (useSprites)
+        if (useSprites && m_magLoc != -1)
         {
-            glVertexAttribPointer(CelestiaGLProgram::PointSizeAttributeIndex,
+            glVertexAttribPointer(m_magLoc,
                                   1, GL_FLOAT, GL_FALSE,
-                                  stride, &vertices[0].size);
+                                  stride, &vertices[0].magnitude);
         }
 
         if (texture != nullptr)
@@ -421,12 +432,13 @@ void PointStarVertexBuffer::finish()
 
 inline void PointStarVertexBuffer::addStar(const Eigen::Vector3f& pos,
                                            const Color& color,
-                                           float size)
+                                           float size, float magnitude)
 {
     if (nStars < capacity)
     {
         vertices[nStars].position = pos;
         vertices[nStars].size = size;
+        vertices[nStars].magnitude = magnitude;
         color.get(vertices[nStars].color);
         nStars++;
     }
@@ -6624,11 +6636,11 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
                     discSize *= discScale;
 
                     float glareAlpha = min(0.5f, discScale / 4.0f);
-                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), discSize * 3.0f);
+                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), discSize * 3.0f, star.getAbsoluteMagnitude());
 
                     alpha = 1.0f;
                 }
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), discSize);
+                starVertexBuffer->addStar(relPos, Color(starColor, alpha), discSize, star.getAbsoluteMagnitude());
             }
             else
             {
@@ -6640,12 +6652,12 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
                 {
                     float discScale = min(100.0f, satPoint - appMag + 2.0f);
                     float glareAlpha = min(GlareOpacity, (discScale - 2.0f) / 4.0f);
-                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), 2.0f * discScale * size);
+                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), 2.0f * discScale * size, star.getAbsoluteMagnitude());
 #ifdef DEBUG_HDR_ADAPT
                     maxSize = max(maxSize, 2.0f * discScale * size);
 #endif
                 }
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), size);
+                starVertexBuffer->addStar(relPos, Color(starColor, alpha), size, star.getAbsoluteMagnitude());
             }
 
             ++nRendered;
@@ -6750,15 +6762,15 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.colorTemp = colorTemp;
 
     glEnable(GL_TEXTURE_2D);
-    gaussianDiscTex->bind();
-    starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
-    starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
+//    gaussianDiscTex->bind();
+//    starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
+//    starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
 
-    starRenderer.glareVertexBuffer->startSprites();
+//    starRenderer.glareVertexBuffer->startSprites();
     if (starStyle == PointStars)
         starRenderer.starVertexBuffer->startPoints();
     else
-        starRenderer.starVertexBuffer->startSprites();
+        starRenderer.starVertexBuffer->startSprites(saturationMag, faintestMag);
 
 #ifdef OCTREE_DEBUG
     m_starProcStats.nodes = 0;
@@ -6778,9 +6790,9 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 #endif
 
     starRenderer.starVertexBuffer->render();
-    starRenderer.glareVertexBuffer->render();
+//    starRenderer.glareVertexBuffer->render();
     starRenderer.starVertexBuffer->finish();
-    starRenderer.glareVertexBuffer->finish();
+//    starRenderer.glareVertexBuffer->finish();
 }
 
 
