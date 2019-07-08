@@ -342,12 +342,33 @@ void PointStarVertexBuffer::startSprites(float saturationMag, float faintestMag)
                           1, GL_FLOAT, GL_FALSE,
                           stride, &vertices[0].magnitude);
 
+/*
     prog->floatParam("saturationMagnitude") = saturationMag;
     prog->floatParam("limitingMagnitude")   = faintestMag;
     int w, h;
     renderer.getScreenSize(nullptr, nullptr, &w, &h);
     prog->vec3Param("viewportSize") = Vector3f(w, h, 0);
+*/
 
+    float m_limitingMagnitude = faintestMag;
+    float m_diffractionSpikeBrightness = 0.5;
+
+
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    Vector2f viewportCoord(viewport[0], viewport[1]);
+    Vector2f viewportSize(viewport[2], viewport[3]);
+    prog->vec2Param("viewportSize")  = viewportSize;
+    prog->vec2Param("viewportCoord") = viewportCoord;
+
+    float visibilityThreshold = 1.0f / 255.0f;
+    float logMVisThreshold = log(visibilityThreshold) / log(2.512f);
+    float saturationMag_ = m_limitingMagnitude - 4.5f; //+ logMVisThreshold;
+    float magScale = (logMVisThreshold) / (saturationMag_ - m_limitingMagnitude);
+    prog->floatParam("thresholdBrightness") = visibilityThreshold;
+    prog->floatParam("diffSpikeBrightness") = m_diffractionSpikeBrightness * 3.0f;
+    prog->floatParam("exposure") = pow(2.512f, magScale * saturationMag);
+    prog->floatParam("magScale") = magScale;
 
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);

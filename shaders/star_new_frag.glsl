@@ -1,28 +1,31 @@
 #version 120
 
 varying vec2 pointCenter;
-varying vec4 starColor;
+varying vec4 color;
 varying float brightness;
 
 //uniform float sigma2;
-//uniform float glareSigma2;
-//uniform float glareBrightness;
-
-const float glareBrightness = 0.003f;
 const float sigma2 = 0.35f;
-const float glareSigma2 = 0.15f; // fixme
+//uniform float glareFalloff;
+const float glareFalloff = 1.0f / 15.0f;
+//uniform float glareBrightness;
+const float glareBrightness = 0.003f;
 
+uniform float diffSpikeBrightness;
+uniform float exposure;
+
+
+vec3 linearToSRGB(vec3 c)
+{
+    return c;
+}
 
 void main()
 {
-    // gl_FragCoord contains the position of the pixel center in viewport coordinates. Compute
-    // the distance to the center of the star.
     vec2 offset = gl_FragCoord.xy - pointCenter;
     float r2 = dot(offset, offset);
-//    float r2 = length(gl_PointCoord.xy);
-
     float b = exp(-r2 / (2.0 * sigma2));
-    b += glareBrightness * exp(-r2 / (2.0 * glareSigma2));
-    gl_FragColor = vec4(b * starColor.rgb * brightness, 1.0);
-//    gl_FragColor = starColor;
+    float spikes = (max(0.0, 1.0 - abs(offset.x + offset.y)) + max(0.0, 1.0 - abs(offset.x - offset.y))) * diffSpikeBrightness;
+    b += glareBrightness / (glareFalloff * pow(r2, 1.5) + 1.0) * (spikes + 0.5);
+    gl_FragColor = vec4(linearToSRGB(b * exposure * color.rgb * brightness), 1.0);
 }

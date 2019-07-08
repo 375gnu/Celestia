@@ -1,48 +1,40 @@
 #version 120
 
-attribute float magnitude;
-
-uniform vec3 viewportSize;
-uniform float limitingMagnitude;
-uniform float saturationMagnitude;
-//uniform float glareBrightness;
-//uniform float sigma2;
-//uniform float glareSigma2;
-//uniform float exposure;
+uniform vec2 viewportSize;
+uniform vec2 viewportCoord;
 
 varying vec2 pointCenter;
-varying vec4 starColor;
+varying vec4 color;
 varying float brightness;
 
-const float glareBrightness = 0.003f;
+//uniform float Llim;
+//uniform float Lsat;
+uniform float magScale;
+
+//uniform float sigma2;
 const float sigma2 = 0.35f;
-const float glareSigma2 = 0.015f; // fixme
-
+//uniform float glareFalloff;
 const float glareFalloff = 1.0f / 15.0f;
+//uniform float glareBrightness;
+const float glareBrightness = 0.003f;
 
-const float exposure = 1.0f;
-
-const float thresholdBrightness = 1.0 / 512.0;
+uniform float exposure;
+uniform float thresholdBrightness;
 
 void main()
 {
-    vec4 projectedPosition = ftransform();
+    vec4 position = gl_Vertex;
+    float appMag = position.z;
+    position.z = sqrt(1.0 - dot(position.xy, position.xy)) * sign(gl_Color.a - 0.5);
+    vec4 projectedPosition = gl_ModelViewProjectionMatrix * position;
+    vec2 devicePosition = projectedPosition.xy / projectedPosition.w;
+    pointCenter = (devicePosition * 0.5 + vec2(0.5, 0.5)) * viewportSize + viewportCoord;
+    color = gl_Color;
+    float b = pow(2.512, -appMag * magScale);
+    float r2 = -log(thresholdBrightness / (exposure * b)) * 2.0 * sigma2;
+    float rGlare2 = (exposure * glareBrightness * b / thresholdBrightness - 1.0) / glareFalloff;
+    gl_PointSize = 2.0 * sqrt(max(r2, max(0.25, rGlare2)));
 
-    // Perspective projection to get the star position in normalized device coordinates
-    vec2 ndcPosition = projectedPosition.xy / projectedPosition.w;
-
-    float b = pow(2.512, (limitingMagnitude - saturationMagnitude) * (saturationMagnitude - magnitude));
-
-    // Calculate the minimum size of a point large enough to contain both the glare function and PSF; these
-    // functions are both infinite in extent, but we can clip them when they fall off to an indiscernable level
-    float r2  = -log(thresholdBrightness / (exposure * b)) * 2.0 * sigma2;
-//    float rG2 = -log(thresholdBrightness / (glareBrightness * b)) * 2.0 * glareSigma2;
-   float rG2 = (exposure * glareBrightness * b / thresholdBrightness - 1.0) / glareFalloff;
-
-    // Convert to viewport coordinates (the same coordinate system as the gl_FragCoord register)
-    pointCenter  = (ndcPosition + 1.0) * 0.5 * viewportSize.xy;
-    starColor    = gl_Color;
-    brightness   = b;
-    gl_PointSize = 2.0 * sqrt(max(r2, rG2));
-    gl_Position  = projectedPosition;
+    brightness = b;
+    gl_Position = projectedPosition;
 }
