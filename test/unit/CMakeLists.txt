@@ -1,5 +1,6 @@
 include(TestCase)
 
+test_case(config celengine)
 test_case(hash celengine)
 test_case(fs celengine)
 if(WIN32)

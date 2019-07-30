@@ -20,6 +20,8 @@ set(CELENGINE_SOURCES
   catalogxref.h
   category.cpp
   category.h
+  configuration.cpp
+  configuration.h
   console.cpp
   console.h
   constellation.cpp
@@ -102,6 +104,8 @@ set(CELENGINE_SOURCES
   pointstarrenderer.h
   pointstarvertexbuffer.cpp
   pointstarvertexbuffer.h
+  property.cpp
+  property.h
   rectangle.h
   referencemark.h
   rendcontext.cpp
