@@ -1,6 +1,11 @@
 #pragma once
 
 #include "moviecapture.h"
+#define __STDC_CONSTANT_MACROS
+extern "C"
+{
+#include <libavformat/avformat.h>
+}
 
 class FFMPEGCapturePrivate;
 
