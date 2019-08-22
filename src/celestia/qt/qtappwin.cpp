@@ -652,6 +652,7 @@ void CelestiaAppWindow::slotCaptureVideo()
         dir = settings.value("CaptureVideoDir").toString();
     else
         dir = QDir::current().path();
+    settings.endGroup();
 
     constexpr int videoSizes[][2] = {
         { 160, 120 },
@@ -738,10 +739,10 @@ void CelestiaAppWindow::slotCaptureVideo()
                 delete movieCapture;
         }
 
+        settings.beginGroup("Preferences");
         settings.setValue("CaptureVideoDir", QFileInfo(saveAsName).absolutePath());
+        settings.endGroup();
     }
-
-    settings.endGroup();
 #endif
 }
 
@@ -1129,7 +1130,7 @@ void CelestiaAppWindow::createMenus()
     QAction* captureVideoAction = new QAction(QIcon(":/icons/capture-video.png"),
                                               _("Capture &video"), this);
     // TODO: Add Mac support for video capture
-#if defined(__APPLE__) || (!defined(_WIN32) && !defined(THEORA))
+#ifndef USE_FFMPEG
     captureVideoAction->setEnabled(false);
 #endif
     captureVideoAction->setShortcut(QString(_("Shift+F10")));

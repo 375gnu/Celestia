@@ -144,12 +144,55 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
     this->fps = fps;
 
     // find the encoder
-    vc = avcodec_find_encoder(/*oc->oformat->video_codec*/AV_CODEC_ID_FFVHUFF);
+    vc = avcodec_find_encoder(oc->oformat->video_codec/*AV_CODEC_ID_FFVHUFF*/);
     if (vc == nullptr)
     {
         cout << "Video codec isn't found\n";
         return false;
     }
+
+#define AVCODEC_DEBUG 1
+#if AVCODEC_DEBUG
+{
+    cout << "codec: " << vc->name << ' ' << vc->long_name <<'\n';
+
+    cout << "supported framerates:\n";
+    const AVRational *f = vc->supported_framerates;
+    if (f != nullptr)
+    {
+        for (; f->num != 0 && f->den != 0; f++)
+            cout << f->num << ' ' << f->den << '\n';
+    }
+    else
+    {
+        cout << "any\n";
+    }
+
+    cout << "supported pixel formats:\n";
+    const enum AVPixelFormat *p = vc->pix_fmts;
+    if (p != nullptr)
+    {
+        for (; *p != -1; p++)
+            cout << *p << '\n';
+    }
+    else
+    {
+        cout << "unknown\n";
+    }
+
+    cout << "recognized profiles:\n";
+    const AVProfile *r = vc->profiles;
+    if (r != nullptr)
+    {
+        for (; r->profile != FF_PROFILE_UNKNOWN; r++)
+            cout << r->profile << ' ' << r->name << '\n';
+    }
+    else
+    {
+        cout << "unknown\n";
+    }
+}
+#endif
 
     st = avformat_new_stream(oc, nullptr);
     if (st == nullptr)
@@ -166,7 +209,7 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
         return false;
     }
 
-#if 0
+#if 1
     enc->codec_id = oc->oformat->video_codec; // TODO: make selectable
 #else
     enc->codec_id = oc->oformat->video_codec = AV_CODEC_ID_FFVHUFF;
@@ -209,8 +252,6 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
 
 bool FFMPEGCapturePrivate::start()
 {
-    av_dump_format(oc, 0, filename.c_str(), 1);
-
     // open the output file, if needed
     if ((oc->oformat->flags & AVFMT_NOFILE) == 0)
     {
@@ -227,6 +268,8 @@ bool FFMPEGCapturePrivate::start()
         cout << "Failed to write header\n";
         return false;
     }
+
+    av_dump_format(oc, 0, filename.c_str(), 1);
 
     if ((pkt = av_packet_alloc()) == nullptr)
     {
