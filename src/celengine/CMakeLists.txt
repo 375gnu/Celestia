@@ -165,6 +165,4 @@ if(ENABLE_SPICE)
   target_link_libraries(celengine CSPICE::CSPICE)
 endif()
 
-cotire(celengine)
-
 #install(TARGETS celengine LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
