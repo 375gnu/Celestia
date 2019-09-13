@@ -4,11 +4,13 @@
 extern "C"
 {
 #include <libavutil/timestamp.h>
+#include <libavutil/pixdesc.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
 
 #include <iostream>
+#include <vector>
 #include <fmt/printf.h>
 
 
@@ -27,6 +29,8 @@ class FFMPEGCapturePrivate
     bool start();
     bool writeVideoFrame(bool = false);
     void finish();
+
+    bool isSupportedPixelFormat(enum AVPixelFormat) const;
 
  private:
     int writePacket();
@@ -90,13 +94,28 @@ bool FFMPEGCapturePrivate::init(const std::string& _filename)
     return oc != nullptr;
 }
 
+bool FFMPEGCapturePrivate::isSupportedPixelFormat(enum AVPixelFormat format) const
+{
+    const enum AVPixelFormat *p = vc->pix_fmts;
+    if (p == nullptr)
+        return false;
+
+    for (; *p != -1; p++)
+    {
+        if (*p == format)
+            return true;
+    }
+
+    return false;
+}
+
 #ifdef DEBUG_VIDEO
 // av_ts2str and av_ts2timestr macros are not compatible with C++, so
 // we undef them and provide own implementations
 #ifdef av_ts2str
 #undef av_ts2str
 #endif
-std::string av_ts2str(int64_t ts)
+static std::string av_ts2str(int64_t ts)
 {
     char s[AV_TS_MAX_STRING_SIZE];
     av_ts_make_string(s, ts);
@@ -106,7 +125,7 @@ std::string av_ts2str(int64_t ts)
 #ifdef av_ts2timestr
 #undef av_ts2timestr
 #endif
-std::string av_ts2timestr(int64_t ts, AVRational *tb)
+static std::string av_ts2timestr(int64_t ts, AVRational *tb)
 {
     char s[AV_TS_MAX_STRING_SIZE];
     av_ts_make_time_string(s, ts, tb);
@@ -173,7 +192,10 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
     if (p != nullptr)
     {
         for (; *p != -1; p++)
-            cout << *p << '\n';
+        {
+            auto *d = av_pix_fmt_desc_get(*p);
+            cout << d->name << '\n';
+        }
     }
     else
     {
@@ -223,17 +245,28 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
     // of which frame timestamps are represented. For fixed-fps content,
     // timebase should be 1/framerate and timestamp increments should be
     // identical to 1.
-    if (fabs(fps - (29.97)) < 1e-5)
-        st->time_base = { 100, 2997 };
-    else if (fabs(fps - (23.976)) < 1e-5)
-        st->time_base = { 1000, 23976 };
+    if (abs(fps - 29.97) < 1e-5)
+        st->time_base = { 1001, 30000 };
+    else if (abs(fps - 23.976) < 1e-5)
+        st->time_base = { 1001, 24000 };
     else
         st->time_base = { 1, (int) fps };
 
     enc->time_base = st->time_base;
     enc->framerate = st->avg_frame_rate = { st->time_base.den, st->time_base.num };
     enc->gop_size  = 12; // emit one intra frame every twelve frames at most
-    enc->pix_fmt   = AV_PIX_FMT_YUV420P; // TODO: make dependant on enc->codec_id
+
+    // find a best pixel format to convert to from AV_PIX_FMT_RGB24
+    if (isSupportedPixelFormat(AV_PIX_FMT_YUV420P))
+    {
+        enc->pix_fmt = AV_PIX_FMT_YUV420P;
+    }
+    else
+    {
+        enc->pix_fmt = avcodec_find_best_pix_fmt_of_list(vc->pix_fmts, AV_PIX_FMT_RGB24, 0, nullptr);
+        if (enc->pix_fmt == AV_PIX_FMT_NONE)
+            avcodec_default_get_format(enc, &(enc->pix_fmt));
+    }
 
     if (enc->codec_id == AV_CODEC_ID_MPEG1VIDEO)
     {
@@ -417,9 +450,9 @@ bool FFMPEGCapturePrivate::writeVideoFrame(bool finalize)
         return false;
     }
 
-    for (int ret = 0;;)
+    for (;;)
     {
-        ret = avcodec_receive_packet(enc, pkt);
+        int ret = avcodec_receive_packet(enc, pkt);
 
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             break;
