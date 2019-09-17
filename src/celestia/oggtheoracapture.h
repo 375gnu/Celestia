@@ -20,6 +20,8 @@ public:
     float getFrameRate() const;
     int getFrameCount() const;
     int getBytesOut() const { return video_bytesout; } ;
+    void setPreset(const std::string&) override {};
+    std::vector<std::string> getPresetValues() override { return {}; };
     void setAspectRatio(int, int);
     void setQuality(float);
     void recordingStatus(bool) {};  // Added to allow GTK compilation

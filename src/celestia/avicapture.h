@@ -32,6 +32,8 @@ class AVICapture : public MovieCapture
     int getFrameCount() const;
 
     // These are unused for now:
+    virtual void setPreset(const std::string&) {};
+    std::vector<std::string> getPresetValues() override { return {}; };
     virtual void setAspectRatio(int, int) {};
     virtual void setQuality(float) {};
     virtual void recordingStatus(bool) {};

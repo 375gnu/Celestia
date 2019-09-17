@@ -31,6 +31,9 @@ class FFMPEGCapturePrivate
     bool writeVideoFrame(bool = false);
     void finish();
 
+    void setPreset(const std::string& value);
+    vector<string> getPresetValues() const;
+
     bool isSupportedPixelFormat(enum AVPixelFormat) const;
 
  private:
@@ -286,8 +289,9 @@ cout << "supported options: ";
 while ((opt = av_opt_next(enc->priv_data, opt)) != nullptr)
 {
     if (opt->type == AV_OPT_TYPE_CONST)
-        cout << "const ";
-    cout << opt->name <<'\n';
+        cout << "const " << opt->name <<'\n';
+    else
+        cout << opt->name << ' ' << opt->type << ' ' << opt->help << ' ' << opt->min << ' ' << opt->max <<'\n';
 }
 cout << "\n";
 
@@ -508,11 +512,23 @@ FFMPEGCapturePrivate::~FFMPEGCapturePrivate()
     av_packet_free(&pkt);
 }
 
+void FFMPEGCapturePrivate::setPreset(const std::string& value)
+{
+    av_opt_set(enc->priv_data, "preset", value.c_str(), 0);
+}
+
+vector<string> FFMPEGCapturePrivate::getPresetValues() const
+{
+//    if (av_opt_get(codec_ctx, opt->name, 0, &str) >= 0)
+//    {
+//    }
+    return {};
+}
 
 FFMPEGCapture::FFMPEGCapture(const Renderer *r) :
-    MovieCapture(r)
+    MovieCapture(r),
+    d(new FFMPEGCapturePrivate)
 {
-    d = new FFMPEGCapturePrivate;
     d->renderer = r;
 }
 
@@ -571,4 +587,14 @@ bool FFMPEGCapture::end()
 bool FFMPEGCapture::captureFrame()
 {
     return d->capturing && d->writeVideoFrame();
+}
+
+void FFMPEGCapture::setPreset(const std::string& value)
+{
+    d->setPreset(value);
+}
+
+vector<string> FFMPEGCapture::getPresetValues()
+{
+    return d->getPresetValues();
 }

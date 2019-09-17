@@ -24,6 +24,9 @@ class FFMPEGCapture : public MovieCapture
     int getHeight() const override;
     float getFrameRate() const override;
 
+    void setPreset(const std::string& value) override;
+    std::vector<std::string> getPresetValues() override;
+
     void setAspectRatio(int, int) override {};
     void setQuality(float) override {};
     void recordingStatus(bool) override {};

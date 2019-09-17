@@ -11,6 +11,7 @@
 #define _MOVIECAPTURE_H_
 
 #include <string>
+#include <vector>
 #include <celengine/render.h>
 
 
@@ -31,6 +32,8 @@ class MovieCapture
     virtual int getHeight() const = 0;
     virtual float getFrameRate() const = 0;
 
+    virtual void setPreset(const std::string& value) = 0;
+    virtual std::vector<std::string> getPresetValues() = 0;
     virtual void setAspectRatio(int aspectNumerator, int aspectDenominator) = 0;
     virtual void setQuality(float) = 0;
     virtual void recordingStatus(bool started) = 0; /* to update UI recording status indicator */
