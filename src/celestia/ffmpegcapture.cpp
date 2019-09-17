@@ -5,6 +5,7 @@ extern "C"
 {
 #include <libavutil/timestamp.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
@@ -279,6 +280,16 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
     // Some formats want stream headers to be separate.
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+const AVOption *opt = nullptr;
+cout << "supported options: ";
+while ((opt = av_opt_next(enc->priv_data, opt)) != nullptr)
+{
+    if (opt->type == AV_OPT_TYPE_CONST)
+        cout << "const ";
+    cout << opt->name <<'\n';
+}
+cout << "\n";
 
     return true;
 }
