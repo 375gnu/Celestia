@@ -154,20 +154,6 @@ void Overlay::print(char c)
     }
 }
 
-void Overlay::print(const char* s)
-{
-    int length = strlen(s);
-    bool validChar = true;
-    int i = 0;
-    while (i < length && validChar)
-    {
-        wchar_t ch = 0;
-        validChar = UTF8Decode(s, i, length, ch);
-        i += UTF8EncodedSize(ch);
-        print(ch);
-    }
-}
-
 void Overlay::drawRectangle(const Rect& r)
 {
     if (useTexture && r.tex == nullptr)
@@ -208,7 +194,7 @@ void OverlayStreamBuf::setOverlay(Overlay* o)
     overlay = o;
 }
 
-
+#if 0
 int OverlayStreamBuf::overflow(int c)
 {
     if (overlay != nullptr)
@@ -277,3 +263,4 @@ int OverlayStreamBuf::overflow(int c)
 
     return c;
 }
+#endif

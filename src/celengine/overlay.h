@@ -10,17 +10,13 @@
 #ifndef _OVERLAY_H_
 #define _OVERLAY_H_
 
-#include <algorithm>
-#include <array>
-#include <iostream>
-#include <string>
 #include <celutil/color.h>
 #if NO_TTF
 #include <celtxf/texturefont.h>
 #else
 #include <celttf/truetypefont.h>
 #endif
-
+#include <celengine/output.h>
 
 class Overlay;
 class Renderer;
@@ -29,7 +25,7 @@ class Rect;
 // Custom streambuf class to support C++ operator style output.  The
 // output is completely unbuffered so that it can coexist with printf
 // style output which the Overlay class also supports.
-class OverlayStreamBuf : public std::streambuf
+class OverlayStreamBuf : public celestia::IOutputStreamBuf
 {
  public:
     OverlayStreamBuf();
@@ -53,7 +49,7 @@ class OverlayStreamBuf : public std::streambuf
 };
 
 
-class Overlay : public std::ostream
+class Overlay : public IOutput
 {
  public:
     Overlay(const Renderer&);
