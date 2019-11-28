@@ -11,19 +11,18 @@
 #define _CELENGINE_CONSOLE_H_
 
 #include <string>
-#include <iostream>
 #if NO_TTF
 #include <celtxf/texturefont.h>
 #else
 #include <celttf/truetypefont.h>
 #endif
-
+#include <celengine/output.h>
 
 class Console;
 
 // Custom streambuf class to support C++ operator style output.  The
 // output is completely unbuffered.
-class ConsoleStreamBuf : public std::streambuf
+class ConsoleStreamBuf : public celestia::IOutputStreamBuf
 {
  public:
     ConsoleStreamBuf() { setbuf(0, 0); };
@@ -45,7 +44,7 @@ class ConsoleStreamBuf : public std::streambuf
 };
 
 
-class Console : public std::ostream
+class Console : public celestia::IOutput
 {
  public:
     Console(int _nRows, int _nColumns);

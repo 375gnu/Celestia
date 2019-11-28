@@ -13,6 +13,7 @@
 
 namespace celestia
 {
+
 IOutput::IOutput() :
     ostream(&sbuf)
 {
@@ -154,4 +155,5 @@ int IOutputStreamBuf::overflow(int c)
 
     return c;
 }
-}
+
+} // namespace

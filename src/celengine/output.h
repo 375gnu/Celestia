@@ -16,25 +16,7 @@ class TextureFont;
 
 namespace celestia
 {
-class IOutput : public std::ostream
-{
- public:
-    IOutput();
-    virtual ~IOutput() = default;
-
-    void virtual begin();
-    void virtual end();
-    void setFont(TextureFont* f);
-    virtual void print(wchar_t c);
-    virtual void print(char c);
-    virtual void print(const char* s);
-    void setColor(float r, float g, float b, float a) const;
-    void setColor(const Color& c) const;
-    void moveBy(float dx, float dy, float dz) const;
-
- private:
-    IOutputStreamBuf sbuf;
-};
+class IOutput;
 
 class IOutputStreamBuf : public std::streambuf
 {
@@ -55,4 +37,24 @@ class IOutputStreamBuf : public std::streambuf
     wchar_t m_decodedChar{ 0 };
     unsigned int m_decodeShift{ 0 };
 };
-}
+
+class IOutput : public std::ostream
+{
+ public:
+    IOutput();
+    virtual ~IOutput() = default;
+
+    void virtual begin();
+    void virtual end();
+    void setFont(TextureFont* f);
+    virtual void print(wchar_t c);
+    virtual void print(char c);
+    virtual void print(const char* s);
+    void setColor(float r, float g, float b, float a) const;
+    void setColor(const Color& c) const;
+    void moveBy(float dx, float dy, float dz) const;
+
+ private:
+    IOutputStreamBuf sbuf;
+};
+} // namespace

@@ -49,7 +49,7 @@ class OverlayStreamBuf : public celestia::IOutputStreamBuf
 };
 
 
-class Overlay : public IOutput
+class Overlay : public celestia::IOutput
 {
  public:
     Overlay(const Renderer&);
