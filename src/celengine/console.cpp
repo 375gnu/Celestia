@@ -113,7 +113,8 @@ void Console::render(int rowHeight)
             wchar_t ch = text[r * (nColumns + 1) + j];
             if (ch == '\0')
                 break;
-            font->render(ch);
+            auto xoffset = font->render(ch);
+            glTranslatef(xoffset, 0.0f, 0.0f);
         }
 
         // advance to the next line

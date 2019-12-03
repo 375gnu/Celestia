@@ -420,24 +420,21 @@ TextureFont::~TextureFont()
 
 
 /**
- * Render a single character and update the modelview transform
- *
- * Render a single character of the font. The modelview transform is
- * automatically updated to advance to the next character.
+ * Render a single character
  *
  * @param ch -- wide character
+ * @return -- rendered character `advance`
  */
-void TextureFont::render(wchar_t ch) const
+float TextureFont::render(wchar_t ch) const
 {
-    float xoffset = impl->render(ch, 0, 0);
-    glTranslatef(xoffset, 0.0f, 0.0f);
+    return impl->render(ch, 0, 0);
 }
 
 /**
  * Render a single character of the font with offset
  *
  * Render a single character of the font, adding the specified offset
- * to the location. Do *not* automatically update the modelview transform.
+ * to the location.
  *
  * @param ch -- wide character
  * @param xoffset -- horizontal offset
@@ -451,8 +448,7 @@ void TextureFont::render(wchar_t ch, float xoffset, float yoffset) const
 /**
  * Render a string with the specified offset
  *
- * Render a string with the specified offset. Do *not* automatically update
- * the modelview transform.
+ * Render a string with the specified offset.
  *
  * @param s -- string to render
  * @param xoffset -- horizontal offset
@@ -464,17 +460,14 @@ void TextureFont::render(const string &s, float xoffset, float yoffset) const
 }
 
 /**
- * Render a string and update the modelview transform
- *
- * Render a string and automatically update the modelview transform for the
- * string width.
+ * Render a string.
  *
  * @param s -- string to render
+ * @return -- rendered string `advance`
  */
-void TextureFont::render(const string& s) const
+float TextureFont::render(const string& s) const
 {
-    float xoffset = impl->render(s, 0, 0);
-    glTranslatef(xoffset, 0.0f, 0.0f);
+    return impl->render(s, 0, 0);
 }
 
 /**

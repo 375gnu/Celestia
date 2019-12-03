@@ -23,8 +23,8 @@ class TextureFont
     TextureFont& operator=(const TextureFont&) = delete;
     TextureFont& operator=(TextureFont&&) = delete;
 
-    void render(wchar_t c) const;
-    void render(const std::string& str) const;
+    float render(wchar_t c) const;
+    float render(const std::string& str) const;
 
     void render(wchar_t c, float xoffset, float yoffset) const;
     void render(const std::string& str, float xoffset, float yoffset) const;

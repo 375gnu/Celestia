@@ -22,8 +22,8 @@ class TextureFont
     TextureFont() = default;
     ~TextureFont();
 
-    void render(wchar_t ch) const;
-    void render(const std::string& s) const;
+    float render(wchar_t ch) const;
+    float render(const std::string& s) const;
 
     void render(wchar_t ch, float xoffset, float yoffset) const;
     void render(const std::string& s, float xoffset, float yoffset) const;

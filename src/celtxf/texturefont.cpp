@@ -31,10 +31,9 @@ TextureFont::~TextureFont()
 }
 
 
-/** Render a single character of the font. The modelview transform is
- *  automatically updated to advance to the next character.
+/** Render a single character of the font.
  */
-void TextureFont::render(wchar_t ch) const
+float TextureFont::render(wchar_t ch) const
 {
     const Glyph* glyph = getGlyph(ch);
     if (glyph == nullptr) glyph = getGlyph((wchar_t)'?');
@@ -50,8 +49,9 @@ void TextureFont::render(wchar_t ch) const
         glTexCoord2f(glyph->texCoords[3].u, glyph->texCoords[3].v);
         glVertex2f(glyph->xoff, glyph->yoff + glyph->height);
         glEnd();
-        glTranslatef(glyph->advance, 0.0f, 0.0f);
+        return glyph->advance;
     }
+    return 0.0f;
 }
 
 
@@ -78,10 +78,9 @@ void TextureFont::render(wchar_t ch, float xoffset, float yoffset) const
 }
 
 
-/** Render a string and automatically update the modelview transform for the
-  * string width.
+/** Render a string.
   */
-void TextureFont::render(const string& s) const
+float TextureFont::render(const string& s) const
 {
     int len = s.length();
     bool validChar = true;
@@ -102,7 +101,7 @@ void TextureFont::render(const string& s) const
         xoffset += glyph->advance;
     }
 
-    glTranslatef(xoffset, 0.0f, 0.0f);
+    return xoffset;
 }
 
 
