@@ -3081,66 +3081,62 @@ void CelestiaCore::renderOverlay()
 
     Universe *u = sim->getUniverse();
 
-    if (hudDetail > 0 && (overlayElements & ShowFrame))
+    if (hudDetail > 0 && ((overlayElements & ShowFrame) != 0))
     {
-        // Field of view and camera mode in lower right corner
-        overlay->savePos();
-        overlay->moveBy(width - emWidth * 15, fontHeight * 3 + 5);
-        overlay->beginText();
-        overlay->setColor(0.6f, 0.6f, 1.0f, 1);
+        array<string, 4> data;
 
         if (sim->getObserverMode() == Observer::Travelling)
         {
             double timeLeft = sim->getArrivalTime() - sim->getRealTime();
             if (timeLeft >= 1)
-                fmt::fprintf(*overlay, _("Travelling (%s)\n"),
-                             FormattedNumber(timeLeft, 0, FormattedNumber::GroupThousands));
+                data[0] = fmt::sprintf(_("Travelling (%s)\n"),
+                                       FormattedNumber(timeLeft, 0, FormattedNumber::GroupThousands));
             else
-                fmt::fprintf(*overlay, _("Travelling\n"));
+                data[0] = _("Travelling\n");
         }
         else
         {
-            *overlay << '\n';
+            data[0] = "\n";
         }
 
         if (!sim->getTrackedObject().empty())
         {
-            fmt::fprintf(*overlay, _("Track %s\n"),
-                         C_("Track", getSelectionName(sim->getTrackedObject(), *u)));
+            data[1] = fmt::sprintf(_("Track %s\n"),
+                                   C_("Track", getSelectionName(sim->getTrackedObject(), *u)));
         }
         else
         {
-            *overlay << '\n';
+            data[1] = "\n";
         }
 
         {
-            //FrameOfReference frame = sim->getFrame();
-            Selection refObject = sim->getFrame()->getRefObject();
-            ObserverFrame::CoordinateSystem coordSys = sim->getFrame()->getCoordinateSystem();
+            auto frame = sim->getFrame();
+            auto refObject = frame->getRefObject();
+            auto coordSys = frame->getCoordinateSystem();
 
             switch (coordSys)
             {
             case ObserverFrame::Ecliptical:
-                fmt::fprintf(*overlay, _("Follow %s\n"),
-                             C_("Follow", getSelectionName(refObject, *u)));
+                data[2] = fmt::sprintf(_("Follow %s\n"),
+                                       C_("Follow", getSelectionName(refObject, *u)));
                 break;
             case ObserverFrame::BodyFixed:
-                fmt::fprintf(*overlay, _("Sync Orbit %s\n"),
-                             C_("Sync", getSelectionName(refObject, *u)));
+                data[2] = fmt::sprintf(_("Sync Orbit %s\n"),
+                                       C_("Sync", getSelectionName(refObject, *u)));
                 break;
             case ObserverFrame::PhaseLock:
-                fmt::fprintf(*overlay, _("Lock %s -> %s\n"),
-                             C_("Lock", getSelectionName(refObject, *u)),
-                             C_("LockTo", getSelectionName(sim->getFrame()->getTargetObject(), *u)));
+                data[2] = fmt::sprintf(_("Lock %s -> %s\n"),
+                                       C_("Lock", getSelectionName(refObject, *u)),
+                                       C_("LockTo", getSelectionName(frame->getTargetObject(), *u)));
                 break;
 
             case ObserverFrame::Chase:
-                fmt::fprintf(*overlay, _("Chase %s\n"),
-                             C_("Chase", getSelectionName(refObject, *u)));
+                data[2] = fmt::sprintf(_("Chase %s\n"),
+                                       C_("Chase", getSelectionName(refObject, *u)));
                 break;
 
             default:
-                *overlay << '\n';
+                data[2] = "\n";
                 break;
             }
         }
@@ -3149,8 +3145,24 @@ void CelestiaCore::renderOverlay()
 
         // Field of view
         float fov = radToDeg(sim->getActiveObserver()->getFOV());
-        fmt::fprintf(*overlay, _("FOV: %s (%.2fx)\n"),
-                              angleToStr(fov), (*activeView)->zoom);
+        data[3] = fmt::sprintf(_("FOV: %s (%.2fx)\n"),
+                               angleToStr(fov), (*activeView)->zoom);
+
+        int length = font->getWidth(data[0]);
+        for (size_t i = 1; i < data.size(); i++)
+        {
+            int w = font->getWidth(data[i]);
+            if (w > length)
+                length = w;
+        }
+        // Field of view and camera mode in lower right corner
+        overlay->savePos();
+        overlay->moveBy(width - length, fontHeight * (data.size() - 1) + 5);
+        overlay->beginText();
+        overlay->setColor(0.6f, 0.6f, 1.0f, 1);
+        for (const auto &s : data)
+            overlay->print(s.c_str());
+
         overlay->endText();
         overlay->restorePos();
     }

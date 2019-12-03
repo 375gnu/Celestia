@@ -65,6 +65,9 @@ class Overlay : public std::ostream
 
     void setWindowSize(int, int);
     void setFont(TextureFont*);
+    TextureFont* getFont() const { return font; }
+
+    int getWidth(const std::string &s) const { return font == nullptr ? 0 : font->getWidth(s); }
 
     void setColor(float r, float g, float b, float a) const;
     void setColor(const Color& c) const;
