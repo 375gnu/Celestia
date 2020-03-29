@@ -11,6 +11,9 @@ namespace celestia
 namespace engine
 {
 
+/*!
+ * Generic property interface
+ */
 class IProperty
 {
  public:
@@ -43,11 +46,31 @@ class Property : IProperty
             m_config->removeProperty(this);
     }
 
+    Property(const Property &other)
+    {
+        copy(other);
+    }
+
+    Property(Property &&other)
+    {
+        move(std::move(other));
+    }
+
+    Property& operator=(const Property &other)
+    {
+        copy(other);
+    }
+
+    Property& operator=(Property &&other)
+    {
+        move(std::move(other));
+    }
+
     // Getters and setters
     inline Property& set(T value)
     {
         m_value = value;
-	return *this;
+        return *this;
     }
 
     Property& operator()(T value)
@@ -79,6 +102,8 @@ class Property : IProperty
     void update() override;
 
  private:
+    void copy(const Property &other);
+    void move(Property &&other);
     std::shared_ptr<Config> m_config        { nullptr };
     std::string             m_name;
     T                       m_value         {};
