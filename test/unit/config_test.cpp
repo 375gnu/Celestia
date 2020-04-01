@@ -10,7 +10,7 @@ using namespace celestia::engine;
 class ConfigReader : IConfigUpdater
 {
  public:
-    ConfigReader(const std::shared_ptr<Config> &cfg) : IConfigUpdater(cfg) {}
+    ConfigReader(std::shared_ptr<Config> cfg) : IConfigUpdater(std::move(cfg)) {}
     void read();
 };
 
@@ -72,8 +72,8 @@ TEST_CASE("Configuration", "[Configuration]")
     SECTION("Update Configuration")
     {
         Application app(c);
-        REQUIRE((app.visible() == true));
+        REQUIRE(app.visible() == true);
         app.visible = false;
-	REQUIRE((app.visible() == false));
+        REQUIRE(app.visible() == false);
     }
 }

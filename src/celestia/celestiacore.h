@@ -14,6 +14,7 @@
 #include <celutil/timer.h>
 #include <celutil/watcher.h>
 // #include <celutil/watchable.h>
+#include <celengine/property.h>
 #include <celengine/solarsys.h>
 #include <celengine/overlay.h>
 #include <celengine/texture.h>
@@ -348,7 +349,12 @@ class CelestiaCore // : public Watchable<CelestiaCore>
 #endif // CELX
 
  private:
-    CelestiaConfig* config{ nullptr };
+    std::shared_ptr<celestia::engine::Config> m_config;
+    PathProperty favoritesFile;
+    PathProperty demoScriptFile;
+    BooleanProperty reverseMouseWheel;
+
+    //CelestiaConfig* config{ nullptr };
 
     Universe* universe{ nullptr };
 

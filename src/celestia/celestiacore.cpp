@@ -30,6 +30,7 @@
 #include <celengine/axisarrow.h>
 #include <celengine/planetgrid.h>
 #include <celengine/visibleregion.h>
+#include <celengine/configreader.h>
 #include <celmath/geomutil.h>
 #include <celutil/color.h>
 #include <celutil/filetype.h>
@@ -71,6 +72,7 @@ using namespace Eigen;
 using namespace std;
 using namespace celmath;
 using namespace celestia::scripts;
+using namespace celestia::engine;
 
 static const int DragThreshold = 3;
 
@@ -141,6 +143,10 @@ float ComputeRotationCoarseness(Simulation& sim)
 
 
 CelestiaCore::CelestiaCore() :
+    m_config            { make_shared<Config>() },
+    favoritesFile       { m_config, "favoritesFile", PathExp("~/favorites.cel") },
+    demoScriptFile      { m_config, "demoScriptFile", {} },
+    reverseMouseWheel   { m_config, "reverseMouseWheel", false },
     oldFOV(stdFOV),
     /* Get a renderer here so it may be queried for capabilities of the
        underlying engine even before rendering is enabled. It's initRenderer()
@@ -179,9 +185,10 @@ CelestiaCore::~CelestiaCore()
 void CelestiaCore::readFavoritesFile()
 {
     // Set up favorites list
-    if (!config->favoritesFile.empty())
+    auto file = favoritesFile();
+    if (file.empty())
     {
-        ifstream in(config->favoritesFile.string(), ios::in);
+        ifstream in(file.string(), ios::in);
 
         if (in.good())
         {
@@ -196,9 +203,10 @@ void CelestiaCore::readFavoritesFile()
 
 void CelestiaCore::writeFavoritesFile()
 {
-    if (!config->favoritesFile.empty())
+    auto file = favoritesFile();
+    if (!file.empty())
     {
-        ofstream out(config->favoritesFile.string(), ios::out);
+        ofstream out(file.string(), ios::out);
         if (out.good())
             WriteFavoritesList(*favorites, out);
     }
@@ -480,7 +488,8 @@ void CelestiaCore::mouseWheel(float motion, int modifiers)
 {
     setViewChanged();
 
-    if (config->reverseMouseWheel) motion = -motion;
+    if (reverseMouseWheel == true)
+        motion = -motion;
     if (motion != 0.0)
     {
         if ((modifiers & ShiftKey) != 0)
@@ -1485,8 +1494,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case 'D':
         addToHistory();
-        if (config->demoScriptFile != "")
-           runScript(config->demoScriptFile);
+        if (!demoScriptFile().empty())
+           runScript(demoScriptFile());
         break;
 
     case 'E':
@@ -3566,20 +3575,24 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
                                   const vector<fs::path>& extrasDirs,
                                   ProgressNotifier* progressNotifier)
 {
+    ConfigReader configReader(m_config);
+    bool ok;
     if (!configFileName.empty())
     {
-        config = ReadCelestiaConfig(configFileName);
+        ok = configReader.read(configFileName);
     }
     else
     {
-        config = ReadCelestiaConfig("celestia.cfg");
-
+        ok = configReader.read("celestia.cfg");
         fs::path localConfigFile = PathExp("~/.celestia.cfg");
         if (!localConfigFile.empty())
-            ReadCelestiaConfig(localConfigFile, config);
+        {
+            bool ok1 = configReader.read(localConfigFile);
+            ok = ok || ok1;
+        }
     }
 
-    if (config == nullptr)
+    if (!ok)
     {
         fatalError(_("Error reading configuration file."), false);
         return false;
@@ -3610,7 +3623,7 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
         if (find(config->extrasDirs.begin(), config->extrasDirs.end(), dir.string()) ==
             config->extrasDirs.end())
         {
-            config->extrasDirs.push_back(dir.string());
+            config->extrasDirs.push_back(dir);
         }
     }
 

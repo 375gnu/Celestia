@@ -3,8 +3,8 @@
 #include <cassert>
 #include <functional>
 #include <memory>
+#include <celcompat/filesystem.h>
 #include "configuration.h"
-
 
 namespace celestia
 {
@@ -115,6 +115,6 @@ class Property : IProperty
 using NumericProperty = Property<double>;
 using StringProperty  = Property<std::string>;
 using BooleanProperty = Property<bool>;
-
+using PathProperty    = Property<fs::path>;
 }
 } // namespace;

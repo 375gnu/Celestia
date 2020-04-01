@@ -62,12 +62,14 @@ class Config
     friend class IProperty;
 };
 
-// Proxy class to invoke private Config's methods from derived classes
+/*!
+ * Proxy class to invoke private Config's methods from derived classes
+ */
 class IConfigUpdater
 {   
     std::shared_ptr<Config> m_cfg;
  public:
-    IConfigUpdater(const std::shared_ptr<Config> &cfg) : m_cfg(cfg) {}
+    IConfigUpdater(std::shared_ptr<Config> cfg) : m_cfg(std::move(cfg)) {}
     inline void beginUpdate() { m_cfg->beginUpdate(); }
     inline void set(const std::string &name, Value *value) { m_cfg->set(name, value); }
     inline void endUpdate() { m_cfg->endUpdate(); }
