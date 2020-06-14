@@ -85,16 +85,21 @@ class GLProgram
 };
 
 
+class CelestiaGLProgram;
+
 class FloatShaderParameter
 {
  public:
     FloatShaderParameter();
     FloatShaderParameter(GLuint obj, const char* name);
+    FloatShaderParameter(GLint _slot) : slot(_slot) {}
 
     FloatShaderParameter& operator=(float);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 
@@ -103,11 +108,14 @@ class Vec3ShaderParameter
  public:
     Vec3ShaderParameter();
     Vec3ShaderParameter(GLuint obj, const char* name);
+    Vec3ShaderParameter(GLint _slot) : slot(_slot) {}
 
     Vec3ShaderParameter& operator=(const Eigen::Vector3f&);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 
@@ -116,11 +124,14 @@ class Vec4ShaderParameter
  public:
     Vec4ShaderParameter();
     Vec4ShaderParameter(GLuint obj, const char* name);
+    Vec4ShaderParameter(GLint _slot) : slot(_slot) {}
 
     Vec4ShaderParameter& operator=(const Eigen::Vector4f&);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 
@@ -129,11 +140,14 @@ class IntegerShaderParameter
  public:
     IntegerShaderParameter();
     IntegerShaderParameter(GLuint obj, const char* name);
+    IntegerShaderParameter(GLint _slot) : slot(_slot) {}
 
     IntegerShaderParameter& operator=(int);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 
@@ -142,11 +156,14 @@ class Mat3ShaderParameter
  public:
     Mat3ShaderParameter();
     Mat3ShaderParameter(GLuint obj, const char* name);
+    Mat3ShaderParameter(GLint _slot) : slot(_slot) {}
 
     Mat3ShaderParameter& operator=(const Eigen::Matrix3f&);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 
@@ -155,11 +172,14 @@ class Mat4ShaderParameter
  public:
     Mat4ShaderParameter();
     Mat4ShaderParameter(GLuint obj, const char* name);
+    Mat4ShaderParameter(GLint _slot) : slot(_slot) {}
 
     Mat4ShaderParameter& operator=(const Eigen::Matrix4f&);
 
  private:
     int slot;
+
+    friend class CelestiaGLProgram;
 };
 
 

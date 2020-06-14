@@ -3360,54 +3360,63 @@ CelestiaGLProgram::~CelestiaGLProgram()
 }
 
 
+#define _GET_UNIFORM(TYPE) \
+    auto it = uniforms.find(paramName); \
+    if (it != uniforms.end()) \
+        return TYPE(it->second); \
+    auto p = TYPE(program->getID(), paramName.c_str()); \
+    uniforms[paramName] = p.slot; \
+    return p;
+
 FloatShaderParameter
 CelestiaGLProgram::floatParam(const string& paramName)
 {
-    return FloatShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(FloatShaderParameter);
 }
 
 
 IntegerShaderParameter
 CelestiaGLProgram::intParam(const string& paramName)
 {
-    return IntegerShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(IntegerShaderParameter);
 }
 
 
 IntegerShaderParameter
 CelestiaGLProgram::samplerParam(const string& paramName)
 {
-    return IntegerShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(IntegerShaderParameter);
 }
 
 
 Vec3ShaderParameter
 CelestiaGLProgram::vec3Param(const string& paramName)
 {
-    return Vec3ShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(Vec3ShaderParameter);
 }
 
 
 Vec4ShaderParameter
 CelestiaGLProgram::vec4Param(const string& paramName)
 {
-    return Vec4ShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(Vec4ShaderParameter);
 }
 
 
 Mat3ShaderParameter
 CelestiaGLProgram::mat3Param(const std::string& paramName)
 {
-    return Mat3ShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(Mat3ShaderParameter);
 }
 
 
 Mat4ShaderParameter
 CelestiaGLProgram::mat4Param(const std::string& paramName)
 {
-    return Mat4ShaderParameter(program->getID(), paramName.c_str());
+    _GET_UNIFORM(Mat4ShaderParameter);
 }
 
+#undef _GET_UNIFORM
 
 int
 CelestiaGLProgram::attribIndex(const std::string& paramName) const

@@ -275,6 +275,8 @@ class CelestiaGLProgram
 
     GLProgram* program;
     const ShaderProperties props;
+
+    std::map<std::string, GLuint> uniforms;
 };
 
 
