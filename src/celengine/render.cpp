@@ -278,8 +278,8 @@ Renderer::Renderer() :
     settingsChanged(true),
     objectAnnotationSetOpen(false)
 {
-    pointStarVertexBuffer = new PointStarVertexBuffer(*this, 2048);
-    glareVertexBuffer = new PointStarVertexBuffer(*this, 2048);
+    pointStarVertexBuffer = new PointStarVertexBuffer(*this, 8192);
+    glareVertexBuffer = new PointStarVertexBuffer(*this, 8192);
     skyVertices = new SkyVertex[MaxSkySlices * (MaxSkyRings + 1)];
     skyIndices = new uint32_t[(MaxSkySlices + 1) * 2 * MaxSkyRings];
     skyContour = new SkyContourPoint[MaxSkySlices + 1];
