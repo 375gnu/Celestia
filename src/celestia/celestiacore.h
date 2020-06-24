@@ -34,11 +34,16 @@
 #include <celscript/legacy/legacyscript.h>
 #include <celscript/common/scriptmaps.h>
 
+namespace celestia
+{
+namespace engine
+{
+class FontManager;
+}
+}
 class Url;
-
 // class CelestiaWatcher;
 class CelestiaCore;
-
 // class astro::Date;
 
 typedef Watcher<CelestiaCore> CelestiaWatcher;
@@ -478,6 +483,7 @@ class CelestiaCore // : public Watchable<CelestiaCore>
 
     Selection lastSelection;
     string selectionNames;
+    celestia::engine::FontManager* fontManager { nullptr };
 
 #ifdef CELX
     friend View* getViewByObserver(CelestiaCore*, Observer*);

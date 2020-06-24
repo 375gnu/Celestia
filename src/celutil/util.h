@@ -13,9 +13,36 @@
 #define _CELUTIL_UTIL_H_
 
 #include <string>
-#include <iostream>
-#include <functional>
+#include <iosfwd>
 #include <celcompat/filesystem.h>
+
+namespace celestia
+{
+namespace util
+{
+class noncopyable
+{
+ protected:
+    noncopyable() = default;
+    ~noncopyable() = default;
+    noncopyable(noncopyable&&) = default;
+    noncopyable& operator=(noncopyable&&) = default;
+    noncopyable(const noncopyable&) = delete;
+    noncopyable& operator=(const noncopyable&) = delete;
+};
+
+class nonmovable
+{
+ protected:
+    nonmovable() = default;
+    ~nonmovable() = default;
+    nonmovable(nonmovable&&) = delete;
+    nonmovable& operator=(nonmovable&&) = delete;
+    nonmovable(const nonmovable&) = default;
+    nonmovable& operator=(const nonmovable&) = default;
+};
+}
+}
 
 extern int compareIgnoringCase(const std::string& s1, const std::string& s2);
 extern int compareIgnoringCase(const std::string& s1, const std::string& s2, int n);

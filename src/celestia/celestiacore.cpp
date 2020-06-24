@@ -55,6 +55,7 @@
 #ifdef CELX
 #include <celephem/scriptobject.h>
 #endif
+#include <celttf/fontmanager.h>
 #include <celttf/truetypefont.h>
 
 #include "imagecapture.h"
@@ -67,6 +68,7 @@ using namespace Eigen;
 using namespace std;
 using namespace celmath;
 using namespace celestia::scripts;
+using namespace celestia::engine;
 
 static const int DragThreshold = 3;
 
@@ -161,6 +163,8 @@ CelestiaCore::CelestiaCore() :
     clog.rdbuf(console.rdbuf());
     cerr.rdbuf(console.rdbuf());
     console.setWindowHeight(Console::PageRows);
+
+    fontManager = FontManager::Initialize(renderer);
 }
 
 CelestiaCore::~CelestiaCore()
@@ -3770,12 +3774,14 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
 }
 
 static TextureFont*
-LoadFontHelper(const Renderer* renderer, const fs::path& p)
+LoadFontHelper(FontManager* fm, const fs::path& p)
 {
+    if (fm == nullptr)
+        return nullptr;
     if (p.is_absolute())
-        return LoadTextureFont(renderer, p);
+        return fm->getFont(p);
 
-    return LoadTextureFont(renderer, fs::path("fonts") / p);
+    return fm->getFont(fs::path("fonts") / p);
 }
 
 bool CelestiaCore::initRenderer()
@@ -3820,9 +3826,9 @@ bool CelestiaCore::initRenderer()
     }
 
     if (config->mainFont.empty())
-        font = LoadTextureFont(renderer, "fonts/DejaVuSans.ttf,12");
+        font = LoadFontHelper(fontManager, "DejaVuSans.ttf,12");
     else
-        font = LoadFontHelper(renderer, config->mainFont);
+        font = LoadFontHelper(fontManager, config->mainFont);
 
     if (font == nullptr)
         cout << _("Error loading font; text will not be visible.\n");
@@ -3830,7 +3836,7 @@ bool CelestiaCore::initRenderer()
         font->buildTexture();
 
     if (!config->titleFont.empty())
-        titleFont = LoadFontHelper(renderer, config->titleFont);
+        titleFont = LoadFontHelper(fontManager, config->titleFont);
     if (titleFont != nullptr)
         titleFont->buildTexture();
     else
@@ -3846,7 +3852,7 @@ bool CelestiaCore::initRenderer()
     }
     else
     {
-        TextureFont* labelFont = LoadFontHelper(renderer, config->labelFont);
+        TextureFont* labelFont = LoadFontHelper(fontManager, config->labelFont);
         if (labelFont == nullptr)
         {
             renderer->setFont(Renderer::FontNormal, font);
@@ -4029,24 +4035,32 @@ CelestiaCore::ContextMenuHandler* CelestiaCore::getContextMenuHandler() const
 
 void CelestiaCore::setFont(const fs::path& fontPath, int collectionIndex, int fontSize)
 {
-    font = LoadTextureFont(renderer, fontPath, collectionIndex, fontSize, screenDpi);
+    if (fontManager == nullptr)
+        return;
+    font = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (font != nullptr)
         font->buildTexture();
 }
 
 void CelestiaCore::setTitleFont(const fs::path& fontPath, int collectionIndex, int fontSize)
 {
-    titleFont = LoadTextureFont(renderer, fontPath, collectionIndex, fontSize, screenDpi);
+    if (fontManager == nullptr)
+        return;
+    titleFont = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (titleFont != nullptr)
         titleFont->buildTexture();
 }
 
 void CelestiaCore::setRendererFont(const fs::path& fontPath, int collectionIndex, int fontSize, Renderer::FontStyle fontStyle)
 {
-    auto f = LoadTextureFont(renderer, fontPath, collectionIndex, fontSize, screenDpi);
+    if (fontManager == nullptr)
+        return;
+    auto f = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (f != nullptr)
+    {
         f->buildTexture();
-    renderer->setFont(fontStyle, f);
+        renderer->setFont(fontStyle, f);
+    }
 }
 
 int CelestiaCore::getTimeZoneBias() const

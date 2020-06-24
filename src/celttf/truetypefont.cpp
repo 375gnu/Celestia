@@ -635,11 +635,11 @@ void TextureFont::flush()
     impl->flush();
 }
 
-TextureFont* TextureFont::load(const Renderer *r, const fs::path &path, int index, int size, int dpi)
+TextureFont* TextureFont::Load(const Renderer *r, const fs::path &path, int index, int size, int dpi)
 {
     FT_Face face;
 
-    if (FT_New_Face(ft, path.string().c_str(), index, &face) != 0)
+    if (FT_New_Face(ft, path.c_str(), index, &face) != 0)
     {
         fmt::fprintf(cerr, "Could not open font %s\n", path);
         return nullptr;
@@ -648,9 +648,15 @@ TextureFont* TextureFont::load(const Renderer *r, const fs::path &path, int inde
     if (!FT_IS_SCALABLE(face))
     {
         fmt::fprintf(cerr, "Font is not scalable: %s\n", path);
+        FT_Done_Face(face);
         return nullptr;
     }
 
+    return TextureFont::Load(r, face, size, dpi);
+}
+
+TextureFont* TextureFont::Load(const Renderer *r, FT_Face face, int size, int dpi)
+{
     if (FT_Set_Char_Size(face, 0, size << 6, dpi, dpi) != 0)
     {
         fmt::fprintf(cerr, "Could not font size %i\n", size);
@@ -667,50 +673,4 @@ TextureFont* TextureFont::load(const Renderer *r, const fs::path &path, int inde
     font->setMaxDescent(-face->size->metrics.descender >> 6);
 
     return font;
-}
-
-// temporary while no fontconfig support
-static fs::path ParseFontName(const fs::path &filename, int &collectionIndex, int &size)
-{
-    // Format with font path/collection index(if any)/font size(if any)
-    auto fn = filename.string();
-    auto pos = fn.rfind(',');
-    if (pos != string::npos)
-    {
-        size = (int) stof(fn.substr(pos + 1));
-        auto rest = fn.substr(0, pos);
-
-        pos = rest.rfind(',');
-        if (pos != string::npos)
-        {
-            collectionIndex = stof(rest.substr(pos + 1));
-            return rest.substr(0, pos);
-        }
-        else
-        {
-            return rest;
-        }
-    }
-    else
-    {
-        size = 12;
-        return filename;
-    }
-}
-
-TextureFont* LoadTextureFont(const Renderer *r, const fs::path &filename, int index, int size, int dpi)
-{
-    if (ft == nullptr)
-    {
-        if (FT_Init_FreeType(&ft))
-        {
-            cerr << "Could not init freetype library\n";
-            return nullptr;
-        }
-    }
-
-    int psize = 0;
-    int pcollectionIndex = 0;
-    auto nameonly = ParseFontName(filename, pcollectionIndex, psize);
-    return TextureFont::load(r, nameonly, index > 0 ? index : pcollectionIndex, size > 0 ? size : psize, dpi);
 }

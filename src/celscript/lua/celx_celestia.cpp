@@ -11,7 +11,8 @@
 
 #include <celutil/debug.h>
 #include <celutil/gettext.h>
-#include "celttf/truetypefont.h"
+#include <celttf/fontmanager.h>
+#include <celttf/truetypefont.h>
 #include <fmt/printf.h>
 #include <celengine/category.h>
 #include <celengine/texture.h>
@@ -34,6 +35,7 @@
 
 using namespace Eigen;
 using namespace celestia::scripts;
+using namespace celestia::engine;
 
 extern const char* KbdCallback;
 extern const char* CleanupCallback;
@@ -2290,7 +2292,9 @@ static int celestia_loadfont(lua_State* l)
     celx.checkArgs(2, 2, "Need one argument for celestia:loadtexture()");
     string s = celx.safeGetString(2, AllErrors, "Argument to celestia:loadfont() must be a string");
     CelestiaCore* appCore = getAppCore(l, AllErrors);
-    TextureFont* font = LoadTextureFont(appCore->getRenderer(), s);
+    FontManager *fm = FontManager::Get();
+    if (fm == nullptr) return 0;
+    TextureFont* font = fm->getFont(s);
     if (font == nullptr) return 0;
     font->buildTexture();
     return celx.pushClass(font);

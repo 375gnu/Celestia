@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <string>
 #include <celcompat/filesystem.h>
 #include <Eigen/Core>
@@ -50,10 +52,9 @@ class TextureFont
     bool buildTexture();
     void flush();
 
-    static TextureFont* load(const Renderer*, const fs::path&, int index, int size, int dpi);
+    static TextureFont* Load(const Renderer*, const fs::path&, int index, int size, int dpi);
+    static TextureFont* Load(const Renderer*, FT_Face face, int size, int dpi);
 
  private:
     TextureFontPrivate *impl;
 };
-
-TextureFont* LoadTextureFont(const Renderer*, const fs::path&, int index = 0, int size = 0, int dpi = 96);
