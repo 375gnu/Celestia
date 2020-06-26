@@ -49,7 +49,7 @@
 #include <cstring>
 #include <cassert>
 #include <ctime>
-#include <set>
+#include <tuple>
 #include <celengine/rectangle.h>
 
 #ifdef CELX
@@ -3773,15 +3773,44 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
     return true;
 }
 
+// temporary while no fontconfig support
+static std::tuple<fs::path, int, int>
+ParseFontName(const fs::path &filename)
+{
+    // Format with font path/collection index(if any)/font size(if any)
+    auto fn = filename.string();
+    auto pos = fn.rfind(',');
+    if (pos != string::npos)
+    {
+        int size = stoi(fn.substr(pos + 1));
+        auto rest = fn.substr(0, pos);
+
+        pos = rest.rfind(',');
+        if (pos != string::npos)
+        {
+            int index = stoi(rest.substr(pos + 1));
+            return make_tuple(fs::path(rest.substr(0, pos)), index, size);
+        }
+        else
+        {
+            return make_tuple(rest, 0, size);
+        }
+    }
+    else
+    {
+        return make_tuple(filename, 0, 12);
+    }
+}
+
 static TextureFont*
-LoadFontHelper(FontManager* fm, const fs::path& p)
+LoadFontHelper(FontManager* fm, const fs::path& p, int index, int size, int dpi)
 {
     if (fm == nullptr)
         return nullptr;
     if (p.is_absolute())
-        return fm->getFont(p);
+        return fm->getFont(p, index, size, dpi);
 
-    return fm->getFont(fs::path("fonts") / p);
+    return fm->getFont(fs::path("fonts") / p, index, size, dpi);
 }
 
 bool CelestiaCore::initRenderer()
@@ -3826,9 +3855,14 @@ bool CelestiaCore::initRenderer()
     }
 
     if (config->mainFont.empty())
-        font = LoadFontHelper(fontManager, "DejaVuSans.ttf,12");
+    {
+        font = LoadFontHelper(fontManager, "DejaVuSans.ttf", 0, 12, screenDpi);
+    }
     else
-        font = LoadFontHelper(fontManager, config->mainFont);
+    {
+        auto p = ParseFontName(config->mainFont);
+        font = LoadFontHelper(fontManager, get<0>(p), get<1>(p), get<2>(p), screenDpi);
+    }
 
     if (font == nullptr)
         cout << _("Error loading font; text will not be visible.\n");
@@ -3836,7 +3870,10 @@ bool CelestiaCore::initRenderer()
         font->buildTexture();
 
     if (!config->titleFont.empty())
-        titleFont = LoadFontHelper(fontManager, config->titleFont);
+    {
+        auto p = ParseFontName(config->titleFont);
+        titleFont = LoadFontHelper(fontManager, get<0>(p), get<1>(p), get<2>(p), screenDpi);
+    }
     if (titleFont != nullptr)
         titleFont->buildTexture();
     else
@@ -3852,7 +3889,8 @@ bool CelestiaCore::initRenderer()
     }
     else
     {
-        TextureFont* labelFont = LoadFontHelper(fontManager, config->labelFont);
+        auto p = ParseFontName(config->labelFont);
+        TextureFont* labelFont = LoadFontHelper(fontManager, get<0>(p), get<1>(p), get<2>(p), screenDpi);
         if (labelFont == nullptr)
         {
             renderer->setFont(Renderer::FontNormal, font);

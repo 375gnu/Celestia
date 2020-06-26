@@ -2294,7 +2294,7 @@ static int celestia_loadfont(lua_State* l)
     CelestiaCore* appCore = getAppCore(l, AllErrors);
     FontManager *fm = FontManager::Get();
     if (fm == nullptr) return 0;
-    TextureFont* font = fm->getFont(s);
+    TextureFont* font = fm->getFont(s, 0, 12, 96); // FIXME!!!
     if (font == nullptr) return 0;
     font->buildTexture();
     return celx.pushClass(font);

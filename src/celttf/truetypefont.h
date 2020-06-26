@@ -52,7 +52,6 @@ class TextureFont
     bool buildTexture();
     void flush();
 
-    static TextureFont* Load(const Renderer*, const fs::path&, int index, int size, int dpi);
     static TextureFont* Load(const Renderer*, FT_Face face, int size, int dpi);
 
  private:

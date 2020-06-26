@@ -12,7 +12,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <memory> // shared_ptr
-#include <vector>
+#include <list>
 #include <celcompat/filesystem.h>
 #include <celutil/util.h>
 
@@ -30,7 +30,8 @@ class FontManager : public util::noncopyable
     static FontManager* Initialize(const Renderer*);
     static FontManager* Get();
 
-    TextureFont* getFont(const fs::path &path, int index = 0, int size = 0, int dpi = 96);
+    TextureFont* getFont(const fs::path &path, int index, int size, int dpi = 96);
+    void releaseFont(TextureFont *font);
 
  private:
     FontManager() = delete;
@@ -39,6 +40,7 @@ class FontManager : public util::noncopyable
         m_ft(ft)
     {
     };
+    void releaseFace(FT_Face face);
 
     FT_Face getFontFace(const fs::path &path, int index);
 
@@ -52,10 +54,12 @@ class FontManager : public util::noncopyable
                  FT_Face face) :
             path(path),
             index(index),
+            count(0),
             face(face)
         {}
         fs::path    path;
         int         index;
+        int         count;
         FT_Face     face;
     };
     struct FontCacheEntry
@@ -64,21 +68,26 @@ class FontManager : public util::noncopyable
                        int index,
                        int size,
                        int dpi,
+                       FT_Face face,
                        TextureFont *font) :
             path(path),
             index(index),
             size(size),
             dpi(dpi),
+            count(0),
+            face(face),
             font(font)
         {}
         fs::path    path;
         int         index;
         int         size;
         int         dpi;
+        int         count;
+        FT_Face     face;
         TextureFont *font;
     };
-    std::vector<FontFace>       m_faces;
-    std::vector<FontCacheEntry> m_fonts;
+    std::list<FontFace>       m_faces;
+    std::list<FontCacheEntry> m_fonts;
 };
 
 }

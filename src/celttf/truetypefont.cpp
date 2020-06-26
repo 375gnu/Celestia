@@ -134,8 +134,10 @@ TextureFontPrivate::TextureFontPrivate(const Renderer *renderer) :
 
 TextureFontPrivate::~TextureFontPrivate()
 {
+#if 0
     if (m_face)
         FT_Done_Face(m_face);
+#endif
     if (m_texName != 0)
         glDeleteTextures(1, &m_texName);
 }
@@ -633,26 +635,6 @@ bool TextureFont::buildTexture()
 void TextureFont::flush()
 {
     impl->flush();
-}
-
-TextureFont* TextureFont::Load(const Renderer *r, const fs::path &path, int index, int size, int dpi)
-{
-    FT_Face face;
-
-    if (FT_New_Face(ft, path.c_str(), index, &face) != 0)
-    {
-        fmt::fprintf(cerr, "Could not open font %s\n", path);
-        return nullptr;
-    }
-
-    if (!FT_IS_SCALABLE(face))
-    {
-        fmt::fprintf(cerr, "Font is not scalable: %s\n", path);
-        FT_Done_Face(face);
-        return nullptr;
-    }
-
-    return TextureFont::Load(r, face, size, dpi);
 }
 
 TextureFont* TextureFont::Load(const Renderer *r, FT_Face face, int size, int dpi)
