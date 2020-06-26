@@ -54,7 +54,7 @@ class FontManager : public util::noncopyable
                  FT_Face face) :
             path(path),
             index(index),
-            count(0),
+            count(1),
             face(face)
         {}
         fs::path    path;
@@ -74,7 +74,7 @@ class FontManager : public util::noncopyable
             index(index),
             size(size),
             dpi(dpi),
-            count(0),
+            count(1),
             face(face),
             font(font)
         {}
