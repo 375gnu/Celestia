@@ -93,13 +93,13 @@ TextureFont* FontManager::getFont(const fs::path &path, int index, int size, int
         return nullptr;
     }
 
-    auto font = TextureFont::Load(m_renderer, face, size, dpi);
+    auto font = TextureFont::Load(this, m_renderer, face, size, dpi);
     m_fonts.emplace_back(path, index, size, dpi, face, font);
 
     return font;
 }
 
-void FontManager::releaseFont(TextureFont *font)
+void FontManager::releaseFont(const TextureFont *font)
 {
     auto cmp = [font](const FontCacheEntry &e) { return e.font == font; };
     auto f = std::find_if(begin(m_fonts), end(m_fonts), cmp);
@@ -112,8 +112,6 @@ void FontManager::releaseFont(TextureFont *font)
     assert(f->count > 0);
     if (f->count == 1)
     {
-        delete font;
-
         FT_Face face = f->face;
         m_fonts.erase(f);
 

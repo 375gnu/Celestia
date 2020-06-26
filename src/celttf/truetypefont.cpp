@@ -17,6 +17,7 @@
 #include <celengine/render.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include "fontmanager.h"
 #include "truetypefont.h"
 
 #define DUMP_TEXTURE 0
@@ -26,6 +27,7 @@
 #endif
 
 using namespace std;
+using namespace celestia::engine;
 
 static FT_Library ft = nullptr;
 
@@ -65,7 +67,7 @@ struct TextureFontPrivate
     };
 
     TextureFontPrivate() = delete;
-    TextureFontPrivate(const Renderer *renderer);
+    TextureFontPrivate(FontManager *fontManager, const Renderer *renderer);
     ~TextureFontPrivate();
     TextureFontPrivate(const TextureFontPrivate&) = default;
     TextureFontPrivate(TextureFontPrivate&&) = default;
@@ -87,6 +89,7 @@ struct TextureFontPrivate
     CelestiaGLProgram* getProgram();
     void flush();
 
+    FontManager *m_fontManager;
     const Renderer *m_renderer;
     CelestiaGLProgram *m_prog { nullptr };
 
@@ -99,7 +102,7 @@ struct TextureFontPrivate
     int m_texWidth;
     int m_texHeight;
 
-    GLuint m_texName { 0 };       // texture object
+    GLuint m_texName { 0 }; // texture object
     vector<Glyph> m_glyphs; // character information
     GLint m_maxTextureSize; // max supported texture size
 
@@ -123,7 +126,8 @@ inline float pt_to_px(float pt, int dpi = 96)
    last  = first + 32
 */
 
-TextureFontPrivate::TextureFontPrivate(const Renderer *renderer) :
+TextureFontPrivate::TextureFontPrivate(FontManager *fontManager, const Renderer *renderer) :
+    m_fontManager(fontManager),
     m_renderer(renderer)
 {
     m_unicodeBlocks[0] = { 0x0020, 0x007E }; // Basic Latin
@@ -478,13 +482,14 @@ void TextureFontPrivate::flush()
 }
 
 
-TextureFont::TextureFont(const Renderer *renderer) :
-    impl(new TextureFontPrivate(renderer))
+TextureFont::TextureFont(FontManager *fontManager, const Renderer *renderer) :
+    impl(new TextureFontPrivate(fontManager, renderer))
 {
 }
 
 TextureFont::~TextureFont()
 {
+    impl->m_fontManager->releaseFont(this);
     delete impl;
 }
 
@@ -637,7 +642,7 @@ void TextureFont::flush()
     impl->flush();
 }
 
-TextureFont* TextureFont::Load(const Renderer *r, FT_Face face, int size, int dpi)
+TextureFont* TextureFont::Load(FontManager* fm, const Renderer *r, FT_Face face, int size, int dpi)
 {
     if (FT_Set_Char_Size(face, 0, size << 6, dpi, dpi) != 0)
     {
@@ -645,7 +650,7 @@ TextureFont* TextureFont::Load(const Renderer *r, FT_Face face, int size, int dp
         return nullptr;
     }
 
-    auto* font = new TextureFont(r);
+    auto* font = new TextureFont(fm, r);
     font->impl->m_face = face;
 
     if (!font->impl->buildAtlas())

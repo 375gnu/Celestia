@@ -15,12 +15,20 @@
 #include <celcompat/filesystem.h>
 #include <Eigen/Core>
 
+namespace celestia
+{
+namespace engine
+{
+class FontManager;
+}
+}
+
 class Renderer;
 
 struct TextureFontPrivate;
 class TextureFont
 {
-    TextureFont(const Renderer*);
+    TextureFont(celestia::engine::FontManager*, const Renderer*);
  public:
     TextureFont() = delete;
     ~TextureFont();
@@ -52,7 +60,7 @@ class TextureFont
     bool buildTexture();
     void flush();
 
-    static TextureFont* Load(const Renderer*, FT_Face face, int size, int dpi);
+    static TextureFont* Load(celestia::engine::FontManager*, const Renderer*, FT_Face face, int size, int dpi);
 
  private:
     TextureFontPrivate *impl;
