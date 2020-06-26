@@ -19,39 +19,6 @@ namespace celestia
 {
 namespace engine
 {
-namespace /* helpers */
-{
-// temporary while no fontconfig support
-fs::path ParseFontName(const fs::path &filename, int &collectionIndex, int &size)
-{
-    // Format with font path/collection index(if any)/font size(if any)
-    auto fn = filename.string();
-    auto pos = fn.rfind(',');
-    if (pos != std::string::npos)
-    {
-        size = (int) stof(fn.substr(pos + 1));
-        auto rest = fn.substr(0, pos);
-
-        pos = rest.rfind(',');
-        if (pos != std::string::npos)
-        {
-            collectionIndex = stof(rest.substr(pos + 1));
-            return rest.substr(0, pos);
-        }
-        else
-        {
-            return rest;
-        }
-    }
-    else
-    {
-        size = 12;
-        return filename;
-    }
-}
-
-} // namespace
-
 static FontManager* fontManager = nullptr;
 
 FontManager* FontManager::Initialize(const Renderer *renderer)
@@ -107,15 +74,9 @@ FT_Face FontManager::getFontFace(const fs::path &path, int index)
 
 TextureFont* FontManager::getFont(const fs::path &path, int index, int size, int dpi)
 {
-    int psize = 0, pindex = 0;
-    auto nameonly = ParseFontName(path, pindex, psize);
-    if (index <= 0)
-        index = pindex;
-    if (size <= 0)
-        size = psize;
-
-    auto cmp = [&nameonly, index, size, dpi](const FontCacheEntry &e) {
-        return e.path == nameonly && e.index == index && e.size == size && e.dpi == dpi;
+    auto cmp = [&path, index, size, dpi](const FontCacheEntry &e)
+    {
+        return e.path == path && e.index == index && e.size == size && e.dpi == dpi;
     };
     auto f = std::find_if(begin(m_fonts), end(m_fonts), cmp);
     if (f != end(m_fonts))
@@ -124,7 +85,7 @@ TextureFont* FontManager::getFont(const fs::path &path, int index, int size, int
         return f->font;
     }
 
-    auto face = getFontFace(nameonly, index);
+    auto face = getFontFace(path, index);
 
     if (FT_Set_Char_Size(face, 0, size << 6, dpi, dpi) != 0)
     {
@@ -133,16 +94,14 @@ TextureFont* FontManager::getFont(const fs::path &path, int index, int size, int
     }
 
     auto font = TextureFont::Load(m_renderer, face, size, dpi);
-    m_fonts.emplace_back(nameonly, index, size, dpi, face, font);
+    m_fonts.emplace_back(path, index, size, dpi, face, font);
 
     return font;
 }
 
 void FontManager::releaseFont(TextureFont *font)
 {
-    auto cmp = [font](const FontCacheEntry &e) {
-        return e.font == font;
-    };
+    auto cmp = [font](const FontCacheEntry &e) { return e.font == font; };
     auto f = std::find_if(begin(m_fonts), end(m_fonts), cmp);
     if (f == end(m_fonts))
     {

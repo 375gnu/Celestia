@@ -2289,7 +2289,7 @@ static int celestia_loadfont(lua_State* l)
 {
     CelxLua celx(l);
 
-    celx.checkArgs(2, 2, "Need one argument for celestia:loadtexture()");
+    celx.checkArgs(2, 2, "Need one argument for celestia:loadfont()");
     string s = celx.safeGetString(2, AllErrors, "Argument to celestia:loadfont() must be a string");
     CelestiaCore* appCore = getAppCore(l, AllErrors);
     FontManager *fm = FontManager::Get();
