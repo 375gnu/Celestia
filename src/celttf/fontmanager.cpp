@@ -145,5 +145,15 @@ void FontManager::releaseFace(FT_Face face)
     }
 }
 
+void FontManager::dupFont(const TextureFont *font)
+{
+    auto cmp = [font](const FontCacheEntry &e) { return e.font == font; };
+    auto f = std::find_if(begin(m_fonts), end(m_fonts), cmp);
+    if (f == end(m_fonts))
+        fmt::fprintf(std::cerr, "Font %p is not found in cache!\n", (void*)font);
+    else
+        f->count++;
+}
+
 }
 }

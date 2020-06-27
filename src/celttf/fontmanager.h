@@ -32,6 +32,7 @@ class FontManager : public util::noncopyable
 
     TextureFont* getFont(const fs::path &path, int index, int size, int dpi = 96);
     void releaseFont(const TextureFont *font);
+    void dupFont(const TextureFont *font);
 
  private:
     FontManager() = delete;

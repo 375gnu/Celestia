@@ -3875,9 +3875,14 @@ bool CelestiaCore::initRenderer()
         titleFont = LoadFontHelper(fontManager, get<0>(p), get<1>(p), get<2>(p), screenDpi);
     }
     if (titleFont != nullptr)
+    {
         titleFont->buildTexture();
+    }
     else
+    {
+        fontManager->dupFont(font);
         titleFont = font;
+    }
 
     // Set up the overlay
     overlay = new Overlay(*renderer);
@@ -3885,6 +3890,7 @@ bool CelestiaCore::initRenderer()
 
     if (config->labelFont.empty())
     {
+        fontManager->dupFont(font);
         renderer->setFont(Renderer::FontNormal, font);
     }
     else
@@ -3893,6 +3899,7 @@ bool CelestiaCore::initRenderer()
         TextureFont* labelFont = LoadFontHelper(fontManager, get<0>(p), get<1>(p), get<2>(p), screenDpi);
         if (labelFont == nullptr)
         {
+            fontManager->dupFont(font);
             renderer->setFont(Renderer::FontNormal, font);
         }
         else
@@ -3902,6 +3909,7 @@ bool CelestiaCore::initRenderer()
         }
     }
 
+    fontManager->dupFont(titleFont);
     renderer->setFont(Renderer::FontLarge, titleFont);
     return true;
 }
@@ -4075,6 +4083,8 @@ void CelestiaCore::setFont(const fs::path& fontPath, int collectionIndex, int fo
 {
     if (fontManager == nullptr)
         return;
+    if (font != nullptr)
+        fontManager->releaseFont(font);
     font = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (font != nullptr)
         font->buildTexture();
@@ -4084,6 +4094,8 @@ void CelestiaCore::setTitleFont(const fs::path& fontPath, int collectionIndex, i
 {
     if (fontManager == nullptr)
         return;
+    if (font != nullptr)
+        fontManager->releaseFont(titleFont);
     titleFont = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (titleFont != nullptr)
         titleFont->buildTexture();
@@ -4093,7 +4105,10 @@ void CelestiaCore::setRendererFont(const fs::path& fontPath, int collectionIndex
 {
     if (fontManager == nullptr)
         return;
-    auto f = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
+    auto f = renderer->getFont(fontStyle);
+    if (f != nullptr)
+        fontManager->releaseFont(f);
+    f = fontManager->getFont(fontPath, collectionIndex, fontSize, screenDpi);
     if (f != nullptr)
     {
         f->buildTexture();
