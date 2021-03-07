@@ -2273,7 +2273,10 @@ ShaderManager::buildFragmentShader(const ShaderProperties& props)
         source += CalculateShadow();
     }
 
+    source += "const float gamma = 2.2;\n";
+
     source += "\nvoid main(void)\n{\n";
+    source += "vec4 fragColor;\n";
     source += "vec4 color;\n";
     if (props.usesTangentSpaceLighting() ||
         props.lightModel == ShaderProperties::PerPixelSpecularModel ||
@@ -2483,15 +2486,15 @@ ShaderManager::buildFragmentShader(const ShaderProperties& props)
     {
         // Add in the specular color
         if (props.texUsage & ShaderProperties::SpecularInDiffuseAlpha)
-            source += "gl_FragColor = color * diff + float(color.a) * spec;\n";
+            source += "fragColor = color * diff + float(color.a) * spec;\n";
         else if (props.texUsage & ShaderProperties::SpecularTexture)
-            source += "gl_FragColor = color * diff + texture2D(specTex, " + specTexCoord + ".st) * spec;\n";
+            source += "fragColor = color * diff + texture2D(specTex, " + specTexCoord + ".st) * spec;\n";
         else
-            source += "gl_FragColor = color * diff + spec;\n";
+            source += "fragColor = color * diff + spec;\n";
     }
     else
     {
-        source += "gl_FragColor = color * diff;\n";
+        source += "fragColor = color * diff;\n";
     }
 
     // Add in the emissive color
@@ -2523,23 +2526,25 @@ ShaderManager::buildFragmentShader(const ShaderProperties& props)
         }
 
 #ifdef USE_HDR
-        source += "gl_FragColor += texture2D(nightTex, " + nightTexCoord + ".st) * totalLight * nightLightScale;\n";
+        source += "fragColor += texture2D(nightTex, " + nightTexCoord + ".st) * totalLight * nightLightScale;\n";
 #else
-        source += "gl_FragColor += texture2D(nightTex, " + nightTexCoord + ".st) * totalLight;\n";
+        source += "fragColor += texture2D(nightTex, " + nightTexCoord + ".st) * totalLight;\n";
 #endif
     }
 
     if (props.texUsage & ShaderProperties::EmissiveTexture)
     {
-        source += "gl_FragColor += texture2D(emissiveTex, " + emissiveTexCoord + ".st);\n";
+        source += "fragColor += texture2D(emissiveTex, " + emissiveTexCoord + ".st);\n";
     }
 
     // Include the effect of atmospheric scattering.
     if (props.hasScattering())
     {
-        source += "gl_FragColor.rgb = gl_FragColor.rgb * scatterEx + " + VarScatterInFS() + ";\n";
+        source += "fragColor.rgb = fragColor.rgb * scatterEx + " + VarScatterInFS() + ";\n";
     }
 
+    source += "gl_FragColor.a = fragColor.a;\n";
+    source += "gl_FragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));\n";
     source += "}\n";
 
     DumpFSSource(source);
@@ -2785,7 +2790,10 @@ ShaderManager::buildRingsFragmentShader(const ShaderProperties& props)
         }
     }
 
+    source += "const float gamma = 2.2;\n";
+
     source += "\nvoid main(void)\n{\n";
+    source += "vec4 fragColor;\n";
 
     source += "vec4 diff = vec4(ambientColor, 1.0);\n";
 
@@ -2843,7 +2851,10 @@ ShaderManager::buildRingsFragmentShader(const ShaderProperties& props)
         }
     }
 
-    source += "gl_FragColor = vec4(color.rgb * diff.rgb, opticalDepth);\n";
+    source += "fragColor = vec4(color.rgb * diff.rgb, opticalDepth);\n";
+
+    source += "gl_FragColor.a = fragColor.a;\n";
+    source += "gl_FragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));\n";
 
     source += "}\n";
 
@@ -2927,8 +2938,11 @@ ShaderManager::buildAtmosphereFragmentShader(const ShaderProperties& props)
         source += "varying vec3 " + ScatteredColor(i) + ";\n";
     }
 
+    source += "const float gamma = 2.2;\n";
+
     source += "\nvoid main(void)\n";
     source += "{\n";
+    source += "vec4 fragColor;\n";
 
     // Sum the contributions from each light source
     source += "vec3 color = vec3(0.0, 0.0, 0.0);\n";
@@ -2946,7 +2960,10 @@ ShaderManager::buildAtmosphereFragmentShader(const ShaderProperties& props)
         source += "    color += (phRayleigh * rayleighCoeff + phMie * mieCoeff) * invScatterCoeffSum * " + ScatteredColor(i) + ";\n";
     }
 
-    source += "    gl_FragColor = vec4(color, dot(scatterEx, vec3(0.333, 0.333, 0.333)));\n";
+    source += "    fragColor = vec4(color, dot(scatterEx, vec3(0.333, 0.333, 0.333)));\n";
+
+    source += "    gl_FragColor.a = fragColor.a;\n";
+    source += "    gl_FragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));\n";
     source += "}\n";
 
     DumpFSSource(source);
@@ -3049,9 +3066,12 @@ ShaderManager::buildEmissiveFragmentShader(const ShaderProperties& props)
     source += DeclareVarying("v_Color", Shader_Vector4);
     source += DeclareVarying("v_TexCoord0", Shader_Vector2);
 
+    source += "const float gamma = 2.2;\n";
+
     // Begin main()
     source += "\nvoid main(void)\n";
     source += "{\n";
+    source += "vec4 fragColor;\n";
 
     string colorSource = "v_Color";
     if (props.usePointSize())
@@ -3066,15 +3086,17 @@ ShaderManager::buildEmissiveFragmentShader(const ShaderProperties& props)
     if (props.texUsage & ShaderProperties::DiffuseTexture)
     {
         if (props.usePointSize())
-            source += "    gl_FragColor = " + colorSource + " * texture2D(diffTex, gl_PointCoord);\n";
+            source += "    fragColor = " + colorSource + " * texture2D(diffTex, gl_PointCoord);\n";
         else
-            source += "    gl_FragColor = " + colorSource + " * texture2D(diffTex, v_TexCoord0.st);\n";
+            source += "    fragColor = " + colorSource + " * texture2D(diffTex, v_TexCoord0.st);\n";
     }
     else
     {
-        source += "    gl_FragColor = " + colorSource + " ;\n";
+        source += "    fragColor = " + colorSource + " ;\n";
     }
 
+    source += "    gl_FragColor.a = fragColor.a;\n";
+    source += "    gl_FragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));\n";
     source += "}\n";
     // End of main()
 
@@ -3212,19 +3234,20 @@ ShaderManager::buildParticleFragmentShader(const ShaderProperties& props)
 
     source << DeclareVarying("v_Color", Shader_Vector4);
 
+    source << "const float gamma = 2.2;\n";
+
     // Begin main()
     source << "\nvoid main(void)\n";
     source << "{\n";
 
     if (props.texUsage & ShaderProperties::DiffuseTexture)
-    {
-        source << "    gl_FragColor = v_Color * texture2D(diffTex, gl_PointCoord);\n";
-    }
+        source << "    vec4 fragColor = v_Color * texture2D(diffTex, gl_PointCoord);\n";
     else
-    {
-        source << "    gl_FragColor = v_Color;\n";
-    }
+        source << "    vec4 fragColor = v_Color;\n";
 
+
+    source << "    gl_FragColor.a = fragColor.a;\n";
+    source << "    gl_FragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));\n";
     source << "}\n";
     // End of main()
 
