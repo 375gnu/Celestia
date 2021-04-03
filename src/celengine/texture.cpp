@@ -139,18 +139,23 @@ static int getInternalFormat(int format)
     switch (format)
     {
     case GL_RGBA:
-    case GL_BGRA:
+        return GL_SRGB_ALPHA;
     case GL_RGB:
+        return GL_SRGB;
+    case GL_BGRA:
     case GL_BGR:
     case GL_LUMINANCE_ALPHA:
     case GL_ALPHA:
     case GL_INTENSITY:
     case GL_LUMINANCE:
     case GL_DSDT_NV:
-    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
         return format;
+    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
     default:
         return 0;
     }
