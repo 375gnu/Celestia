@@ -77,7 +77,7 @@ void actionCopyURL(GtkAction*, AppData* app)
 /* File -> Open URL */
 void actionOpenURL(GtkAction*, AppData* app)
 {
-    GtkWidget* dialog = gtk_dialog_new_with_buttons("Enter cel:// URL",
+    GtkWidget* dialog = gtk_dialog_new_with_buttons(_("Enter cel:// URL"),
                                                     GTK_WINDOW(app->mainWindow),
                                                     GTK_DIALOG_MODAL,
                                                     GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
@@ -105,7 +105,7 @@ void actionOpenURL(GtkAction*, AppData* app)
 /* File -> Open Script... */
 void actionOpenScript(GtkAction*, AppData* app)
 {
-    GtkWidget* fs = gtk_file_chooser_dialog_new("Open Script.",
+    GtkWidget* fs = gtk_file_chooser_dialog_new(_("Open Script."),
                                                 GTK_WINDOW(app->mainWindow),
                                                 GTK_FILE_CHOOSER_ACTION_OPEN,
                                                 GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -120,7 +120,7 @@ void actionOpenScript(GtkAction*, AppData* app)
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fs), g_get_home_dir());
 
     GtkFileFilter* filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "Celestia Scripts");
+    gtk_file_filter_set_name(filter, _("Celestia Scripts"));
 
     gtk_file_filter_add_pattern(filter, "*.cel");
 
@@ -145,7 +145,7 @@ void actionOpenScript(GtkAction*, AppData* app)
 /* File -> Capture Image... */
 void actionCaptureImage(GtkAction*, AppData* app)
 {
-    GtkWidget* fs = gtk_file_chooser_dialog_new("Save Image to File",
+    GtkWidget* fs = gtk_file_chooser_dialog_new(_("Save Image to File"),
                                                 GTK_WINDOW(app->mainWindow),
                                                 GTK_FILE_CHOOSER_ACTION_SAVE,
                                                 GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -153,7 +153,7 @@ void actionCaptureImage(GtkAction*, AppData* app)
                                                 NULL);
 
     GtkFileFilter* filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "PNG and JPEG Images");
+    gtk_file_filter_set_name(filter, _("PNG and JPEG Images"));
     gtk_file_filter_add_pattern(filter, "*.jpeg");
     gtk_file_filter_add_pattern(filter, "*.jpg");
     gtk_file_filter_add_pattern(filter, "*.png");
@@ -195,13 +195,13 @@ void actionCaptureMovie(GtkAction*, AppData* app)
                                GTK_DIALOG_DESTROY_WITH_PARENT,
                                GTK_MESSAGE_ERROR,
                                GTK_BUTTONS_OK,
-                               "Stop current movie capture before starting another one.");
+                               _("Stop current movie capture before starting another one."));
         gtk_dialog_run(GTK_DIALOG(errBox));
         gtk_widget_destroy(errBox);
         return;
     }
 
-    GtkWidget* fs = gtk_file_chooser_dialog_new("Save Ogg Theora Movie to File",
+    GtkWidget* fs = gtk_file_chooser_dialog_new(_("Save Ogg Theora Movie to File"),
                                                 GTK_WINDOW(app->mainWindow),
                                                 GTK_FILE_CHOOSER_ACTION_SAVE,
                                                 GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -209,7 +209,7 @@ void actionCaptureMovie(GtkAction*, AppData* app)
                                                 NULL);
 
     GtkFileFilter* filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "Ogg Files");
+    gtk_file_filter_set_name(filter, _("Ogg Files"));
     gtk_file_filter_add_pattern(filter, "*.ogg");
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fs), filter);
 
@@ -223,18 +223,18 @@ void actionCaptureMovie(GtkAction*, AppData* app)
     GtkWidget* hbox = gtk_hbox_new(FALSE, CELSPACING);
     gtk_container_set_border_width(GTK_CONTAINER(hbox), CELSPACING);
 
-    GtkWidget* rlabel = gtk_label_new("Aspect Ratio:");
+    GtkWidget* rlabel = gtk_label_new(_("Aspect Ratio:"));
     gtk_box_pack_start(GTK_BOX(hbox), rlabel, TRUE, TRUE, 0);
 
     GtkWidget* aspectmenubox = gtk_combo_box_text_new();
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(aspectmenubox), "1:1");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(aspectmenubox), "4:3");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(aspectmenubox), "16:9");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(aspectmenubox), "Display");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(aspectmenubox), _("Display"));
     gtk_combo_box_set_active(GTK_COMBO_BOX(aspectmenubox), 0);
     gtk_box_pack_start(GTK_BOX(hbox), aspectmenubox, FALSE, FALSE, 0);
 
-    GtkWidget* flabel = gtk_label_new("Frame Rate:");
+    GtkWidget* flabel = gtk_label_new(_("Frame Rate:"));
     gtk_box_pack_start(GTK_BOX(hbox), flabel, TRUE, TRUE, 0);
 
     GtkWidget* fpsspin = gtk_spin_button_new_with_range(5.0, 30.0, 0.01);
@@ -242,7 +242,7 @@ void actionCaptureMovie(GtkAction*, AppData* app)
     gtk_spin_button_set_value(GTK_SPIN_BUTTON(fpsspin), 12.0);
     gtk_spin_button_set_increments(GTK_SPIN_BUTTON(fpsspin), 0.01, 1.0);
 
-    GtkWidget* qlabel = gtk_label_new("Video Quality:");
+    GtkWidget* qlabel = gtk_label_new(_("Video Quality:"));
     gtk_box_pack_start(GTK_BOX(hbox), qlabel, TRUE, TRUE, 0);
 
     GtkWidget* qspin = gtk_spin_button_new_with_range(0.0, 10.0, 1.0);
@@ -274,7 +274,7 @@ void actionCaptureMovie(GtkAction*, AppData* app)
                            GTK_DIALOG_DESTROY_WITH_PARENT,
                            GTK_MESSAGE_ERROR,
                            GTK_BUTTONS_OK,
-                           "Movie support was not included. To use re-build with --enable-theora.");
+                           _("Movie support was not included. To use re-build with --enable-theora."));
     gtk_dialog_run(GTK_DIALOG(errBox));
     gtk_widget_destroy(errBox);
 #endif
@@ -307,7 +307,7 @@ void actionTourGuide(GtkAction*, AppData* app)
 
 void actionSearchObject(GtkAction*, AppData* app)
 {
-    GtkWidget* dialog = gtk_dialog_new_with_buttons("Select Object",
+    GtkWidget* dialog = gtk_dialog_new_with_buttons(_("Select Object"),
                                                     GTK_WINDOW(app->mainWindow),
                                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                                     GTK_STOCK_OK, GTK_RESPONSE_OK,
@@ -319,7 +319,7 @@ void actionSearchObject(GtkAction*, AppData* app)
     GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     gtk_box_pack_start(GTK_BOX(content_area), box, TRUE, TRUE, 0);
 
-    GtkWidget* label = gtk_label_new("Object name");
+    GtkWidget* label = gtk_label_new(_("Object name"));
     gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 0);
 
     GtkWidget* entry = gtk_entry_new();
