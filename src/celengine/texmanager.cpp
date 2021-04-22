@@ -7,15 +7,14 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
-#include <config.h>
 #include <celutil/debug.h>
-#include <iostream>
+#include <celutil/fsutils.h>
 #include <fstream>
 #include "multitexture.h"
 #include "texmanager.h"
 
 using namespace std;
-
+using namespace celestia;
 
 static TextureManager* textureManager = nullptr;
 
@@ -26,6 +25,7 @@ static const char *directories[]=
     "hires"
 };
 
+static char *extensions[] = {"png", "jpg", "jpeg", "dds", "dxt5nm", "ctx"};
 
 TextureManager* GetTextureManager()
 {
@@ -34,51 +34,9 @@ TextureManager* GetTextureManager()
     return textureManager;
 }
 
-
-static string resolveWildcard(const string& filename)
-{
-    string base(filename, 0, filename.length() - 1);
-
-    string pngfile = base + "png";
-    {
-        ifstream in(pngfile);
-        if (in.good())
-            return pngfile;
-    }
-    string jpgfile = base + "jpg";
-    {
-        ifstream in(jpgfile);
-        if (in.good())
-            return jpgfile;
-    }
-    string ddsfile = base + "dds";
-    {
-        ifstream in(ddsfile);
-        if (in.good())
-            return ddsfile;
-    }
-    string dxt5file = base + "dxt5nm";
-    {
-        ifstream in(dxt5file);
-        if (in.good())
-            return dxt5file;
-    }
-    string ctxfile = base + "ctx";
-    {
-        ifstream in(ctxfile);
-        if (in.good())
-            return ctxfile;
-    }
-
-    return "";
-}
-
-
 fs::path TextureInfo::resolve(const fs::path& baseDir)
 {
-    bool wildcard = false;
-    if (!source.empty() && source.at(source.length() - 1) == '*')
-        wildcard = true;
+    bool wildcard = source.extension() == ".*";
 
     if (!path.empty())
     {
@@ -86,7 +44,7 @@ fs::path TextureInfo::resolve(const fs::path& baseDir)
         // cout << "Resolve: testing [" << filename << "]\n";
         if (wildcard)
         {
-            filename = resolveWildcard(filename.string());
+            filename = util::ResolveWildcard(filename, extensions);
             if (!filename.empty())
                 return filename;
         }
@@ -101,10 +59,8 @@ fs::path TextureInfo::resolve(const fs::path& baseDir)
     fs::path filename = baseDir / directories[resolution] / source;
     if (wildcard)
     {
-        string matched = resolveWildcard(filename.string());
-        if (matched.empty())
-            return filename; // . . . for lack of any better way to handle it.
-        else
+        fs::path matched = util::ResolveWildcard(filename);
+        if (!matched.empty())
             return matched;
     }
 
@@ -117,14 +73,14 @@ Texture* TextureInfo::load(const fs::path& name)
     Texture::AddressMode addressMode = Texture::EdgeClamp;
     Texture::MipMapMode mipMode = Texture::DefaultMipMaps;
 
-    if (flags & WrapTexture)
+    if ((flags & WrapTexture) != 0)
         addressMode = Texture::Wrap;
-    else if (flags & BorderClamp)
+    else if ((flags & BorderClamp) != 0)
         addressMode = Texture::BorderClamp;
 
-    if (flags & NoMipMaps)
+    if ((flags & NoMipMaps) != 0)
         mipMode = Texture::NoMipMaps;
-    else if (flags & AutoMipMaps)
+    else if ((flags & AutoMipMaps) != 0)
         mipMode = Texture::AutoMipMaps;
 
     if (bumpHeight == 0.0f)
@@ -132,7 +88,8 @@ Texture* TextureInfo::load(const fs::path& name)
         DPRINTF(LOG_LEVEL_ERROR, "Loading texture: %s\n", name);
         // cout << "Loading texture: " << name << '\n';
 
-        return LoadTextureFromFile(name, addressMode, mipMode);
+        bool sRGB = (flags & sRGBTexture) != 0;
+        return LoadTextureFromFile(name, addressMode, mipMode, sRGB);
     }
 
     DPRINTF(LOG_LEVEL_ERROR, "Loading bump map: %s\n", name);

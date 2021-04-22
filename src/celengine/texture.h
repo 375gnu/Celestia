@@ -10,7 +10,6 @@
 #ifndef _CELENGINE_TEXTURE_H_
 #define _CELENGINE_TEXTURE_H_
 
-#include <string>
 #include <celutil/color.h>
 #include <celcompat/filesystem.h>
 #include <celengine/image.h>
@@ -98,7 +97,8 @@ class Texture
     };
 
     // Format option flags
-    enum {
+    enum
+    {
         DXT5NormalMap = 1
     };
 
@@ -115,19 +115,20 @@ class Texture
 };
 
 
-class ImageTexture : public Texture
+class ImageTexture : public Texture/*, util::noncopyable*/
 {
  public:
-    ImageTexture(Image& img, AddressMode, MipMapMode);
+    ImageTexture(Image& img, AddressMode, MipMapMode, bool);
     ~ImageTexture();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
-    virtual void bind();
-    virtual void setBorderColor(Color);
+    const TextureTile getTile(int lod, int u, int v) override;
+    void bind() override;
+    void setBorderColor(Color) override;
 
     unsigned int getName() const;
 
  private:
+    bool sRGB;
     unsigned int glName;
 };
 
@@ -135,19 +136,20 @@ class ImageTexture : public Texture
 class TiledTexture : public Texture
 {
  public:
-    TiledTexture(Image& img, int _uSplit, int _vSplit, MipMapMode);
+    TiledTexture(Image& img, int _uSplit, int _vSplit, MipMapMode, bool);
     ~TiledTexture();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
-    virtual void bind();
-    virtual void setBorderColor(Color);
+    const TextureTile getTile(int lod, int u, int v) override;
+    void bind() override;
+    void setBorderColor(Color) override;
 
-    virtual int getUTileCount(int lod) const;
-    virtual int getVTileCount(int lod) const;
+    int getUTileCount(int lod) const override;
+    int getVTileCount(int lod) const override;
 
  private:
     int uSplit;
     int vSplit;
+    bool sRGB;
     unsigned int* glNames;
 };
 
@@ -158,35 +160,42 @@ class CubeMap : public Texture
     CubeMap(Image* faces[]);
     ~CubeMap();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
-    virtual void bind();
-    virtual void setBorderColor(Color);
+    const TextureTile getTile(int lod, int u, int v) override;
+    void bind() override;
+    void setBorderColor(Color) override;
 
  private:
     unsigned int glName;
 };
 
 
-extern Texture* CreateProceduralTexture(int width, int height,
-                                        int format,
-                                        ProceduralTexEval func,
-                                        Texture::AddressMode addressMode = Texture::EdgeClamp,
-                                        Texture::MipMapMode mipMode = Texture::DefaultMipMaps);
-extern Texture* CreateProceduralTexture(int width, int height,
-                                        int format,
-                                        TexelFunctionObject& func,
-                                        Texture::AddressMode addressMode = Texture::EdgeClamp,
-                                        Texture::MipMapMode mipMode = Texture::DefaultMipMaps);
-extern Texture* CreateProceduralCubeMap(int size, int format,
-                                        ProceduralTexEval func);
+Texture*
+CreateProceduralTexture(int width, int height,
+                        int format,
+                        ProceduralTexEval func,
+                        Texture::AddressMode addressMode = Texture::EdgeClamp,
+                        Texture::MipMapMode mipMode = Texture::DefaultMipMaps);
 
-extern Texture* LoadTextureFromFile(const fs::path& filename,
-                                    Texture::AddressMode addressMode = Texture::EdgeClamp,
-                                    Texture::MipMapMode mipMode = Texture::DefaultMipMaps);
+Texture*
+CreateProceduralTexture(int width, int height,
+                        int format,
+                        TexelFunctionObject& func,
+                        Texture::AddressMode addressMode = Texture::EdgeClamp,
+                        Texture::MipMapMode mipMode = Texture::DefaultMipMaps);
 
-extern Texture* LoadHeightMapFromFile(const fs::path& filename,
-                                      float height,
-                                      Texture::AddressMode addressMode = Texture::EdgeClamp);
+Texture*
+CreateProceduralCubeMap(int size, int format,
+                        ProceduralTexEval func);
 
+Texture*
+LoadTextureFromFile(const fs::path& filename,
+                    Texture::AddressMode addressMode = Texture::EdgeClamp,
+                    Texture::MipMapMode mipMode = Texture::DefaultMipMaps,
+                    bool sRGB = false);
+
+Texture*
+LoadHeightMapFromFile(const fs::path& filename,
+                      float height,
+                      Texture::AddressMode addressMode = Texture::EdgeClamp);
 
 #endif // _CELENGINE_TEXTURE_H_

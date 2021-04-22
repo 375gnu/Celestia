@@ -10,60 +10,58 @@
 #ifndef _TEXMANAGER_H_
 #define _TEXMANAGER_H_
 
-#include <string>
-#include <map>
+#include <tuple> // for std::tie
 #include <celutil/resmanager.h>
 #include <celengine/texture.h>
 #include "multitexture.h"
 
-
 class TextureInfo : public ResourceInfo<Texture>
 {
  public:
-    std::string source;
+    fs::path source;
     fs::path path;
-    unsigned int flags;
+    unsigned flags;
     float bumpHeight;
-    unsigned int resolution;
+    unsigned resolution;
 
-    enum {
+    enum
+    {
         WrapTexture      = 0x1,
         CompressTexture  = 0x2,
         NoMipMaps        = 0x4,
         AutoMipMaps      = 0x8,
         AllowSplitting   = 0x10,
         BorderClamp      = 0x20,
+        sRGBTexture      = 0x40,
     };
 
-    TextureInfo(const std::string& _source,
-                const fs::path& _path,
-                unsigned int _flags,
-                unsigned int _resolution = medres) :
-        source(_source),
-        path(_path),
-        flags(_flags),
-        bumpHeight(0.0f),
-        resolution(_resolution) {};
+    TextureInfo(const fs::path &source,
+                const fs::path &path,
+                float bumpHeight,
+                unsigned flags,
+                unsigned resolution = medres) :
+        source(source),
+        path(path),
+        flags(flags),
+        bumpHeight(bumpHeight),
+        resolution(resolution)
+    {
+    }
 
-    TextureInfo(const std::string& _source,
-                const fs::path& _path,
-                float _bumpHeight,
-                unsigned int _flags,
-                unsigned int _resolution = medres) :
-        source(_source),
-        path(_path),
-        flags(_flags),
-        bumpHeight(_bumpHeight),
-        resolution(_resolution) {};
+    TextureInfo(const fs::path &source,
+                const fs::path &path,
+                unsigned flags,
+                unsigned resolution = medres) :
+    TextureInfo(source, path, 0.0f, flags, resolution)
+    {
+    }
 
-    TextureInfo(const std::string& _source,
-                unsigned int _flags,
-                unsigned int _resolution = medres) :
-        source(_source),
-        path(""),
-        flags(_flags),
-        bumpHeight(0.0f),
-        resolution(_resolution) {};
+    TextureInfo(const fs::path &source,
+                unsigned flags,
+                unsigned resolution = medres) :
+        TextureInfo(source, {}, 0.0f, flags, resolution)
+    {
+    }
 
     fs::path resolve(const fs::path&) override;
     Texture* load(const fs::path&) override;
@@ -71,22 +69,12 @@ class TextureInfo : public ResourceInfo<Texture>
 
 inline bool operator<(const TextureInfo& ti0, const TextureInfo& ti1)
 {
-    if (ti0.resolution == ti1.resolution)
-    {
-        if (ti0.source == ti1.source)
-            return ti0.path < ti1.path;
-        else
-            return ti0.source < ti1.source;
-    }
-    else
-    {
-        return ti0.resolution < ti1.resolution;
-    }
+    return std::tie(ti0.resolution, ti0.source, ti0.path)
+         < std::tie(ti1.resolution, ti1.source, ti1.path);
 }
 
 typedef ResourceManager<TextureInfo> TextureManager;
 
-extern TextureManager* GetTextureManager();
+TextureManager* GetTextureManager();
 
 #endif // _TEXMANAGER_H_
-

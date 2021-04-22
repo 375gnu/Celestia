@@ -7,7 +7,6 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
-#include <config.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
@@ -157,6 +156,25 @@ static int getInternalFormat(int format)
 #endif
 }
 
+static int getInternalFormat_sRGB(int format)
+{
+    switch (format)
+    {
+    case GL_RGBA:
+        return GL_SRGB_ALPHA;
+    case GL_RGB:
+        return GL_SRGB;
+    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+        return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+    default:
+        return 0;
+    }
+}
+
 
 #if 0
 // Required in order to support on-the-fly compression; currently, this
@@ -232,9 +250,13 @@ static void SetBorderColor(Color borderColor, GLenum target)
 
 // Load a prebuilt set of mipmaps; assumes that the image contains
 // a complete set of mipmap levels.
-static void LoadMipmapSet(Image& img, GLenum target)
+static void LoadMipmapSet(Image& img, GLenum target, bool sRGB)
 {
-    int internalFormat = getInternalFormat(img.getFormat());
+    int internalFormat;
+    if (sRGB)
+        internalFormat = getInternalFormat_sRGB(img.getFormat());
+    else
+        internalFormat = getInternalFormat(img.getFormat());
 
     for (int mip = 0; mip < img.getMipLevelCount(); mip++)
     {
@@ -267,9 +289,13 @@ static void LoadMipmapSet(Image& img, GLenum target)
 
 
 // Load a texture without any mipmaps
-static void LoadMiplessTexture(Image& img, GLenum target)
+static void LoadMiplessTexture(Image& img, GLenum target, bool sRGB)
 {
-    int internalFormat = getInternalFormat(img.getFormat());
+    int internalFormat;
+    if (sRGB)
+        internalFormat = getInternalFormat_sRGB(img.getFormat());
+    else
+        internalFormat = getInternalFormat(img.getFormat());
 
     if (img.isCompressed())
     {
@@ -384,13 +410,14 @@ void Texture::setFormatOptions(unsigned int opts)
 
 ImageTexture::ImageTexture(Image& img,
                            AddressMode addressMode,
-                           MipMapMode mipMapMode) :
+                           MipMapMode mipMapMode,
+                           bool sRGB) :
     Texture(img.getWidth(), img.getHeight()),
+    sRGB(sRGB),
     glName(0)
 {
     glGenTextures(1, (GLuint*) &glName);
     glBindTexture(GL_TEXTURE_2D, glName);
-
 
     bool mipmap = mipMapMode != NoMipMaps;
     bool precomputedMipMaps = false;
@@ -439,12 +466,12 @@ ImageTexture::ImageTexture(Image& img,
     {
         if (precomputedMipMaps)
         {
-            LoadMipmapSet(img, GL_TEXTURE_2D);
+            LoadMipmapSet(img, GL_TEXTURE_2D, sRGB);
         }
         else if (mipMapMode == DefaultMipMaps)
         {
 #ifdef NO_GLU
-            LoadMiplessTexture(img, GL_TEXTURE_2D);
+            LoadMiplessTexture(img, GL_TEXTURE_2D, sRGB);
 #else
             gluBuild2DMipmaps(GL_TEXTURE_2D,
                               getInternalFormat(img.getFormat()),
@@ -457,12 +484,12 @@ ImageTexture::ImageTexture(Image& img,
         else
         {
             assert(mipMapMode == AutoMipMaps);
-            LoadMiplessTexture(img, GL_TEXTURE_2D);
+            LoadMiplessTexture(img, GL_TEXTURE_2D, sRGB);
         }
     }
     else
     {
-        LoadMiplessTexture(img, GL_TEXTURE_2D);
+        LoadMiplessTexture(img, GL_TEXTURE_2D, sRGB);
     }
 #ifdef NO_GLU
     if (genMipmaps && FramebufferObject::isSupported())
@@ -512,10 +539,12 @@ void ImageTexture::setBorderColor(Color borderColor)
 
 TiledTexture::TiledTexture(Image& img,
                            int _uSplit, int _vSplit,
-                           MipMapMode mipMapMode) :
+                           MipMapMode mipMapMode,
+                           bool sRGB) :
     Texture(img.getWidth(), img.getHeight()),
     uSplit(_uSplit),
     vSplit(_vSplit),
+    sRGB(sRGB),
     glNames(nullptr)
 {
     glNames = new unsigned int[uSplit * vSplit];
@@ -613,7 +642,7 @@ TiledTexture::TiledTexture(Image& img,
                     // TODO: Handle uncompressed textures with prebuilt mipmaps
                 }
 
-                LoadMipmapSet(*tile, GL_TEXTURE_2D);
+                LoadMipmapSet(*tile, GL_TEXTURE_2D, sRGB);
             }
             else
             {
@@ -653,14 +682,14 @@ TiledTexture::TiledTexture(Image& img,
 #ifdef NO_GLU
                     if (FramebufferObject::isSupported())
                     {
-                        LoadMiplessTexture(*tile, GL_TEXTURE_2D);
+                        LoadMiplessTexture(*tile, GL_TEXTURE_2D, sRGB);
                         glGenerateMipmap(GL_TEXTURE_2D);
                     }
 #ifndef GL_ES
                     else
                     {
                         glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-                        LoadMiplessTexture(*tile, GL_TEXTURE_2D);
+                        LoadMiplessTexture(*tile, GL_TEXTURE_2D, sRGB);
                     }
 #endif
 #else
@@ -674,7 +703,7 @@ TiledTexture::TiledTexture(Image& img,
                 }
                 else
                 {
-                    LoadMiplessTexture(*tile, GL_TEXTURE_2D);
+                    LoadMiplessTexture(*tile, GL_TEXTURE_2D, sRGB);
                 }
                 DumpTextureMipmapInfo(GL_TEXTURE_2D);
             }
@@ -795,12 +824,12 @@ CubeMap::CubeMap(Image* faces[]) :
         {
             if (precomputedMipMaps)
             {
-                LoadMipmapSet(*face, targetFace);
+                LoadMipmapSet(*face, targetFace, sRGB);
             }
             else
             {
 #ifdef NO_GLU
-                LoadMiplessTexture(*face, targetFace);
+                LoadMiplessTexture(*face, targetFace, sRGB);
 #else
                 gluBuild2DMipmaps(targetFace,
                                   getInternalFormat(format),
@@ -813,7 +842,7 @@ CubeMap::CubeMap(Image* faces[]) :
         }
         else
         {
-            LoadMiplessTexture(*face, targetFace);
+            LoadMiplessTexture(*face, targetFace, sRGB);
         }
     }
 #ifdef NO_GLU
@@ -983,7 +1012,8 @@ static bool isPow2(int x)
 
 static Texture* CreateTextureFromImage(Image& img,
                                        Texture::AddressMode addressMode,
-                                       Texture::MipMapMode mipMode)
+                                       Texture::MipMapMode mipMode,
+                                       bool sRGB)
 {
 #if 0
     // Require texture dimensions to be powers of two.  Even though the
@@ -1017,7 +1047,7 @@ static Texture* CreateTextureFromImage(Image& img,
         int uSplit = max(1, img.getWidth() / maxDim);
         int vSplit = max(1, img.getHeight() / maxDim);
         fmt::fprintf(clog, _("Creating tiled texture. Width=%i, max=%i\n"), img.getWidth(), maxDim);
-        tex = new TiledTexture(img, uSplit, vSplit, mipMode);
+        tex = new TiledTexture(img, uSplit, vSplit, mipMode, sRGB);
     }
     else
     {
@@ -1025,7 +1055,7 @@ static Texture* CreateTextureFromImage(Image& img,
         // The image is small enough to fit in a single texture; or, splitting
         // was disallowed so we'll scale the large image down to fit in
         // an ordinary texture.
-        tex = new ImageTexture(img, addressMode, mipMode);
+        tex = new ImageTexture(img, addressMode, mipMode, sRGB);
     }
 
     return tex;
@@ -1034,7 +1064,8 @@ static Texture* CreateTextureFromImage(Image& img,
 
 Texture* LoadTextureFromFile(const fs::path& filename,
                              Texture::AddressMode addressMode,
-                             Texture::MipMapMode mipMode)
+                             Texture::MipMapMode mipMode,
+                             bool sRGB)
 {
     // Check for a Celestia texture--these need to be handled specially.
     ContentType contentType = DetermineFileType(filename);
@@ -1048,7 +1079,7 @@ Texture* LoadTextureFromFile(const fs::path& filename,
     if (img == nullptr)
         return nullptr;
 
-    Texture* tex = CreateTextureFromImage(*img, addressMode, mipMode);
+    Texture* tex = CreateTextureFromImage(*img, addressMode, mipMode, sRGB);
 
     if (contentType == Content_DXT5NormalMap)
     {
