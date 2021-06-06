@@ -74,7 +74,7 @@ SplashData* splashStart(AppData* app, gboolean showSplash)
     GtkWidget* gf = gtk_fixed_new();
     gtk_container_add(GTK_CONTAINER(ss->splash), gf);
 
-    GtkWidget* i = gtk_image_new_from_file("splash/splash.png");
+    GtkWidget* i = gtk_image_new_from_file(app->core->getConfig()->splashImageFile.string().c_str());
     gtk_fixed_put(GTK_FIXED(gf), i, 0, 0);
 
     /* The information label is right-aligned and biased to the lower-right

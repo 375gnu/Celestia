@@ -3143,7 +3143,9 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     if (startDirectory != "")
         SetCurrentDirectory(startDirectory.c_str());
 
-    s_splash = new SplashWindow(SPLASH_DIR "\\" "splash.png");
+    appCore = new CelestiaCore();
+
+    s_splash = new SplashWindow(appCore->getConfig()->splashImageFile);
     s_splash->setMessage(_("Loading data files..."));
     if (!skipSplashScreen)
         s_splash->showSplash();
@@ -3229,8 +3231,6 @@ int APIENTRY WinMain(HINSTANCE hInstance,
         lastFullScreenMode = fallbackFullScreenMode;
     }
 
-    appCore = new CelestiaCore();
-
     // Gettext integration
     setlocale(LC_ALL, "");
     setlocale(LC_NUMERIC, "C");
@@ -3242,14 +3242,21 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     textdomain("celestia");
 
     // Loading localized resources
-    char res[255];
-    sprintf(res, "locale\\res_%s.dll", _("LANGUAGE"));
-    int langID = 0;
-    if (sscanf(_("WinLangID"), "%x", &langID) == 1)
-        SetThreadLocale(langID);
-    if ((hRes = LoadLibrary(res)) == NULL) {
-        cout << "Couldn't load localized resources: "<< res<< "\n";
-        hRes = hInstance;
+    const char *langMsgid = N_("LANGUAGE");
+    const char *langCode = _(langMsgid);
+    if (langCode != langMsgid)
+    {
+        int langID = 0;
+        const char *winLangID = _("WinLangID");
+        if(from_chars(winLangID, winLangID + strlen(winLangID), langID, 16).ec == std::errc())
+            SetThreadLocale(langID);
+
+        string resDLL = fmt::format("locale\\res_{}.dll", langCode);
+        if ((hRes = LoadLibrary(resDLL.c_str())) == nullptr)
+        {
+            fmt::print("Couldn't load localized resources: {}\n", res);
+            hRes = hInstance;
+        }
     }
 #endif
 

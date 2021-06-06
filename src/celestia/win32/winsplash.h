@@ -12,12 +12,13 @@
 #include <windows.h>
 #include <string>
 #include <celengine/image.h>
+#include <celcompat/filesystem.h>
 
 
 class SplashWindow
 {
 public:
-    SplashWindow(const std::string& _imageFileName);
+    SplashWindow(const fs::path& _imageFileName);
     ~SplashWindow();
 
     LRESULT CALLBACK windowProc(HWND, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -35,7 +36,7 @@ public:
 private:
     HWND hwnd;
     const char* className;
-    std::string imageFileName;
+    fs::path imageFileName;
     Image* image;
     HBITMAP hBitmap;
     HBITMAP hCompositionBitmap;

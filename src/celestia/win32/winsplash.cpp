@@ -52,7 +52,7 @@ static LRESULT CALLBACK SplashWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
 }
 
 
-SplashWindow::SplashWindow(const string& _imageFileName) :
+SplashWindow::SplashWindow(const fs::path& _imageFileName) :
     hwnd(NULL),
     className(NULL),
     imageFileName(_imageFileName),

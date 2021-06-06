@@ -39,6 +39,7 @@ public:
     std::string labelFont;
     std::string titleFont;
     fs::path logoTextureFile;
+    fs::path splashImageFile;
     std::string cursor;
     std::vector<std::string> ignoreGLExtensions;
     float rotateAcceleration;
