@@ -278,10 +278,6 @@ static void initRealize(GtkWidget* widget, AppData* app)
     if (app->fullScreen)
         gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(gtk_action_group_get_action(app->agMain, "FullScreen")), TRUE);
 
-    /* If URL at startup, make it so. */
-    if (app->startURL != NULL)
-        app->core->setStartURL(app->startURL);
-
     /* Set simulation time */
     app->core->start();
     updateTimeZone(app, app->showLocalTime);
@@ -319,7 +315,6 @@ int main(int argc, char* argv[])
     app->lastY = 0;
     app->showLocalTime = FALSE;
     app->fullScreen = FALSE;
-    app->startURL = NULL;
 
     /* Watcher enables sending signals from inside of core */
     GtkWatcher* gtkWatcher;

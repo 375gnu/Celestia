@@ -62,9 +62,6 @@ struct _AppData {
     int lastX;
     int lastY;
 
-    /* Starting URL */
-    char* startURL;
-
     /* A few preferences not tracked by the core */
     gboolean showLocalTime;
     gboolean fullScreen;

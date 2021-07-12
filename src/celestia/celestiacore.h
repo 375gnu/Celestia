@@ -324,8 +324,6 @@ class CelestiaCore // : public Watchable<CelestiaCore>
 
     void notifyWatchers(int);
 
-    void setLogFile(const fs::path&);
-
     class Alerter
     {
     public:
@@ -402,6 +400,7 @@ class CelestiaCore // : public Watchable<CelestiaCore>
 
  private:
     bool initDataPath();
+    void setLogFile(const fs::path&);
 
     CelestiaConfig* config{ nullptr };
 

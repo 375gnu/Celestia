@@ -1909,11 +1909,13 @@ void CelestiaCore::setStartURL(const string &url)
     {
         startURL = url;
         // Don't use {} as it will throw error C2593 on MSVC
-        //config->initScriptFile = fs::path();
+        if (config != nullptr)
+            config->initScriptFile = fs::path();
     }
     else
     {
-        //config->initScriptFile = url;
+        if (config != nullptr)
+            config->initScriptFile = url;
     }
 }
 
@@ -4878,7 +4880,7 @@ util::CmdLineParser CelestiaCore::getCommandLineParser()
               [this](const char *v) { m_extrasDirs.push_back(v); return true; });
     parser.on("url", 'u', true,
               _("URL expected after --url/-u"),
-              [this](const char *v) { setStartURL(v); return true; });
+              [this](const char *v) { startURL = v; return true; });
     parser.on("log", 'l', true,
               _("A filename expected after --log/-l"),
               [this](const char *v) { setLogFile(v); return true; });
