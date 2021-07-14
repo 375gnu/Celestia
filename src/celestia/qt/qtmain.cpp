@@ -38,7 +38,7 @@ using namespace std;
 // Command line options
 static bool startFullscreen = false;
 static bool runOnce = false;
-static QString startURL;
+/* static */QString startURL;
 static QString logFilename;
 static QString startDirectory;
 static QString startScript;

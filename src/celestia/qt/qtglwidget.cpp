@@ -64,6 +64,8 @@ const Renderer::StarStyle DEFAULT_STAR_STYLE = Renderer::FuzzyPointStars;
 const unsigned int DEFAULT_TEXTURE_RESOLUTION = medres;
 
 
+extern QString startURL;
+
 CelestiaGlWidget::CelestiaGlWidget(QWidget* parent, const char* /* name */, CelestiaCore* core) :
     QGLWidget(parent)
 {
@@ -118,6 +120,7 @@ static GLContext::GLRenderPath getBestAvailableRenderPath(const GLContext& /*glc
 
 void CelestiaGlWidget::initializeGL()
 {
+    appCore->resize(width(), height());
     using namespace celestia;
     if (!gl::init(appCore->getConfig()->ignoreGLExtensions) || !gl::checkVersion(gl::GL_2_1))
     {
@@ -133,6 +136,9 @@ void CelestiaGlWidget::initializeGL()
         exit(1);
     }
 
+    if (!startURL.isEmpty())
+        appCore->setStartURL(startURL.toStdString());
+    appCore->start();
     appCore->tick();
 
     // Read saved settings

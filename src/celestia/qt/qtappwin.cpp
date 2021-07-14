@@ -1390,8 +1390,6 @@ void CelestiaAppWindow::createMenus()
     m_appCore->getSimulation()->setSyncTime(check);
 
     // Set up the default time zone name and offset from UTC
-    m_appCore->start();
-
     string tzName;
     int dstBias;
     if (GetTZInfo(tzName, dstBias))
