@@ -23,7 +23,7 @@ class PointStarVertexBuffer
 public:
     using capacity_t = unsigned int;
 
-    PointStarVertexBuffer(const Renderer& _renderer, unsigned int _capacity);
+    PointStarVertexBuffer(const Renderer& _renderer, capacity_t _capacity);
     ~PointStarVertexBuffer();
     PointStarVertexBuffer() = delete;
     PointStarVertexBuffer(const PointStarVertexBuffer&) = delete;
@@ -31,13 +31,13 @@ public:
     PointStarVertexBuffer& operator=(const PointStarVertexBuffer&) = delete;
     PointStarVertexBuffer& operator=(PointStarVertexBuffer&&) = delete;
 
-    void startBasicPoints();
-    void startSprites();
+    void start();
     void render();
     void finish();
     inline void addStar(const Eigen::Vector3f& pos, const Color&, float);
     void setTexture(Texture* /*_texture*/);
     void setPointScale(float);
+    void setLimitingMagnitude(float);
 
     static void enable();
     static void disable();
@@ -57,13 +57,9 @@ private:
     capacity_t nStars           { 0 };
     StarVertex* vertices        { nullptr };
     Texture* texture            { nullptr };
-    bool pointSizeFromVertex    { false };
     float pointScale            { 1.0f };
+    float limitingMagnitude     { 7.0f };
     CelestiaGLProgram* program  { nullptr };
-
-    static PointStarVertexBuffer* current;
-
-    void makeCurrent();
 };
 
 inline void PointStarVertexBuffer::addStar(const Eigen::Vector3f& pos,

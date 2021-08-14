@@ -93,19 +93,22 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
         // planets.
         if (distance > SolarSystemMaxDistance)
         {
-            float pointSize, alpha, glareSize, glareAlpha;
-            float size = BaseStarDiscSize * static_cast<float>(renderer->getScreenDpi()) / 96.0f;
-            renderer->calculatePointSize(appMag,
-                                         size,
-                                         pointSize,
-                                         alpha,
-                                         glareSize,
-                                         glareAlpha);
+#ifdef USE_HDR
+            float satPoint = saturationMag;
+            float alpha = exposure*(faintestMag - appMag)/(faintestMag - saturationMag + 0.001f);
+#else
+            float satPoint = faintestMag - (1.0f - brightnessBias) / brightnessScale; // TODO: precompute this value
+            float alpha = (faintestMag - appMag) * brightnessScale + brightnessBias;
+#endif
 
-            if (glareSize != 0.0f)
-                glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), glareSize);
-            if (pointSize != 0.0f)
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), pointSize);
+            if (alpha < 0.0f)
+            {
+                alpha = 0.0f;
+            }
+            else if (alpha > 1.0f)
+            {
+                starVertexBuffer->addStar(relPos, Color(starColor, alpha), appMag);
+            }
 
             // Place labels for stars brighter than the specified label threshold brightness
             if (((labelMode & Renderer::StarLabels) != 0) && appMag < labelThresholdMag)

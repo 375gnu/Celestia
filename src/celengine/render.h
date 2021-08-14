@@ -782,7 +782,6 @@ class Renderer
 
     Eigen::Quaternionf m_cameraOrientation;
     PointStarVertexBuffer* pointStarVertexBuffer;
-    PointStarVertexBuffer* glareVertexBuffer;
     std::vector<RenderListEntry> renderList;
     std::vector<SecondaryIlluminator> secondaryIlluminators;
     std::vector<DepthBufferPartition> depthPartitions;
