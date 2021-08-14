@@ -110,53 +110,14 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
             float satPoint = faintestMag - (1.0f - brightnessBias) / brightnessScale; // TODO: precompute this value
             float alpha = (faintestMag - appMag) * brightnessScale + brightnessBias;
 #endif
-#ifdef DEBUG_HDR_ADAPT
-            minMag = max(minMag, appMag);
-            maxMag = min(maxMag, appMag);
-            minAlpha = min(minAlpha, alpha);
-            maxAlpha = max(maxAlpha, alpha);
-            ++total;
-            if (alpha > above)
+
+            if (alpha < 0.0f)
             {
-                ++countAboveN;
+                alpha = 0.0f;
             }
-#endif
-
-            if (useScaledDiscs)
+            else if (alpha > 1.0f)
             {
-                float discSize = size;
-                if (alpha < 0.0f)
-                {
-                    alpha = 0.0f;
-                }
-                else if (alpha > 1.0f)
-                {
-                    float discScale = min(MaxScaledDiscStarSize, (float) pow(2.0f, 0.3f * (satPoint - appMag)));
-                    discSize *= discScale;
-
-                    float glareAlpha = min(0.5f, discScale / 4.0f);
-                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), discSize * 3.0f);
-
-                    alpha = 1.0f;
-                }
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), discSize);
-            }
-            else
-            {
-                if (alpha < 0.0f)
-                {
-                    alpha = 0.0f;
-                }
-                else if (alpha > 1.0f)
-                {
-                    float discScale = min(100.0f, satPoint - appMag + 2.0f);
-                    float glareAlpha = min(GlareOpacity, (discScale - 2.0f) / 4.0f);
-                    glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), 2.0f * discScale * size);
-#ifdef DEBUG_HDR_ADAPT
-                    maxSize = max(maxSize, 2.0f * discScale * size);
-#endif
-                }
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), size);
+                starVertexBuffer->addStar(relPos, Color(starColor, alpha), appMag);
             }
 
             ++nRendered;

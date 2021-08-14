@@ -264,7 +264,6 @@ Renderer::Renderer() :
     saturationMag(1.0f),
     starStyle(FuzzyPointStars),
     pointStarVertexBuffer(nullptr),
-    glareVertexBuffer(nullptr),
     textureResolution(medres),
     frameCount(0),
     lastOrbitCacheFlush(0),
@@ -287,7 +286,6 @@ Renderer::Renderer() :
     objectAnnotationSetOpen(false)
 {
     pointStarVertexBuffer = new PointStarVertexBuffer(*this, 2048);
-    glareVertexBuffer = new PointStarVertexBuffer(*this, 2048);
     skyVertices = new SkyVertex[MaxSkySlices * (MaxSkyRings + 1)];
     skyIndices = new uint32_t[(MaxSkySlices + 1) * 2 * MaxSkyRings];
     skyContour = new SkyContourPoint[MaxSkySlices + 1];
@@ -317,7 +315,6 @@ Renderer::Renderer() :
 Renderer::~Renderer()
 {
     delete pointStarVertexBuffer;
-    delete glareVertexBuffer;
     delete[] skyVertices;
     delete[] skyIndices;
     delete[] skyContour;
@@ -4631,7 +4628,6 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.viewNormal        = observer.getOrientationf().conjugate() * -Vector3f::UnitZ();
     starRenderer.renderList        = &renderList;
     starRenderer.starVertexBuffer  = pointStarVertexBuffer;
-    starRenderer.glareVertexBuffer = glareVertexBuffer;
     starRenderer.fov               = fov;
     starRenderer.cosFOV            = (float) cos(degToRad(calcMaxFOV(fov, getAspectRatio())) / 2.0f);
 
@@ -4663,31 +4659,18 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.labelThresholdMag = 1.2f * max(1.0f, (faintestMag - 4.0f) * (1.0f - 0.5f * (float) log10(effDistanceToScreen)));
 
     starRenderer.size = BaseStarDiscSize * screenDpi / 96.0f;
-    if (starStyle == ScaledDiscStars)
-    {
-        starRenderer.useScaledDiscs = true;
-        starRenderer.brightnessScale *= 2.0f;
-        starRenderer.maxDiscSize = starRenderer.size * MaxScaledDiscStarSize;
-    }
-    else if (starStyle == FuzzyPointStars)
-    {
-        starRenderer.brightnessScale *= 1.0f;
-    }
+    starRenderer.brightnessScale *= 2.0f;
+    starRenderer.maxDiscSize = starRenderer.size * MaxScaledDiscStarSize;
 
     starRenderer.colorTemp = colorTemp;
 
     gaussianDiscTex->bind();
     starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
     starRenderer.starVertexBuffer->setPointScale(screenDpi / 96.0f);
-    starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
-    starRenderer.glareVertexBuffer->setPointScale(screenDpi / 96.0f);
+    starRenderer.starVertexBuffer->setLimitingMagnitude(faintestMag);
 
     PointStarVertexBuffer::enable();
-    starRenderer.glareVertexBuffer->startSprites();
-    if (starStyle == PointStars)
-        starRenderer.starVertexBuffer->startBasicPoints();
-    else
-        starRenderer.starVertexBuffer->startSprites();
+    starRenderer.starVertexBuffer->start();
 
 #ifdef OCTREE_DEBUG
     m_starProcStats.nodes = 0;
@@ -4707,9 +4690,7 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 #endif
 
     starRenderer.starVertexBuffer->render();
-    starRenderer.glareVertexBuffer->render();
     starRenderer.starVertexBuffer->finish();
-    starRenderer.glareVertexBuffer->finish();
     PointStarVertexBuffer::disable();
 
 #ifndef GL_ES
