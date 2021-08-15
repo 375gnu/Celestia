@@ -16,9 +16,13 @@ void main()
 
     float magnitude = in_PointSize;
 
+#if 0
     float m = min(magnitude, saturationMagnitude);
     float s = limitingMagnitude - m;
     s += sqrt(max(0.0, saturationMagnitude - magnitude));
+#else
+    float s = limitingMagnitude - magnitude;
+#endif
 
     color = in_Color;
     set_vp(vec4(in_Position, 1.0));
