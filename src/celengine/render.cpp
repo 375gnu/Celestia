@@ -146,7 +146,7 @@ static bool commonDataInitialized = false;
 
 LODSphereMesh* g_lodSphere = nullptr;
 
-static Texture* gaussianDiscTex = nullptr;
+static Texture* g_moffatDiscTex = nullptr;
 static Texture* gaussianGlareTex = nullptr;
 
 static const float CoronaHeight = 0.2f;
@@ -355,26 +355,29 @@ static void RectToSphericalMapEval(float x, float y, float z,
 #endif
 
 
-static void BuildGaussianDiscMipLevel(unsigned char* mipPixels,
-                                      unsigned int log2size,
-                                      float fwhm,
-                                      float power)
+static void BuildMoffatDiscMipLevel(unsigned char* mipPixels,
+                                    unsigned int log2size,
+                                    float fwhm,
+                                    float power)
 {
     unsigned int size = 1 << log2size;
-    float sigma = fwhm / 2.3548f;
-    float isig2 = 1.0f / (2.0f * sigma * sigma);
-    float s = 1.0f / (sigma * (float) sqrt(2.0 * celestia::numbers::pi));
+    constexpr float beta = 4.765f;
+    float alpha = fwhm / (2.f * sqrt(pow(2.f, 1.f / beta) - 1.f));
+    float alpha2 = alpha * alpha;
+    float a = (beta - 1.f) / (celestia::numbers::pi_v<float> * alpha2);
 
     for (unsigned int i = 0; i < size; i++)
     {
-        float y = (float) i - size / 2;
+        float y = static_cast<float>(i - size / 2);
         for (unsigned int j = 0; j < size; j++)
         {
-            float x = (float) j - size / 2;
+            float x = static_cast<float>(j - size / 2);
             float r2 = x * x + y * y;
-            float f = s * (float) exp(-r2 * isig2) * power;
+            float f = a * pow(1.f + r2 / alpha2, -beta);
 
-            mipPixels[i * size + j] = (unsigned char) (255.99f * min(f, 1.0f));
+            // divide `f` by `a` to normalize the value to 1
+            // in (0, 0) f == a
+            mipPixels[i * size + j] = static_cast<std::uint8_t>(255.99f * min(f / a, 1.0f));
         }
     }
 }
@@ -429,7 +432,7 @@ static void BuildGlareMipLevel2(unsigned char* mipPixels,
 #endif
 
 
-static Texture* BuildGaussianDiscTexture(unsigned int log2size)
+static Texture* BuildMoffatDiscTexture(unsigned int log2size)
 {
     unsigned int size = 1 << log2size;
     Image* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
@@ -437,10 +440,10 @@ static Texture* BuildGaussianDiscTexture(unsigned int log2size)
     for (unsigned int mipLevel = 0; mipLevel <= log2size; mipLevel++)
     {
         float fwhm = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.3f;
-        BuildGaussianDiscMipLevel(img->getMipLevel(mipLevel),
-                                  log2size - mipLevel,
-                                  fwhm,
-                                  (float) pow(2.0f, (float) (log2size - mipLevel)));
+        BuildMoffatDiscMipLevel(img->getMipLevel(mipLevel),
+                                log2size - mipLevel,
+                                fwhm,
+                                (float) pow(2.0f, (float) (log2size - mipLevel)));
     }
 
     ImageTexture* texture = new ImageTexture(*img,
@@ -464,7 +467,7 @@ static Texture* BuildGaussianGlareTexture(unsigned int log2size)
         // Optional gaussian glare
         float fwhm = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.15f;
         float power = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.15f;
-        BuildGaussianDiscMipLevel(img->getMipLevel(mipLevel),
+        BuildMoffatDiscMipLevel(img->getMipLevel(mipLevel),
                                   log2size - mipLevel,
                                   fwhm,
                                   power);
@@ -552,7 +555,7 @@ bool Renderer::init(int winWidth, int winHeight, DetailOptions& _detailOptions)
     {
         g_lodSphere = new LODSphereMesh();
 
-        gaussianDiscTex = BuildGaussianDiscTexture(8);
+        g_moffatDiscTex = BuildMoffatDiscTexture(8);
         gaussianGlareTex = BuildGaussianGlareTexture(9);
 
         commonDataInitialized = true;
@@ -1856,7 +1859,7 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
         setPipelineState(ps);
 
         if (starStyle != PointStars)
-            gaussianDiscTex->bind();
+            g_moffatDiscTex->bind();
 
         if (pointSize > gl::maxPointSize)
             renderLargePoint(*this, position, {color, alpha}, pointSize, mvp);
@@ -3913,8 +3916,8 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 
     starRenderer.colorTemp = colorTemp;
 
-    gaussianDiscTex->bind();
-    starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
+    g_moffatDiscTex->bind();
+    starRenderer.starVertexBuffer->setTexture(g_moffatDiscTex);
     starRenderer.starVertexBuffer->setPointScale(screenDpi / 96.0f);
     starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
     starRenderer.glareVertexBuffer->setPointScale(screenDpi / 96.0f);
