@@ -40,6 +40,9 @@ void PointStarVertexBuffer::start()
     program->samplerParam("starTex") = 0;
     program->floatParam("limitingMagnitude") = limitingMagnitude;
     program->floatParam("pointScale") = pointScale;
+    std::array<int, 4> viewport;
+    renderer.getViewport(viewport);
+    program->vec4Param("viewport") = Eigen::Map<Eigen::Vector4i>(viewport.data()).cast<float>();
     glEnableVertexAttribArray(CelestiaGLProgram::PointSizeAttributeIndex);
     glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
     glEnableVertexAttribArray(CelestiaGLProgram::ColorAttributeIndex);

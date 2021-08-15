@@ -2,6 +2,7 @@ attribute vec3 in_Position;
 attribute float in_PointSize;
 attribute vec4 in_Color;
 
+uniform vec4 viewport;
 uniform float limitingMagnitude;
 uniform float pointScale;
 
