@@ -26,6 +26,7 @@
 #endif
 #include <celestia/celestiacore.h>
 #include <celestia/url.h>
+#include "sdlui.h"
 
 namespace celestia
 {
@@ -58,6 +59,7 @@ class SDL_Application
     static std::shared_ptr<SDL_Application> init(std::string_view, int, int);
 
     bool createOpenGLWindow();
+    bool setupImgui();
 
     bool initCelestiaCore();
     void run();
@@ -116,6 +118,7 @@ SDL_Application::init(std::string_view name, int w, int h)
 SDL_Application::~SDL_Application()
 {
     delete m_appCore;
+    delete m_ui;
 
     if (m_glContext != nullptr)
         SDL_GL_DeleteContext(m_glContext);
@@ -152,10 +155,20 @@ SDL_Application::getError() const
     return SDL_GetError();
 }
 
+bool
+SDL_Application::setupImgui()
+{
+    m_ui = new SDL_UI(m_mainWindow, &m_glContext, m_appCore);
+    if (m_ui == nullptr)
+        return false;
+    return m_ui->init();
+}
+
 void
 SDL_Application::display()
 {
     m_appCore->draw();
+    m_ui->display();
     SDL_GL_SwapWindow(m_mainWindow);
 }
 
@@ -203,6 +216,7 @@ SDL_Application::run()
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0)
         {
+            m_ui->processEvent(&event);
             switch (event.type)
             {
             case SDL_QUIT:
@@ -212,22 +226,28 @@ SDL_Application::run()
                 handleTextInputEvent(event.text);
                 break;
             case SDL_KEYDOWN:
-                handleKeyPressEvent(event.key);
+                if (!m_ui->wantCaptureKeyboard())
+                    handleKeyPressEvent(event.key);
                 break;
             case SDL_KEYUP:
-                handleKeyReleaseEvent(event.key);
+                if (!m_ui->wantCaptureKeyboard())
+                    handleKeyReleaseEvent(event.key);
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                handleMousePressEvent(event.button);
+                if (!m_ui->wantCaptureMouse())
+                    handleMousePressEvent(event.button);
                 break;
             case SDL_MOUSEBUTTONUP:
-                handleMouseReleaseEvent(event.button);
+                if (!m_ui->wantCaptureMouse())
+                    handleMouseReleaseEvent(event.button);
                 break;
             case SDL_MOUSEWHEEL:
-                handleMouseWheelEvent(event.wheel);
+                if (!m_ui->wantCaptureMouse())
+                    handleMouseWheelEvent(event.wheel);
                 break;
             case SDL_MOUSEMOTION:
-                handleMouseMotionEvent(event.motion);
+                if (!m_ui->wantCaptureMouse())
+                    handleMouseMotionEvent(event.motion);
                 break;
             case SDL_WINDOWEVENT:
                 handleWindowEvent(event.window);
@@ -236,7 +256,10 @@ SDL_Application::run()
                 break;
             }
         }
+
         m_appCore->tick();
+        if (!m_ui->update()) { quit = true; }
+
         display();
     }
 }
@@ -607,6 +630,11 @@ sdlmain(int /* argc */, char ** /* argv */)
     {
         FatalError("Could not create a OpenGL window! Error: {}", app->getError());
         return 4;
+    }
+    if (!app->setupImgui())
+    {
+        FatalError("Could not initialize Dear Imgui!");
+        return 6;
     }
 
     gl::init();

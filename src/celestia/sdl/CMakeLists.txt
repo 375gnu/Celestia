@@ -4,9 +4,18 @@ if(NOT ENABLE_SDL)
 endif()
 
 find_package(SDL2 CONFIG REQUIRED)
-set(SDL_SOURCES sdlmain.cpp)
+set(SDL_SOURCES
+  sdlmain.cpp
+  sdlui.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_opengl3.cpp
+  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_sdl.cpp)
 add_executable(celestia-sdl ${SDL_SOURCES})
 add_dependencies(celestia-sdl celestia)
+target_include_directories(celestia-sdl PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
 target_link_libraries(celestia-sdl PRIVATE celestia)
 if(TARGET SDL2::SDL2main AND TARGET SDL2::SDL2)
   if(MINGW)
