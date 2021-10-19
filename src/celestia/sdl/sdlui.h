@@ -1,15 +1,22 @@
-#ifndef CELESTIA_CELESTIA_SDL_SDLUI_H
-#define CELESTIA_CELESTIA_SDL_SDLUI_H
+#pragma once
 
-#include <celengine/glsupport.h>
+#include <vector>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#include <celestia/celestiacore.h>
+class CelestiaCore;
+struct ScriptMenuItem;
 
 namespace celestia
 {
+enum class ImGuiColorScheme
+{
+    Dark,
+    Light,
+    Classic,
+};
+
 class SDL_UI
 {
 public:
@@ -30,11 +37,13 @@ private:
     CelestiaCore *m_appCore;
 
     bool m_initialized{ false };
+    bool m_showPreferences{ false };
     bool m_showCelestialBrowser{ false };
+    ImGuiColorScheme m_colorScheme{ ImGuiColorScheme::Dark };
 
     bool mainMenu();
-    void celestialBrowser();
+    void preferences();
+
+    std::vector<ScriptMenuItem>* m_scripts{ nullptr };
 };
 }
-
-#endif

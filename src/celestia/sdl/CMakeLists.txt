@@ -5,6 +5,7 @@ endif()
 
 find_package(SDL2 CONFIG REQUIRED)
 set(SDL_SOURCES
+  sdlcelestialbrowser.cpp
   sdlmain.cpp
   sdlui.cpp
   ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
