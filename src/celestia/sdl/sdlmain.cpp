@@ -19,12 +19,14 @@
 #include <celutil/gettext.h>
 #include <celutil/tzutil.h>
 #include <SDL.h>
+#include <SDL_clipboard.h>
 #ifdef GL_ES
 #include <SDL_opengles2.h>
 #else
 #include <SDL_opengl.h>
 #endif
 #include <celestia/celestiacore.h>
+#include <celestia/celestiastate.h>
 #include <celestia/url.h>
 #include "sdlui.h"
 
@@ -70,7 +72,7 @@ class SDL_Application
 
     // handlers
     void handleTextInputEvent(const SDL_TextInputEvent &event);
-    void handleKeyPressEvent(const SDL_KeyboardEvent &event);
+    void handleKeyPressEvent(const SDL_KeyboardEvent &event, bool &quit);
     void handleKeyReleaseEvent(const SDL_KeyboardEvent &event);
     void handleMousePressEvent(const SDL_MouseButtonEvent &event);
     void handleMouseReleaseEvent(const SDL_MouseButtonEvent &event);
@@ -80,9 +82,9 @@ class SDL_Application
 
     // aux functions
     void toggleFullscreen();
-    void copyURL();
-    void pasteURL();
     void configure() const;
+    void copy();
+    void paste();
 
     // state variables
     std::string m_appName;
@@ -97,6 +99,7 @@ class SDL_Application
     CelestiaCore *m_appCore     { nullptr };
     SDL_Window   *m_mainWindow  { nullptr };
     SDL_GLContext m_glContext   { nullptr };
+    SDL_UI       *m_ui          { nullptr };
 };
 
 std::shared_ptr<SDL_Application>
@@ -146,6 +149,7 @@ SDL_Application::createOpenGLWindow()
     // First try to enable adaptive sync and then vsync
     if (SDL_GL_SetSwapInterval(-1) == -1)
         SDL_GL_SetSwapInterval(1);
+
     return true;
 }
 
@@ -158,7 +162,7 @@ SDL_Application::getError() const
 bool
 SDL_Application::setupImgui()
 {
-    m_ui = new SDL_UI(m_mainWindow, &m_glContext, m_appCore);
+    m_ui = new SDL_UI(m_mainWindow, &m_glContext, m_appCore, &m_cursorVisible, &m_fullscreen);
     if (m_ui == nullptr)
         return false;
     return m_ui->init();
@@ -227,7 +231,7 @@ SDL_Application::run()
                 break;
             case SDL_KEYDOWN:
                 if (!m_ui->wantCaptureKeyboard())
-                    handleKeyPressEvent(event.key);
+                    handleKeyPressEvent(event.key, quit);
                 break;
             case SDL_KEYUP:
                 if (!m_ui->wantCaptureKeyboard())
@@ -258,7 +262,15 @@ SDL_Application::run()
         }
 
         m_appCore->tick();
-        if (!m_ui->update()) { quit = true; }
+        switch (m_ui->update())
+        {
+        case UIAction::Quit: quit = true; break;
+        case UIAction::Copy: copy(); break;
+        case UIAction::Paste: paste(); break;
+        case UIAction::ToggleFullscreen: toggleFullscreen(); break;
+        default:
+            break;
+        }
 
         display();
     }
@@ -319,7 +331,7 @@ toCelestiaKey(SDL_Keycode key)
 }
 
 void
-SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
+SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event, bool &quit)
 {
     switch (event.keysym.sym)
     {
@@ -340,21 +352,20 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
     if ((event.keysym.mod & KMOD_CTRL) != 0)
     {
         int k = tolower(key);
-        if (k >= 'a' && k <= 'z')
+        switch (k)
         {
-            switch (k)
+        case 'c': copy(); return;
+        case 'q': quit = true; return;
+        case 'v': paste(); return;
+        default:
+            if (k >= 'a' && k <= 'z')
             {
-            case 'c':
-                copyURL();
-                break;
-            case 'v':
-                pasteURL();
-                break;
-            default:
                 key = k + 1 - 'a';
                 m_appCore->charEntered(key, mod);
+                return;
             }
-            return;
+            mod |= CelestiaCore::ControlKey;
+            break;
         }
         mod |= CelestiaCore::ControlKey;
     }
@@ -438,7 +449,6 @@ SDL_Application::handleMouseReleaseEvent(const SDL_MouseButtonEvent &event)
     {
         if (!m_cursorVisible)
         {
-            SDL_ShowCursor(SDL_ENABLE);
             m_cursorVisible = true;
             SDL_WarpMouseInWindow(m_mainWindow, m_lastX, m_lastY);
         }
@@ -472,7 +482,6 @@ SDL_Application::handleMouseMotionEvent(const SDL_MouseMotionEvent &event)
         int y = event.y - m_lastY;
         if (m_cursorVisible)
         {
-            SDL_ShowCursor(SDL_DISABLE);
             m_cursorVisible = false;
             m_lastX = event.x;
             m_lastY = event.y;
@@ -531,27 +540,42 @@ SDL_Application::toggleFullscreen()
 }
 
 void
-SDL_Application::copyURL()
+SDL_Application::copy()
 {
-    CelestiaState appState(m_appCore);
-    appState.captureState();
-
-    if (SDL_SetClipboardText(Url(appState).getAsString().c_str()) == 0)
-        m_appCore->flash(_("Copied URL"));
+    if (m_appCore->getTextEnterMode() == CelestiaCore::KbNormal)
+    {
+        CelestiaState appState(m_appCore);
+        appState.captureState();
+        Url url(appState);
+        if (SDL_SetClipboardText(Url(appState).getAsString().c_str()) == 0)
+            m_appCore->flash(_("Copied URL"));
+    }
+    else
+    {
+        const std::string& consoleText = m_appCore->getTypedText();
+        if (!consoleText.empty())
+            SDL_SetClipboardText(consoleText.c_str());
+    }
 }
 
 void
-SDL_Application::pasteURL()
+SDL_Application::paste()
 {
-    if (SDL_HasClipboardText() != SDL_TRUE)
-        return;
-
     // on error SDL_GetClipboardText returns a new empty string
-    char *str = SDL_GetClipboardText(); // don't add const due to SDL_free
-    if (*str != '\0' && m_appCore->goToUrl(str))
-        m_appCore->flash(_("Pasting URL"));
-
-    SDL_free(str);
+    char* clipboardText = SDL_GetClipboardText(); // don't add const due to SDL_free
+    if (clipboardText != nullptr && clipboardText[0] != '\0')
+    {
+        if (m_appCore->getTextEnterMode() == CelestiaCore::KbNormal)
+        {
+            m_appCore->goToUrl(clipboardText);
+            m_appCore->flash(_("Pasting URL"));
+        }
+        else
+        {
+            m_appCore->setTypedText(clipboardText);
+        }
+    }
+    SDL_free(clipboardText);
 }
 
 static void

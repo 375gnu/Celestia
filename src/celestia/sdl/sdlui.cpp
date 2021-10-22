@@ -1,6 +1,7 @@
+#include <climits>
 #include <cstdint>
 
-#include <SDL_clipboard.h>
+#include <SDL_version.h>
 
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -14,9 +15,7 @@
 #include <celengine/render.h>
 #include <celengine/starcolors.h>
 #include <celestia/celestiacore.h>
-#include <celestia/celestiastate.h>
 #include <celestia/scriptmenu.h>
-#include <celestia/url.h>
 #include <celutil/gettext.h>
 
 #include "sdlui.h"
@@ -40,17 +39,19 @@ namespace celestia
 
 SDL_UI::SDL_UI(SDL_Window* window,
                SDL_GLContext* glContext,
-               CelestiaCore* appCore) :
+               CelestiaCore* appCore,
+               bool* cursorVisible,
+               bool* isFullscreen) :
     m_window(window),
     m_glContext(glContext),
-    m_appCore(appCore)
+    m_appCore(appCore),
+    m_cursorVisible(cursorVisible),
+    m_fullscreen(isFullscreen)
 {
 }
 
 SDL_UI::~SDL_UI()
 {
-    delete m_scripts;
-
     if (m_initialized)
     {
         ImGui_ImplOpenGL3_Shutdown();
@@ -77,20 +78,24 @@ SDL_UI::processEvent(const SDL_Event* event)
     ImGui_ImplSDL2_ProcessEvent(event);
 }
 
-bool
+UIAction
 SDL_UI::update()
 {
-    bool keepRunning = true;
+    UIAction action = UIAction::None;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    keepRunning &= mainMenu();
-    if (m_showPreferences) preferences();
+    renderMainMenu(action);
+    if (m_showGLInfo) renderGLInfo();
+    if (m_showAbout) renderAbout();
+    if (m_showPreferences) renderPreferences();
+
+    if (!*m_cursorVisible) { ImGui::SetMouseCursor(ImGuiMouseCursor_None); }
 
     ImGui::Render();
 
-    return keepRunning;
+    return action;
 }
 
 void
@@ -111,10 +116,9 @@ SDL_UI::wantCaptureKeyboard() const
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-bool
-SDL_UI::mainMenu()
+void
+SDL_UI::renderMainMenu(UIAction& action)
 {
-    bool keepRunning = true;
     bool outputViewport = false;
     if (ImGui::BeginMainMenuBar())
     {
@@ -128,7 +132,7 @@ SDL_UI::mainMenu()
             {
                 if (m_scripts == nullptr)
                 {
-                    m_scripts = ScanScriptsDirectory("scripts", false);
+                    m_scripts = std::unique_ptr<std::vector<ScriptMenuItem>>(ScanScriptsDirectory("scripts", false));
                 }
 
                 for (const ScriptMenuItem& item : *m_scripts)
@@ -144,7 +148,7 @@ SDL_UI::mainMenu()
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Preferences..")) { m_showPreferences = true; }
-            if (ImGui::MenuItem("Exit", "CTRL+Q")) { keepRunning = false; }
+            if (ImGui::MenuItem("Exit", "CTRL+Q")) { action = UIAction::Quit; }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Navigation"))
@@ -153,23 +157,14 @@ SDL_UI::mainMenu()
             if (ImGui::MenuItem("Center selection")) { m_appCore->charEntered('c'); }
             if (ImGui::MenuItem("Goto selection")) { m_appCore->charEntered('g'); }
             if (ImGui::MenuItem("Goto object..")) { }
-            if (ImGui::MenuItem("Copy URL/console text", "CTRL+C"))
+            bool targetUrl = m_appCore->getTextEnterMode() == CelestiaCore::KbNormal;
+            if (ImGui::MenuItem(targetUrl ? "Copy URL##copyitem" : "Copy console text##copyitem", "CTRL+C"))
             {
-                CelestiaState appState(m_appCore);
-                appState.captureState();
-                Url url(appState);
-                SDL_SetClipboardText(url.getAsString().c_str());
-                m_appCore->flash(_("Copied URL"));
+                action = UIAction::Copy;
             }
-            if (ImGui::MenuItem("Paste URL/console text", "CTRL+V"))
+            if (ImGui::MenuItem(targetUrl ? "Paste URL##pasteitem" : "Paste console text##pasteitem", "CTRL+V"))
             {
-                char* clipboardText = SDL_GetClipboardText();
-                if (clipboardText != nullptr && clipboardText[0] != '\0')
-                {
-                    m_appCore->goToUrl(std::string(clipboardText));
-                    m_appCore->flash(_("Pasting URL"));
-                }
-                SDL_free(clipboardText);
+                action = UIAction::Paste;
             }
             ImGui::EndMenu();
         }
@@ -193,25 +188,161 @@ SDL_UI::mainMenu()
         {
             ImGui::MenuItem("Celestial browser", nullptr, &m_showCelestialBrowser);
             ImGui::Separator();
-            if (ImGui::MenuItem("Full screen", "SHIFT+F11")) { }
+            if (ImGui::MenuItem("Full screen", nullptr, *m_fullscreen)) { action = UIAction::ToggleFullscreen; }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help"))
         {
-            if (ImGui::MenuItem("Celestia manual")) { }
+            if (ImGui::MenuItem("Celestia manual")) { SDL_OpenURL("https://en.wikibooks.org/wiki/Celestia"); }
             ImGui::Separator();
-            if (ImGui::MenuItem("OpenGL info")) { }
-            if (ImGui::MenuItem("About Celestia")) { }
+            if (ImGui::MenuItem("OpenGL info")) { m_showGLInfo = true; }
+            if (ImGui::MenuItem("About Celestia")) { m_showAbout = true; }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
     m_appCore->setSafeAreaInsets(0, ImGui::GetMainViewport()->WorkPos.y, 0, 0);
-    return keepRunning;
 }
 
 void
-SDL_UI::preferences()
+SDL_UI::renderGLInfo()
+{
+    if (ImGui::Begin("OpenGL Info", &m_showGLInfo))
+    {
+        if (m_glInfo.empty())
+        {
+            m_appCore->getRenderer()->getInfo(m_glInfo);
+            if (m_glInfo.count("Extensions") > 0)
+            {
+                std::string& extensions = m_glInfo["Extensions"];
+                std::string::size_type old = 0;
+                std::string::size_type pos = extensions.find(' ');
+                while (pos != std::string::npos)
+                {
+                    m_glExtensions.push_back(extensions.substr(old, pos - old));
+                    old = pos + 1;
+                    pos = extensions.find(' ', old);
+                }
+            }
+        }
+        if (m_glInfo.count("API") > 0 && m_glInfo.count("APIVersion") > 0)
+        {
+            ImGui::Text("%s version: %s", m_glInfo["API"].c_str(), m_glInfo["APIVersion"].c_str());
+        }
+        if (m_glInfo.count("Vendor") > 0)
+        {
+            ImGui::Text("Vendor: %s", m_glInfo["Vendor"].c_str());
+        }
+        if (m_glInfo.count("Renderer") > 0)
+        {
+            ImGui::Text("Renderer: %s", m_glInfo["Renderer"].c_str());
+        }
+        if (m_glInfo.count("Language") > 0 && m_glInfo.count("LanguageVersion") > 0)
+        {
+            ImGui::Text("%s version: %s", m_glInfo["Language"].c_str(), m_glInfo["LanguageVersion"].c_str());
+        }
+        if (m_glInfo.count("MaxTextureUnits") > 0)
+        {
+            ImGui::Text("Max simultaneous textures: %s", m_glInfo["MaxTextureUnits"].c_str());
+        }
+        if (m_glInfo.count("MaxTextureSize") > 0)
+        {
+            ImGui::Text("Max texture size: %s", m_glInfo["MaxTextureSize"].c_str());
+        }
+        if (m_glInfo.count("PointSizeMax") > 0 && m_glInfo.count("PointSizeMin") > 0)
+        {
+            ImGui::Text("Point size range: %s - %s", m_glInfo["PointSizeMin"].c_str(), m_glInfo["PointSizeMax"].c_str());
+        }
+        if (m_glInfo.count("PointSizeGran") > 0)
+        {
+            ImGui::Text("Point size granularity: %s", m_glInfo["PointSizeGran"].c_str());
+        }
+        if (m_glInfo.count("MaxCubeMapSize") > 0)
+        {
+            ImGui::Text("Max cube map size: %s", m_glInfo["MaxCubeMapSize"].c_str());
+        }
+        if (m_glInfo.count("MaxVaryingFloats") > 0)
+        {
+            ImGui::Text("Number of interpolators: %s", m_glInfo["MaxVaryingFloats"].c_str());
+        }
+        if (m_glInfo.count("MaxAnisotropy") > 0)
+        {
+            ImGui::Text("Max anisotropy filtering: %s", m_glInfo["MaxAnisotropy"].c_str());
+        }
+
+        if (!m_glExtensions.empty())
+        {
+            ImGui::Separator();
+            ImGui::TextUnformatted("Supported extensions:");
+            for (const std::string& extension : m_glExtensions)
+            {
+                ImGui::Text("- %s", extension.c_str());
+            }
+        }
+
+        ImGui::End();
+    }
+}
+
+void
+SDL_UI::renderAbout()
+{
+    if (ImGui::Begin("About Celestia", &m_showAbout))
+    {
+        ImGui::TextUnformatted(
+            "Celestia 1.7\n"
+            "Development snapshot, commit " GIT_COMMIT);
+        ImGui::Separator();
+        SDL_version version;
+        SDL_GetVersion(&version);
+        ImGui::Text(
+            "Built for %zu bit CPU\n"
+#if defined(_MSC_VER)
+            "Using MSVC %d\n"
+#elif defined(__clang_version__)
+            "Using Clang %s\n"
+#elif defined(__GNUC__)
+            "Using GNU GCC %s\n"
+#else
+            "Using unknown compiler\n"
+#endif
+            "Built against SDL %d.%d.%d\n"
+#if defined(USE_SPICE)
+            "NAIF kernels are supported\n"
+#else
+            "NAIF kernels are not supported\n"
+#endif
+#if defined(USE_LIBAVIF)
+            "AVIF images are supported\n"
+#else
+            "AVIF images are not supported\n"
+#endif
+            "Runtime SDL version %d.%d.%d",
+            sizeof(void*) * CHAR_BIT,
+#if defined(_MSC_VER)
+            _MSC_FULL_VER,
+#elif defined(__clang_version__)
+            __clang_version__,
+#elif defined(__GNUC__)
+            __VERSION__,
+#endif
+            SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+            +version.major, +version.minor, +version.patch);
+
+        ImGui::TextWrapped("Copyright (c) 2001-2021 by the Celestia Development Team.");
+        ImGui::TextWrapped(
+            "Celestia is free software. You can redistribute it and/or modify "
+            "it under the terms of the GNU General Public License as published "
+            "by the Free Software Foundation; either version 2 of the License, "
+            "or (at your option) any later version."
+        );
+
+        ImGui::End();
+    }
+}
+
+void
+SDL_UI::renderPreferences()
 {
     if (ImGui::Begin("Preferences", &m_showPreferences, ImGuiWindowFlags_NoScrollbar))
     {
@@ -229,7 +360,7 @@ SDL_UI::preferences()
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Objects");
+                    ImGui::TextUnformatted("Objects");
                     ImGui::BeginChild("objectpane", ImVec2(0, 0), true);
                     bool flag = (renderFlags & Renderer::ShowStars) != 0;
                     if (ImGui::Checkbox("Stars", &flag)) { renderFlags ^= Renderer::ShowStars; }
@@ -257,7 +388,7 @@ SDL_UI::preferences()
                     if (ImGui::Checkbox("Globular clusters", &flag)) { renderFlags ^= Renderer::ShowGlobulars; }
                     ImGui::EndChild();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Features");
+                    ImGui::TextUnformatted("Features");
                     ImGui::BeginChild("featurespane", ImVec2(0, 0), true);
                     flag = (renderFlags & Renderer::ShowAtmospheres) != 0;
                     if (ImGui::Checkbox("Atmospheres", &flag)) { renderFlags ^= Renderer::ShowAtmospheres; }
@@ -291,7 +422,7 @@ SDL_UI::preferences()
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Orbits");
+                    ImGui::TextUnformatted("Orbits");
                     ImGui::BeginChild("orbitspane", ImVec2(0, 0), true);
                     bool flag = (renderFlags & Renderer::ShowOrbits) != 0;
                     if (ImGui::Checkbox("Show orbits", &flag)) { renderFlags ^= Renderer::ShowOrbits; }
@@ -321,9 +452,9 @@ SDL_UI::preferences()
                     if (orbitMask != oldOrbitMask) { renderer->setOrbitMask(orbitMask); }
                     ImGui::EndChild();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Navigation");
+                    ImGui::TextUnformatted("Navigation");
                     ImGui::BeginChild("guidespane", ImVec2(0, 0), true);
-                    ImGui::Text("Grids");
+                    ImGui::TextUnformatted("Grids");
                     flag = (renderFlags & Renderer::ShowCelestialSphere) != 0;
                     if (ImGui::Checkbox("Equatorial", &flag)) { renderFlags ^= Renderer::ShowCelestialSphere; }
                     flag = (renderFlags & Renderer::ShowEclipticGrid) != 0;
@@ -333,7 +464,7 @@ SDL_UI::preferences()
                     flag = (renderFlags & Renderer::ShowHorizonGrid) != 0;
                     if (ImGui::Checkbox("Horizontal", &flag)) { renderFlags ^= Renderer::ShowHorizonGrid; }
                     ImGui::Separator();
-                    ImGui::Text("Constellations");
+                    ImGui::TextUnformatted("Constellations");
                     flag = (renderFlags & Renderer::ShowDiagrams) != 0;
                     if (ImGui::Checkbox("Diagrams", &flag)) { renderFlags ^= Renderer::ShowDiagrams; }
                     flag = (renderFlags & Renderer::ShowBoundaries) != 0;
@@ -341,7 +472,7 @@ SDL_UI::preferences()
                     flag = (labelMode & Renderer::I18nConstellationLabels) == 0; // true if no i18n
                     if (ImGui::Checkbox("Latin names", &flag)) { labelMode ^= Renderer::I18nConstellationLabels; }
                     ImGui::Separator();
-                    ImGui::Text("Miscellaneous");
+                    ImGui::TextUnformatted("Miscellaneous");
                     flag = (renderFlags & Renderer::ShowMarkers) != 0;
                     if (ImGui::Checkbox("Markers", &flag)) { renderFlags ^= Renderer::ShowMarkers; }
                     flag = (renderFlags & Renderer::ShowEcliptic) != 0;
@@ -359,7 +490,7 @@ SDL_UI::preferences()
                     ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 3.0f);
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Labels");
+                    ImGui::TextUnformatted("Labels");
                     ImGui::BeginChild("labelspane", ImVec2(0, 0), true);
                     bool flag = (labelMode & Renderer::StarLabels) != 0;
                     if (ImGui::Checkbox("Stars", &flag)) { labelMode ^= Renderer::StarLabels; }
@@ -389,12 +520,12 @@ SDL_UI::preferences()
                     if (ImGui::Checkbox("Constellations", &flag)) labelMode ^= Renderer::ConstellationLabels;
                     ImGui::EndChild();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Locations");
+                    ImGui::TextUnformatted("Locations");
                     ImGui::BeginChild("locspane", ImVec2(0, 0), true);
                     flag = (labelMode & Renderer::LocationLabels) != 0;
                     if (ImGui::Checkbox("Show locations", &flag)) labelMode ^= Renderer::LocationLabels;
                     ImGui::Separator();
-                    ImGui::Text("Location types");
+                    ImGui::TextUnformatted("Location types");
                     if (ImGui::BeginTable("##loctypes", 2))
                     {
                         auto locFilter = observer->getLocationFilter();
@@ -427,7 +558,7 @@ SDL_UI::preferences()
                         ImGui::EndTable();
                     }
                     ImGui::Separator();
-                    ImGui::Text("Minimum labelled feature size");
+                    ImGui::TextUnformatted("Minimum labelled feature size");
                     float featureSize = renderer->getMinimumFeatureSize();
                     if (ImGui::SliderFloat("pixels", &featureSize, 0.01f, 1000.0f, "%.2f", ImGuiSliderFlags_Logarithmic)) renderer->setMinimumFeatureSize(featureSize);
                     ImGui::EndChild();
@@ -441,9 +572,9 @@ SDL_UI::preferences()
                 {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Quality");
+                    ImGui::TextUnformatted("Quality");
                     ImGui::BeginChild("qualitypane", ImVec2(0, 0), true);
-                    ImGui::Text("Texture resolution");
+                    ImGui::TextUnformatted("Texture resolution");
                     auto resolution = renderer->getResolution();
                     auto oldResolution = resolution;
                     if (ImGui::RadioButton("Low", resolution == 0)) resolution = 0;
@@ -451,20 +582,20 @@ SDL_UI::preferences()
                     if (ImGui::RadioButton("High", resolution == 2)) resolution = 2;
                     if (resolution != oldResolution) renderer->setResolution(resolution);
                     ImGui::Separator();
-                    ImGui::Text("Illumination");
+                    ImGui::TextUnformatted("Illumination");
                     float ambientLight = renderer->getAmbientLightLevel();
                     if (ImGui::SliderFloat("Ambient", &ambientLight, 0.0, 1.0)) renderer->setAmbientLightLevel(ambientLight);
                     bool flag = (renderFlags & Renderer::ShowTintedIllumination) != 0;
                     if (ImGui::Checkbox("Tinted illumination", &flag)) renderFlags ^= Renderer::ShowTintedIllumination;
                     ImGui::Separator();
-                    ImGui::Text("Antialiasing");
+                    ImGui::TextUnformatted("Antialiasing");
                     flag = (renderFlags & Renderer::ShowSmoothLines) != 0;
                     if (ImGui::Checkbox("Antialiased lines", &flag)) renderFlags ^= Renderer::ShowSmoothLines;
                     ImGui::EndChild();
                     ImGui::TableNextColumn();
-                    ImGui::Text("Stars");
+                    ImGui::TextUnformatted("Stars");
                     ImGui::BeginChild("starspane", ImVec2(0, 0), true);
-                    ImGui::Text("Style");
+                    ImGui::TextUnformatted("Style");
                     auto starStyle = renderer->getStarStyle();
                     if (ImGui::RadioButton("Points", starStyle == Renderer::PointStars)) renderer->setStarStyle(Renderer::PointStars);
                     if (ImGui::RadioButton("Fuzzy points", starStyle == Renderer::FuzzyPointStars)) renderer->setStarStyle(Renderer::FuzzyPointStars);
@@ -473,7 +604,7 @@ SDL_UI::preferences()
                     flag = (renderFlags & Renderer::ShowAutoMag) != 0;
                     if (ImGui::Checkbox("Auto-magnitude", &flag)) renderFlags ^= Renderer::ShowAutoMag;
                     ImGui::Separator();
-                    ImGui::Text("Star colors");
+                    ImGui::TextUnformatted("Star colors");
                     auto starColorTable = renderer->getStarColorTable();
                     auto starColorsD65 = GetStarColorTable(ColorTable_Blackbody_D65);
                     auto starColorsClassic = GetStarColorTable(ColorTable_Enhanced);
@@ -486,7 +617,7 @@ SDL_UI::preferences()
             }
             if (ImGui::BeginTabItem("Display"))
             {
-                ImGui::Text("Date display format");
+                ImGui::TextUnformatted("Date display format");
                 auto timeFormat = m_appCore->getDateFormat();
 #ifndef _WIN32
                 if (ImGui::RadioButton("Local format", timeFormat == astro::Date::Locale)) m_appCore->setDateFormat(astro::Date::Locale);
@@ -494,7 +625,7 @@ SDL_UI::preferences()
                 if (ImGui::RadioButton("Time zone name", timeFormat == astro::Date::TZName)) m_appCore->setDateFormat(astro::Date::TZName);
                 if (ImGui::RadioButton("UTC offset", timeFormat == astro::Date::UTCOffset)) m_appCore->setDateFormat(astro::Date::UTCOffset);
                 ImGui::Separator();
-                ImGui::Text("Color scheme");
+                ImGui::TextUnformatted("Color scheme");
                 if (ImGui::RadioButton("Dark", m_colorScheme == ImGuiColorScheme::Dark))
                 {
                     m_colorScheme = ImGuiColorScheme::Dark;
