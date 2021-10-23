@@ -223,6 +223,22 @@ namespace astro
                  double& trueAnomaly, double& eccentricAnomaly);
     double meanEclipticObliquity(double jd);
 
+    struct OrbitalElements
+    {
+        double semimajorAxis;
+        double eccentricity;
+        double inclination;
+        double longAscendingNode;
+        double argPericenter;
+        double meanAnomaly;
+        double period;
+    };
+
+    void StateVectorToElements(const Eigen::Vector3d& position,
+                               const Eigen::Vector3d& v,
+                               double GM,
+                               OrbitalElements* elements);
+
     // epoch J2000: 12 UT on 1 Jan 2000
     constexpr inline double J2000            = 2451545.0;
     constexpr inline double speedOfLight     = 299792.458; // km/s

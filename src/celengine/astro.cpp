@@ -54,6 +54,12 @@ static const Matrix3d EQUATORIAL_TO_GALACTIC_MATRIX = EQUATORIAL_TO_GALACTIC_ROT
 // Atomic Time
 static const double dTA = 32.184;
 
+struct LeapSecondRecord
+{
+    int seconds;
+    double t;
+};
+
 
 // Table of leap second insertions. The leap second always
 // appears as the last second of the day immediately prior
@@ -861,4 +867,64 @@ bool astro::isMassUnit(std::string_view unitName)
 void astro::setLeapSeconds(celestia::util::array_view<astro::LeapSecondRecord> leapSeconds)
 {
     g_leapSeconds = leapSeconds;
+}
+
+
+void astro::StateVectorToElements(const Vector3d& position,
+                                  const Vector3d& v,
+                                  double GM,
+                                  OrbitalElements* elements)
+{
+    Vector3d R = position;
+    Vector3d L = R.cross(v);
+    double magR = R.norm();
+    double magL = L.norm();
+    double magV = v.norm();
+    L *= (1.0 / magL);
+
+    Vector3d W = L.cross(R / magR);
+
+    // Compute the semimajor axis
+    double a = 1.0 / (2.0 / magR - square(magV) / GM);
+
+    // Compute the eccentricity
+    double p = square(magL) / GM;
+    double q = R.dot(v);
+    double ex = 1.0 - magR / a;
+    double ey = q / sqrt(a * GM);
+    double e = sqrt(ex * ex + ey * ey);
+
+    // Compute the mean anomaly
+    double E = atan2(ey, ex);
+    double M = E - e * sin(E);
+
+    // Compute the inclination
+    double cosi = L.dot(Vector3d::UnitY());
+    double i = 0.0;
+    if (cosi < 1.0)
+        i = acos(cosi);
+
+    // Compute the longitude of ascending node
+    double Om = atan2(L.x(), L.z());
+
+    // Compute the argument of pericenter
+    Vector3d U = R / magR;
+    double s_nu = v.dot(U) * sqrt(p / GM);
+    double c_nu = v.dot(W) * sqrt(p / GM) - 1;
+    s_nu /= e;
+    c_nu /= e;
+    Vector3d P = U * c_nu - W * s_nu;
+    Vector3d Q = U * s_nu + W * c_nu;
+    double om = atan2(P.y(), Q.y());
+
+    // Compute the period
+    double T = 2 * PI * sqrt(cube(a) / GM);
+
+    elements->semimajorAxis     = a;
+    elements->eccentricity      = e;
+    elements->inclination       = i;
+    elements->longAscendingNode = Om;
+    elements->argPericenter     = om;
+    elements->meanAnomaly       = M;
+    elements->period            = T;
 }

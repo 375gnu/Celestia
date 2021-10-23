@@ -12,6 +12,8 @@
 
 #include <Eigen/Core>
 
+#include "celengine/astro.h"
+
 
 class OrbitSampleProc;
 
@@ -53,6 +55,8 @@ class Orbit
     };
 
     void adaptiveSample(double startTime, double endTime, OrbitSampleProc& proc, const AdaptiveSamplingParameters& samplingParams) const;
+
+    void calculateOsculatingElements(double t, double dt, astro::OrbitalElements* elements) const;
 };
 
 

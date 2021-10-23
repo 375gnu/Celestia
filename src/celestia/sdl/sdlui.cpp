@@ -19,6 +19,7 @@
 #include <celutil/gettext.h>
 
 #include "sdlcontextmenu.h"
+#include "sdlinfoviewer.h"
 #include "sdlpreferences.h"
 #include "sdlui.h"
 
@@ -99,6 +100,7 @@ SDL_UI::SDL_UI(SDL_Window* window,
     m_appCore(appCore),
     m_cursorVisible(cursorVisible),
     m_fullscreen(isFullscreen),
+    m_infoViewer(std::make_unique<SDL_InfoViewer>(appCore)),
     m_preferences(std::make_unique<SDL_Preferences>(appCore))
 {
 }
@@ -151,7 +153,8 @@ SDL_UI::update()
         ImGui::OpenPopup("celcontext");
         m_openContext = false;
     }
-    renderContextMenu(m_appCore, m_selection);
+    m_infoViewer->render();
+    renderContextMenu(m_appCore, m_selection, *m_infoViewer);
 
     ImGui::Render();
     return action;

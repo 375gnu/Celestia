@@ -175,6 +175,44 @@ void Orbit::adaptiveSample(double startTime, double endTime, OrbitSampleProc& pr
 }
 
 
+void Orbit::calculateOsculatingElements(double t,
+                                        double dt,
+                                        astro::OrbitalElements* elements) const
+{
+    double sdt = dt;
+
+    // If the trajectory is finite, make sure we sample
+    // it inside the valid time interval.
+    if (!isPeriodic())
+    {
+        double beginTime = 0.0;
+        double endTime = 0.0;
+        getValidRange(beginTime, endTime);
+        clog << "t+dt: " << t + dt << ", endTime: " << endTime << endl;
+        if (t + dt > endTime)
+        {
+            clog << "REVERSE\n";
+            sdt = -dt;
+        }
+    }
+
+    Vector3d p0 = positionAtTime(t);
+    Vector3d p1 = positionAtTime(t + sdt);
+    Vector3d v0 = velocityAtTime(t);
+    Vector3d v1 = velocityAtTime(t + sdt);
+
+    double accel = ((v1 - v0) / sdt).norm();
+    Vector3d r = p0;
+    double GM = accel * r.squaredNorm();
+
+    clog << "vel: " << v0.norm() / 86400.0 << endl;
+    clog << "vel (est): " << (p1 - p0).norm() / sdt / 86400 << endl;
+    clog << "osc: " << t << ", " << dt << ", " << accel << ", GM=" << GM << endl;
+
+    StateVectorToElements(p0, v0, GM, elements);
+}
+
+
 EllipticalOrbit::EllipticalOrbit(double _pericenterDistance,
                                  double _eccentricity,
                                  double _inclination,

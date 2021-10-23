@@ -11,6 +11,7 @@
 
 namespace celestia
 {
+class SDL_InfoViewer;
 class SDL_Preferences;
 
 enum class UIAction
@@ -48,6 +49,7 @@ private:
     CelestiaCore *m_appCore;
     bool *m_cursorVisible;
     bool *m_fullscreen;
+    std::unique_ptr<SDL_InfoViewer> m_infoViewer;
     std::unique_ptr<SDL_Preferences> m_preferences;
 
     bool m_initialized{ false };

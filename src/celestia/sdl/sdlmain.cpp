@@ -25,6 +25,8 @@
 #else
 #include <SDL_opengl.h>
 #endif
+#include <celcompat/filesystem.h>
+#include <celutil/gettext.h>
 #include <celestia/celestiacore.h>
 #include <celestia/celestiastate.h>
 #include <celestia/url.h>
@@ -72,10 +74,10 @@ class SDL_Application
 
     // handlers
     void handleTextInputEvent(const SDL_TextInputEvent &event);
-    void handleKeyPressEvent(const SDL_KeyboardEvent &event, bool &quit);
-    void handleKeyReleaseEvent(const SDL_KeyboardEvent &event);
-    void handleMousePressEvent(const SDL_MouseButtonEvent &event);
-    void handleMouseReleaseEvent(const SDL_MouseButtonEvent &event);
+    void handleKeyDownEvent(const SDL_KeyboardEvent &event, bool &quit);
+    void handleKeyUpEvent(const SDL_KeyboardEvent &event);
+    void handleMouseButtonDownEvent(const SDL_MouseButtonEvent &event);
+    void handleMouseButtonUpEvent(const SDL_MouseButtonEvent &event);
     void handleMouseWheelEvent(const SDL_MouseWheelEvent &event);
     void handleMouseMotionEvent(const SDL_MouseMotionEvent &event);
     void handleWindowEvent(const SDL_WindowEvent &event);
@@ -231,19 +233,19 @@ SDL_Application::run()
                 break;
             case SDL_KEYDOWN:
                 if (!m_ui->wantCaptureKeyboard())
-                    handleKeyPressEvent(event.key, quit);
+                    handleKeyDownEvent(event.key, quit);
                 break;
             case SDL_KEYUP:
                 if (!m_ui->wantCaptureKeyboard())
-                    handleKeyReleaseEvent(event.key);
+                    handleKeyUpEvent(event.key);
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (!m_ui->wantCaptureMouse())
-                    handleMousePressEvent(event.button);
+                    handleMouseButtonDownEvent(event.button);
                 break;
             case SDL_MOUSEBUTTONUP:
                 if (!m_ui->wantCaptureMouse())
-                    handleMouseReleaseEvent(event.button);
+                    handleMouseButtonUpEvent(event.button);
                 break;
             case SDL_MOUSEWHEEL:
                 if (!m_ui->wantCaptureMouse())
@@ -289,13 +291,6 @@ toCelestiaKey(SDL_Keycode key)
     case SDLK_HOME:     return CelestiaCore::Key_Home;
     case SDLK_PAGEDOWN: return CelestiaCore::Key_PageDown;
     case SDLK_PAGEUP:   return CelestiaCore::Key_PageUp;
-    case SDLK_RETURN:
-    case SDLK_ESCAPE:
-    case SDLK_BACKSPACE:
-    case SDLK_DELETE:
-    case SDLK_TAB:
-    case SDLK_SPACE:
-         return key;
 
     case SDLK_F1:       return CelestiaCore::Key_F1;
     case SDLK_F2:       return CelestiaCore::Key_F2;
@@ -322,84 +317,80 @@ toCelestiaKey(SDL_Keycode key)
     case SDLK_KP_9:     return CelestiaCore::Key_NumPad9;
     case SDLK_KP_DECIMAL:
         return CelestiaCore::Key_NumPadDecimal;
-
     default:
-        if (key >= 32 && key <= 127)
-            return key;
         return -1;
     }
 }
 
 void
-SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event, bool &quit)
+SDL_Application::handleKeyDownEvent(const SDL_KeyboardEvent &event, bool &quit)
 {
+    int modifiers = 0;
+    if ((event.keysym.mod & KMOD_SHIFT) != 0) { modifiers |= CelestiaCore::ShiftKey; }
+    if ((event.keysym.mod & KMOD_CTRL) != 0) { modifiers |= CelestiaCore::ControlKey; }
     switch (event.keysym.sym)
     {
-    case SDLK_TAB:
-    case SDLK_BACKSPACE:
-    case SDLK_DELETE:
     case SDLK_ESCAPE:
-        m_appCore->charEntered(event.keysym.sym, 0);
+        m_appCore->charEntered('\033');
+        return;
+    case SDLK_TAB:
+        m_appCore->charEntered((event.keysym.mod & KMOD_SHIFT) == 0 ? '\t' : CelestiaCore::Key_BackTab);
+        return;
     case SDLK_RETURN:
+        if ((event.keysym.mod & KMOD_ALT) != 0)
+        {
+            toggleFullscreen();
+        }
+        else
+        {
+            m_appCore->charEntered('\n', modifiers);
+        }
+        return;
+    case SDLK_KP_ENTER:
+        m_appCore->charEntered('\n', modifiers);
+        return;
+    case SDLK_BACKSPACE:
+        m_appCore->charEntered('\b');
+        return;
+    case SDLK_DELETE:
+        m_appCore->charEntered(CelestiaCore::Key_BackTab);
         return;
     }
-
     int key = toCelestiaKey(event.keysym.sym);
-    if (key == -1)
+    if (key >= 0)
+    {
+        m_appCore->keyDown(key, modifiers);
         return;
-
-    int mod = 0;
+    }
     if ((event.keysym.mod & KMOD_CTRL) != 0)
     {
-        int k = tolower(key);
+        int k = std::tolower(key);
         switch (k)
         {
-        case 'c': copy(); return;
-        case 'q': quit = true; return;
-        case 'v': paste(); return;
+        case 'c': copy(); break;
+        case 'q': quit = true; break;
+        case 'v': paste(); break;
         default:
             if (k >= 'a' && k <= 'z')
             {
                 key = k + 1 - 'a';
-                m_appCore->charEntered(key, mod);
-                return;
+                m_appCore->charEntered(key, modifiers);
             }
-            mod |= CelestiaCore::ControlKey;
             break;
         }
     }
-    if ((event.keysym.mod & KMOD_SHIFT) != 0)
-        mod |= CelestiaCore::ShiftKey;
-
-    m_appCore->keyDown(key, mod);
 }
 
 void
-SDL_Application::handleKeyReleaseEvent(const SDL_KeyboardEvent &event)
+SDL_Application::handleKeyUpEvent(const SDL_KeyboardEvent &event)
 {
-    if (event.keysym.sym == SDLK_RETURN)
+    int key = toCelestiaKey(event.keysym.sym);
+    if (key >= 0)
     {
-        if ((event.keysym.mod & KMOD_ALT) != 0)
-            toggleFullscreen();
-        else
-            m_appCore->charEntered(SDLK_RETURN, 0);
-    }
-    else
-    {
-        int key = toCelestiaKey(event.keysym.sym);
-        if (key == -1)
-            return;
-        int mod = 0;
-        if ((event.keysym.mod & KMOD_CTRL) != 0)
-        {
-            mod |= CelestiaCore::ControlKey;
-            if (key >= '0' && key <= '9')
-                m_appCore->charEntered(key, mod);
-        }
-        if ((event.keysym.mod & KMOD_SHIFT) != 0)
-            mod |= CelestiaCore::ShiftKey;
-
-        m_appCore->keyUp(key, 0);
+        int modifiers = 0;
+        if ((event.keysym.mod & KMOD_SHIFT) != 0) { modifiers |= CelestiaCore::ShiftKey; }
+        if ((event.keysym.mod & KMOD_CTRL) != 0) { modifiers |= CelestiaCore::ControlKey; }
+        m_appCore->keyUp(key, modifiers);
     }
 }
 
@@ -426,7 +417,7 @@ toCelestiaButton(int button)
 }
 
 void
-SDL_Application::handleMousePressEvent(const SDL_MouseButtonEvent &event)
+SDL_Application::handleMouseButtonDownEvent(const SDL_MouseButtonEvent &event)
 {
     int button = toCelestiaButton(event.button);
     if (button == -1)
@@ -438,7 +429,7 @@ SDL_Application::handleMousePressEvent(const SDL_MouseButtonEvent &event)
 }
 
 void
-SDL_Application::handleMouseReleaseEvent(const SDL_MouseButtonEvent &event)
+SDL_Application::handleMouseButtonUpEvent(const SDL_MouseButtonEvent &event)
 {
     int button = toCelestiaButton(event.button);;
     if (button == -1)

@@ -15,6 +15,7 @@
 #include <celutil/gettext.h>
 
 #include "sdlcontextmenu.h"
+#include "sdlinfoviewer.h"
 
 namespace celestia
 {
@@ -143,7 +144,7 @@ void renderPlanetarySystemMenus(Simulation* simulation, const PlanetarySystem* p
 }
 }
 
-void renderContextMenu(CelestiaCore* appCore, const Selection& selection)
+void renderContextMenu(CelestiaCore* appCore, const Selection& selection, SDL_InfoViewer& infoViewer)
 {
     if (ImGui::BeginPopup("celcontext"))
     {
@@ -170,7 +171,7 @@ void renderContextMenu(CelestiaCore* appCore, const Selection& selection)
         {
             if (ImGui::MenuItem(_("Sync orbit"), "Y")) { sim->setSelection(selection); appCore->charEntered('y'); }
         }
-        ImGui::MenuItem(_("Info"), nullptr, false, false); // TODO implement this
+        if (ImGui::MenuItem(_("Info"))) { infoViewer.show(selection); }
         if (selection.body() != nullptr)
         {
             bool isVisible = selection.body()->isVisible();

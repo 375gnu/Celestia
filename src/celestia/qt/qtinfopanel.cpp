@@ -27,24 +27,6 @@ using namespace Eigen;
 using namespace celmath;
 using celestia::util::GetLogger;
 
-// TODO: This should be moved to astro.cpp
-struct OrbitalElements
-{
-    double semimajorAxis;
-    double eccentricity;
-    double inclination;
-    double longAscendingNode;
-    double argPericenter;
-    double meanAnomaly;
-    double period;
-};
-
-static void CalculateOsculatingElements(const Orbit& orbit,
-                                        double t,
-                                        double dt,
-                                        OrbitalElements* elements);
-
-
 InfoPanel::InfoPanel(CelestiaCore* _appCore, const QString& title, QWidget* parent) :
     QDockWidget(title, parent),
     appCore(_appCore)
@@ -198,11 +180,10 @@ void InfoPanel::buildSolarSystemBodyPage(const Body* body,
         if (orbitalPeriod == 0.0)
             orbitalPeriod = 365.25;
 
-        OrbitalElements elements;
-        CalculateOsculatingElements(*orbit,
-                                    t,
-                                    orbitalPeriod * 1.0e-6,
-                                    &elements);
+        astro::OrbitalElements elements;
+        orbit->calculateOsculatingElements(t,
+                                           orbitalPeriod * 1.0e-6,
+                                           &elements);
         if (orbitalPeriod < 2.0)
         {
             orbitalPeriod *= 24.0;
@@ -357,104 +338,3 @@ void InfoPanel::updateHelper(ModelHelper* model, const QItemSelection& newSel, c
                       appCore->getSimulation()->getTime());
     }
 }
-
-
-static void StateVectorToElements(const Vector3d& position,
-                                  const Vector3d& v,
-                                  double GM,
-                                  OrbitalElements* elements)
-{
-    Vector3d R = position;
-    Vector3d L = R.cross(v);
-    double magR = R.norm();
-    double magL = L.norm();
-    double magV = v.norm();
-    L *= (1.0 / magL);
-
-    Vector3d W = L.cross(R / magR);
-
-    // Compute the semimajor axis
-    double a = 1.0 / (2.0 / magR - square(magV) / GM);
-
-    // Compute the eccentricity
-    double p = square(magL) / GM;
-    double q = R.dot(v);
-    double ex = 1.0 - magR / a;
-    double ey = q / sqrt(a * GM);
-    double e = sqrt(ex * ex + ey * ey);
-
-    // Compute the mean anomaly
-    double E = atan2(ey, ex);
-    double M = E - e * sin(E);
-
-    // Compute the inclination
-    double cosi = L.dot(Vector3d::UnitY());
-    double i = 0.0;
-    if (cosi < 1.0)
-        i = acos(cosi);
-
-    // Compute the longitude of ascending node
-    double Om = atan2(L.x(), L.z());
-
-    // Compute the argument of pericenter
-    Vector3d U = R / magR;
-    double s_nu = v.dot(U) * sqrt(p / GM);
-    double c_nu = v.dot(W) * sqrt(p / GM) - 1;
-    s_nu /= e;
-    c_nu /= e;
-    Vector3d P = U * c_nu - W * s_nu;
-    Vector3d Q = U * s_nu + W * c_nu;
-    double om = atan2(P.y(), Q.y());
-
-    // Compute the period
-    double T = 2 * celestia::numbers::pi * sqrt(cube(a) / GM);
-
-    elements->semimajorAxis     = a;
-    elements->eccentricity      = e;
-    elements->inclination       = i;
-    elements->longAscendingNode = Om;
-    elements->argPericenter     = om;
-    elements->meanAnomaly       = M;
-    elements->period            = T;
-}
-
-
-static void CalculateOsculatingElements(const Orbit& orbit,
-                                        double t,
-                                        double dt,
-                                        OrbitalElements* elements)
-{
-    double sdt = dt;
-
-    // If the trajectory is finite, make sure we sample
-    // it inside the valid time interval.
-    if (!orbit.isPeriodic())
-    {
-        double beginTime = 0.0;
-        double endTime = 0.0;
-        orbit.getValidRange(beginTime, endTime);
-        GetLogger()->debug("t+dt: {}, endTime: {}\n", t + dt, endTime);
-        if (t + dt > endTime)
-        {
-            GetLogger()->debug("REVERSE\n");
-            sdt = -dt;
-        }
-    }
-
-    Vector3d p0 = orbit.positionAtTime(t);
-    Vector3d p1 = orbit.positionAtTime(t + sdt);
-    Vector3d v0 = orbit.velocityAtTime(t);
-    Vector3d v1 = orbit.velocityAtTime(t + sdt);
-
-    double accel = ((v1 - v0) / sdt).norm();
-    Vector3d r = p0;
-    double GM = accel * r.squaredNorm();
-
-    GetLogger()->debug("vel: {}\n", v0.norm() / 86400.0);
-    GetLogger()->debug("vel (est): {}\n", (p1 - p0).norm() / sdt / 86400);
-    GetLogger()->debug("osc: {}, {}, {}, GM={}\n", t, dt, accel, GM);
-
-    StateVectorToElements(p0, v0, GM, elements);
-}
-
-

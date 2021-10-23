@@ -7,6 +7,7 @@ find_package(SDL2 CONFIG REQUIRED)
 set(SDL_SOURCES
   sdlcelestialbrowser.cpp
   sdlcontextmenu.cpp
+  sdlinfoviewer.cpp
   sdlmain.cpp
   sdlpreferences.cpp
   sdlui.cpp

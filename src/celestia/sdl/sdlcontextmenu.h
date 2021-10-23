@@ -5,5 +5,7 @@ class Selection;
 
 namespace celestia
 {
-void renderContextMenu(CelestiaCore* appCore, const Selection& selection);
+class SDL_InfoViewer;
+
+void renderContextMenu(CelestiaCore* appCore, const Selection& selection, SDL_InfoViewer& infoViewer);
 }
