@@ -1,18 +1,18 @@
 #pragma once
 
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-class CelestiaCore;
-struct ScriptMenuItem;
+#include <celengine/glsupport.h>
+#include <celengine/selection.h>
+#include <celestia/celestiacore.h>
 
 namespace celestia
 {
+class SDL_Preferences;
+
 enum class UIAction
 {
     None,
@@ -22,14 +22,7 @@ enum class UIAction
     ToggleFullscreen,
 };
 
-enum class ImGuiColorScheme
-{
-    Dark,
-    Light,
-    Classic,
-};
-
-class SDL_UI
+class SDL_UI : public CelestiaCore::ContextMenuHandler
 {
 public:
     SDL_UI(SDL_Window* window,
@@ -44,6 +37,8 @@ public:
     UIAction update();
     void display() const;
 
+    void requestContextMenu(float x, float y, Selection sel) override;
+
     bool wantCaptureMouse() const;
     bool wantCaptureKeyboard() const;
 
@@ -53,21 +48,17 @@ private:
     CelestiaCore *m_appCore;
     bool *m_cursorVisible;
     bool *m_fullscreen;
+    std::unique_ptr<SDL_Preferences> m_preferences;
 
     bool m_initialized{ false };
-    bool m_showPreferences{ false };
+    bool m_openContext{ false };
     bool m_showGLInfo{ false };
     bool m_showAbout{ false };
-    bool m_showCelestialBrowser{ false };
-    ImGuiColorScheme m_colorScheme{ ImGuiColorScheme::Dark };
+
+    Selection m_selection { };
 
     void renderMainMenu(UIAction& action);
     void renderGLInfo();
     void renderAbout();
-    void renderPreferences();
-
-    std::map<std::string, std::string> m_glInfo{ };
-    std::vector<std::string> m_glExtensions{ };
-    std::unique_ptr<std::vector<ScriptMenuItem>> m_scripts{ nullptr };
 };
 }

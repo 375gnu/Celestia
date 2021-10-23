@@ -367,7 +367,6 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event, bool &quit)
             mod |= CelestiaCore::ControlKey;
             break;
         }
-        mod |= CelestiaCore::ControlKey;
     }
     if ((event.keysym.mod & KMOD_SHIFT) != 0)
         mod |= CelestiaCore::ShiftKey;
@@ -547,7 +546,7 @@ SDL_Application::copy()
         CelestiaState appState(m_appCore);
         appState.captureState();
         Url url(appState);
-        if (SDL_SetClipboardText(Url(appState).getAsString().c_str()) == 0)
+        if (SDL_SetClipboardText(url.getAsString().c_str()) == 0)
             m_appCore->flash(_("Copied URL"));
     }
     else
@@ -641,7 +640,7 @@ sdlmain(int /* argc */, char ** /* argv */)
     auto app = SDL_Application::init("Celestia", 640, 480);
     if (app == nullptr)
     {
-        FatalError("Could not initialize SDL! Error: {}", app->getError());
+        FatalError(_("Could not initialize SDL! Error: {}"), app->getError());
         return 2;
     }
 
@@ -652,12 +651,12 @@ sdlmain(int /* argc */, char ** /* argv */)
     }
     if (!app->createOpenGLWindow())
     {
-        FatalError("Could not create a OpenGL window! Error: {}", app->getError());
+        FatalError(_("Could not create a OpenGL window! Error: {}"), app->getError());
         return 4;
     }
     if (!app->setupImgui())
     {
-        FatalError("Could not initialize Dear Imgui!");
+        FatalError(_("Could not initialize Dear Imgui!"));
         return 6;
     }
 
@@ -665,7 +664,7 @@ sdlmain(int /* argc */, char ** /* argv */)
 #ifndef GL_ES
     if (!gl::checkVersion(gl::GL_2_1))
     {
-        FatalError("Celestia requires OpenGL 2.1!");
+        FatalError(_("Celestia requires OpenGL 2.1!"));
         return 5;
     }
 #endif
