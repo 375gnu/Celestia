@@ -281,7 +281,7 @@ renderStar(const Star* star, const Universe* universe, double tdb)
         ImGui::TextUnformatted(_("Declination"));
         ImGui::TableNextColumn();
         astro::decimalToDegMinSec(dec, hourdeg, minutes, seconds);
-        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d' %f\"", hourdeg, minutes, seconds);
+        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d" UTF8_PRIME " %f" UTF8_DOUBLE_PRIME, hourdeg, minutes, seconds);
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(_("Distance from Sol"));
         ImGui::TableNextColumn();
@@ -372,7 +372,7 @@ renderDso(const DeepSkyObject* dso, const Universe* universe)
         astro::decimalToDegMinSec(dec, hoursDeg, minutes, seconds);
         ImGui::TextUnformatted(_("Declination"));
         ImGui::TableNextColumn();
-        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d' %f\"", hoursDeg, minutes, seconds);
+        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d" UTF8_PRIME " %f" UTF8_DOUBLE_PRIME, hoursDeg, minutes, seconds);
         Eigen::Vector3d galPos = astro::equatorialToGalactic(eqPos);
         double lon = celmath::radToDeg(std::atan2(galPos.y(), galPos.x()));
         if (lon < 0.0) { lon += 360.0; }
@@ -381,12 +381,12 @@ renderDso(const DeepSkyObject* dso, const Universe* universe)
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(_("Galactic longitude"));
         ImGui::TableNextColumn();
-        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d' %f\"", hoursDeg, minutes, seconds);
+        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d" UTF8_PRIME " %f" UTF8_DOUBLE_PRIME, hoursDeg, minutes, seconds);
         astro::decimalToDegMinSec(lat, hoursDeg, minutes, seconds);
         ImGui::TableNextColumn();
         ImGui::TextUnformatted(_("Galactic latitude"));
         ImGui::TableNextColumn();
-        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d' %f\"", hoursDeg, minutes, seconds);
+        ImGui::Text("%d" UTF8_DEGREE_SIGN " %d" UTF8_PRIME " %f" UTF8_DOUBLE_PRIME, hoursDeg, minutes, seconds);
         const char* unit;
         double radius = dso->getRadius();
         if (radius > astro::parsecsToLightYears(1.0e6))

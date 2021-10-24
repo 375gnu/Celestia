@@ -4,6 +4,7 @@ if(NOT ENABLE_SDL)
 endif()
 
 find_package(SDL2 CONFIG REQUIRED)
+set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
 set(SDL_SOURCES
   sdlcelestialbrowser.cpp
   sdlcontextmenu.cpp
@@ -11,16 +12,18 @@ set(SDL_SOURCES
   sdlmain.cpp
   sdlpreferences.cpp
   sdlui.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_opengl3.cpp
-  ${CMAKE_SOURCE_DIR}/thirdparty/imgui/backends/imgui_impl_sdl.cpp)
+  ${IMGUI_DIR}/imgui_draw.cpp
+  ${IMGUI_DIR}/imgui_tables.cpp
+  ${IMGUI_DIR}/imgui_widgets.cpp
+  ${IMGUI_DIR}/imgui.cpp
+  ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+  ${IMGUI_DIR}/backends/imgui_impl_sdl.cpp
+  ${IMGUI_DIR}/misc/freetype/imgui_freetype.cpp)
 add_executable(celestia-sdl ${SDL_SOURCES})
+target_compile_definitions(celestia-sdl PRIVATE IMGUI_USER_CONFIG="celestia_imconfig.h")
 add_dependencies(celestia-sdl celestia)
-target_include_directories(celestia-sdl PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
-target_link_libraries(celestia-sdl PRIVATE celestia)
+target_include_directories(celestia-sdl PRIVATE ${IMGUI_DIR})
+target_link_libraries(celestia-sdl PRIVATE Freetype::Freetype celestia)
 if(TARGET SDL2::SDL2main AND TARGET SDL2::SDL2)
   if(MINGW)
     target_compile_definitions(celestia-sdl PRIVATE SDL_MAIN_HANDLED)

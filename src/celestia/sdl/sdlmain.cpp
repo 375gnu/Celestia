@@ -8,11 +8,13 @@
 // of the License, or (at your option) any later version.
 
 #include <cctype>
+#include <climits>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <string_view>
 #include <system_error>
+#include <celengine/glsupport.h>
 #include <fmt/format.h>
 #include <celcompat/filesystem.h>
 #include <celengine/glsupport.h>
@@ -661,6 +663,8 @@ sdlmain(int /* argc */, char ** /* argv */)
 #endif
 
     DumpGLInfo();
+    fmt::print("Base path: {}\n", SDL_GetBasePath());
+    fmt::print("Pref path: {}\n", SDL_GetPrefPath("Celestia", "Celestia"));
 
     app->run();
 

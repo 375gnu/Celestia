@@ -17,6 +17,8 @@
 #define UTF8_DEGREE_SIGN         "\302\260"
 #define UTF8_MULTIPLICATION_SIGN "\303\227"
 #define UTF8_REPLACEMENT_CHAR    "\357\277\275"
+#define UTF8_PRIME               "\342\200\262"
+#define UTF8_DOUBLE_PRIME        "\342\200\263"
 
 bool UTF8Decode(std::string_view str, int pos, wchar_t &ch);
 void UTF8Encode(std::uint32_t ch, std::string &dest);

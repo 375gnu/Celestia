@@ -123,6 +123,17 @@ SDL_UI::init()
     ImGui::StyleColorsDark();
     if (!ImGui_ImplSDL2_InitForOpenGL(m_window, m_glContext)) { return false; }
     if (!ImGui_ImplOpenGL3_Init("#version 100")) { return false; }
+    ImGuiIO& io = ImGui::GetIO();
+    static const ImWchar ranges[] = {
+        0x0020, 0x00ff, // Latin-1
+        0x0391, 0x03c9, // Greek letters
+        0x2032, 0x2033, // Prime, double prime
+        0x2070, 0x2079, // Superscript digits
+        0,
+    };
+    ImFontConfig font_cfg;
+    font_cfg.GlyphRanges = ranges;
+    io.Fonts->AddFontFromFileTTF("fonts/DejaVuSans.ttf", 15.0, nullptr, ranges);
     m_initialized = true;
     m_appCore->setContextMenuHandler(this);
     return true;
