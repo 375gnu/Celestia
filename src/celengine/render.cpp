@@ -154,7 +154,7 @@ static bool commonDataInitialized = false;
 
 LODSphereMesh* g_lodSphere = nullptr;
 
-static Texture* g_moffatDiscTex = nullptr;
+static Texture* gaussianDiscTex = nullptr;
 static Texture* gaussianGlareTex = nullptr;
 
 static const float CoronaHeight = 0.2f;
@@ -389,16 +389,15 @@ static void RectToSphericalMapEval(float x, float y, float z,
 #endif
 
 
-static void BuildMoffatDiscMipLevel(unsigned char* mipPixels,
+static void BuildGaussianDiscMipLevel(unsigned char* mipPixels,
                                       unsigned int log2size,
                                       float fwhm,
                                       float power)
 {
     unsigned int size = 1 << log2size;
-    constexpr float beta = 4.765f;
-    float alpha = fwhm / (2.f * sqrt(pow(2.f, 1.f / beta) - 1.f));
-    float alpha2 = alpha * alpha;
-    float a = (beta - 1.f) / (float(PI) * alpha2);
+    float sigma = fwhm / 2.3548f;
+    float isig2 = 1.0f / (2.0f * sigma * sigma);
+    float s = 1.0f / (sigma * (float) sqrt(2.0 * PI));
 
     for (unsigned int i = 0; i < size; i++)
     {
@@ -407,11 +406,9 @@ static void BuildMoffatDiscMipLevel(unsigned char* mipPixels,
         {
             float x = (float) j - size / 2;
             float r2 = x * x + y * y;
-            float f = a * pow(1.f + r2 / alpha2, -beta);
+            float f = s * (float) exp(-r2 * isig2) * power;
 
-            // divide `f` by `a` to normalize the value to 1
-            // in (0, 0) f == a
-            mipPixels[i * size + j] = (unsigned char) (255.99f * min(f / a, 1.0f));
+            mipPixels[i * size + j] = (unsigned char) (255.99f * min(f, 1.0f));
         }
     }
 }
@@ -466,7 +463,7 @@ static void BuildGlareMipLevel2(unsigned char* mipPixels,
 #endif
 
 
-static Texture* BuildMoffatDiscTexture(unsigned int log2size)
+static Texture* BuildGaussianDiscTexture(unsigned int log2size)
 {
     unsigned int size = 1 << log2size;
     Image* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
@@ -474,7 +471,7 @@ static Texture* BuildMoffatDiscTexture(unsigned int log2size)
     for (unsigned int mipLevel = 0; mipLevel <= log2size; mipLevel++)
     {
         float fwhm = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.3f;
-        BuildMoffatDiscMipLevel(img->getMipLevel(mipLevel),
+        BuildGaussianDiscMipLevel(img->getMipLevel(mipLevel),
                                   log2size - mipLevel,
                                   fwhm,
                                   (float) pow(2.0f, (float) (log2size - mipLevel)));
@@ -501,7 +498,7 @@ static Texture* BuildGaussianGlareTexture(unsigned int log2size)
         // Optional gaussian glare
         float fwhm = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.15f;
         float power = (float) pow(2.0f, (float) (log2size - mipLevel)) * 0.15f;
-        BuildMoffatDiscMipLevel(img->getMipLevel(mipLevel),
+        BuildGaussianDiscMipLevel(img->getMipLevel(mipLevel),
                                   log2size - mipLevel,
                                   fwhm,
                                   power);
@@ -595,7 +592,7 @@ bool Renderer::init(
     {
         g_lodSphere = new LODSphereMesh();
 
-        g_moffatDiscTex = BuildMoffatDiscTexture(8);
+        gaussianDiscTex = BuildGaussianDiscTexture(8);
         gaussianGlareTex = BuildGaussianGlareTexture(9);
 
 #ifdef USE_HDR
@@ -2059,7 +2056,7 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
 
         bool useSprites = starStyle != PointStars;
         if (useSprites)
-            g_moffatDiscTex->bind();
+            gaussianDiscTex->bind();
         if (pointSize > gl::maxPointSize)
             renderLargePoint(*this, center, {color, alpha}, pointSize, mvp);
         else
@@ -4667,8 +4664,8 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 
     starRenderer.colorTemp = colorTemp;
 
-    g_moffatDiscTex->bind();
-    starRenderer.starVertexBuffer->setTexture(g_moffatDiscTex);
+    gaussianDiscTex->bind();
+    starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
     starRenderer.starVertexBuffer->setPointScale(screenDpi / 96.0f);
     starRenderer.starVertexBuffer->setLimitingMagnitude(faintestMag);
 
