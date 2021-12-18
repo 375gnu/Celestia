@@ -29,7 +29,6 @@ void main()
     color = in_Color;
 
     // brightness and exposure
-    float appMag = in_PointSize;
     float logMVisThreshold = log(thresholdBrightness) / log(2.512);
 #if 1
     float saturationMagnitude = limitingMagnitude - 4.5/* + logMVisThreshold*/;
@@ -40,6 +39,14 @@ void main()
     float magScale = logMVisThreshold / (saturationMagnitude - limitingMagnitude);
     float e = pow(2.512, magScale * saturationMagnitude);
     exposure = e;
+
+    // limit size
+    float PS = 256.0 * 256.0 * 4.0;
+    float X = (PS * glareFalloff + 1.0f) * thresholdBrightness / glareBrightness;
+    float GMagnitude = saturationMagnitude - log(X) / log(2.512f) / magScale;
+
+    float appMag = max(in_PointSize, GMagnitude);
+
     float b = pow(2.512, -appMag * magScale);
     brightness = b;
 
