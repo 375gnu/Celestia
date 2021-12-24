@@ -2284,7 +2284,6 @@ static int celestia_loadfont(lua_State* l)
     CelestiaCore* appCore = getAppCore(l, AllErrors);
     auto font = LoadTextureFont(appCore->getRenderer(), s);
     if (font == nullptr) return 0;
-    font->buildTexture();
     return celx.pushClass(font);
 }
 

@@ -10,7 +10,10 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <map>
 #include <vector>
+#include <system_error>
+#include <celcompat/charconv.h>
 #include <celutil/logger.h>
 #include <celutil/utf8.h>
 #include <celengine/glsupport.h>
@@ -27,6 +30,7 @@
 
 using namespace std;
 using celestia::util::GetLogger;
+using celestia::compat::from_chars;
 
 static FT_Library ft = nullptr;
 
@@ -100,7 +104,7 @@ struct TextureFontPrivate
     int m_texWidth;
     int m_texHeight;
 
-    GLuint m_texName { 0 };       // texture object
+    GLuint m_texName { 0 }; // texture object
     vector<Glyph> m_glyphs; // character information
     GLint m_maxTextureSize; // max supported texture size
 
@@ -579,11 +583,6 @@ void TextureFont::setMaxDescent(int _maxDescent)
     impl->m_maxDescent = _maxDescent;
 }
 
-int TextureFont::getTextureName() const
-{
-    return impl->m_texName;
-}
-
 void TextureFont::bind()
 {
     auto *prog = impl->getProgram();
@@ -625,17 +624,12 @@ short TextureFont::getAdvance(wchar_t ch) const
     return g.ax;
 }
 
-bool TextureFont::buildTexture()
-{
-    return true;
-}
-
 void TextureFont::flush()
 {
     impl->flush();
 }
 
-TextureFont* TextureFont::load(const Renderer *r, const fs::path &path, int index, int size, int dpi)
+std::shared_ptr<TextureFont> TextureFont::load(const Renderer *r, const fs::path &path, int index, int size, int dpi)
 {
     FT_Face face;
 
@@ -657,7 +651,7 @@ TextureFont* TextureFont::load(const Renderer *r, const fs::path &path, int inde
         return nullptr;
     }
 
-    auto* font = new TextureFont(r);
+    auto font = std::make_shared<TextureFont>(r);
     font->impl->m_face = face;
 
     if (!font->impl->buildAtlas())
@@ -674,32 +668,32 @@ static fs::path ParseFontName(const fs::path &filename, int &collectionIndex, in
 {
     // Format with font path/collection index(if any)/font size(if any)
     auto fn = filename.string();
-    auto pos = fn.rfind(',');
-    if (pos != string::npos)
+    auto posSize = fn.rfind(',');
+    if (posSize != string::npos)
     {
-        size = (int) stof(fn.substr(pos + 1));
-        auto rest = fn.substr(0, pos);
+        auto [ptr, ec] = from_chars(&fn[posSize + 1], &fn[fn.size()], size);
+        if (ec == std::errc())
+        {
+            auto posCI = fn.rfind(',', posSize - 1);
+            if (posCI != string::npos)
+            {
+                auto [ptr, ec] = from_chars(&fn[posCI + 1], &fn[posSize], collectionIndex);
+                if (ec == std::errc())
+                    return fn.substr(0, posCI);
+            }
+            return fn.substr(0, posSize);
+        }
+    }
 
-        pos = rest.rfind(',');
-        if (pos != string::npos)
-        {
-            collectionIndex = stof(rest.substr(pos + 1));
-            return rest.substr(0, pos);
-        }
-        else
-        {
-            return rest;
-        }
-    }
-    else
-    {
-        size = 12;
-        return filename;
-    }
+    size = 12;
+    return filename;
 }
 
 std::shared_ptr<TextureFont> LoadTextureFont(const Renderer *r, const fs::path &filename, int index, int size)
 {
+    using FontCache = std::map<fs::path, std::shared_ptr<TextureFont>>;
+    static FontCache *fontCache = nullptr;
+
     if (ft == nullptr)
     {
         if (FT_Init_FreeType(&ft))
@@ -709,8 +703,16 @@ std::shared_ptr<TextureFont> LoadTextureFont(const Renderer *r, const fs::path &
         }
     }
 
-    int psize = 0;
-    int pcollectionIndex = 0;
-    auto nameonly = ParseFontName(filename, pcollectionIndex, psize);
-    return std::shared_ptr<TextureFont>(TextureFont::load(r, nameonly, index > 0 ? index : pcollectionIndex, size > 0 ? size : psize, r->getScreenDpi()));
+    if (fontCache == nullptr)
+        fontCache = new FontCache;
+
+    auto tf = (*fontCache)[filename]; // ref to an existing or a created element
+    if (tf == nullptr)
+    {
+        int psize = 0;
+        int pcollectionIndex = 0;
+        auto nameonly = ParseFontName(filename, pcollectionIndex, psize);
+        tf = TextureFont::load(r, nameonly, index > 0 ? index : pcollectionIndex, size > 0 ? size : psize, r->getScreenDpi());
+    }
+    return tf;
 }

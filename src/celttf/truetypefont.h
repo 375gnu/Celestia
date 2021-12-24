@@ -18,8 +18,8 @@ class Renderer;
 struct TextureFontPrivate;
 class TextureFont
 {
-    TextureFont(const Renderer*);
  public:
+    TextureFont(const Renderer*);
     TextureFont() = delete;
     ~TextureFont();
     TextureFont(const TextureFont&) = delete;
@@ -44,13 +44,11 @@ class TextureFont
 
     short getAdvance(wchar_t c) const;
 
-    int getTextureName() const;
     void bind();
     void unbind();
-    bool buildTexture();
     void flush();
 
-    static TextureFont* load(const Renderer*, const fs::path&, int index, int size, int dpi);
+    static std::shared_ptr<TextureFont> load(const Renderer*, const fs::path&, int index, int size, int dpi);
 
  private:
     TextureFontPrivate *impl;
