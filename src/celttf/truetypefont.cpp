@@ -41,8 +41,8 @@ struct Glyph
     int ax;    // advance.x
     int ay;    // advance.y
 
-    int bw;    // bitmap.width;
-    int bh;    // bitmap.height;
+    unsigned int bw;    // bitmap.width;
+    unsigned int bh;    // bitmap.height;
 
     int bl;    // bitmap_left;
     int bt;    // bitmap_top;
@@ -82,12 +82,12 @@ struct TextureFontPrivate
 
     bool buildAtlas();
     void computeTextureSize();
-    bool loadGlyphInfo(wchar_t, Glyph&);
+    bool loadGlyphInfo(wchar_t, Glyph&) const;
     void initCommonGlyphs();
     int getCommonGlyphsCount();
     Glyph& getGlyph(wchar_t);
     Glyph& getGlyph(wchar_t, wchar_t);
-    int toPos(wchar_t) const;
+    [[nodiscard]] int toPos(wchar_t) const;
     void optimize();
     CelestiaGLProgram* getProgram();
     void flush();
@@ -121,7 +121,7 @@ struct TextureFontPrivate
 
 inline float pt_to_px(float pt, int dpi = 96)
 {
-   return dpi == 0 ? pt : pt / 72.0 * dpi;
+   return dpi == 0 ? pt : pt / 72.0f * static_cast<float>(dpi);
 }
 
 /*
@@ -146,7 +146,7 @@ TextureFontPrivate::~TextureFontPrivate()
         glDeleteTextures(1, &m_texName);
 }
 
-bool TextureFontPrivate::loadGlyphInfo(wchar_t ch, Glyph &c)
+bool TextureFontPrivate::loadGlyphInfo(wchar_t ch, Glyph &c) const
 {
     FT_GlyphSlot g = m_face->glyph;
     if (FT_Load_Char(m_face, ch, FT_LOAD_RENDER) != 0)
@@ -167,7 +167,7 @@ bool TextureFontPrivate::loadGlyphInfo(wchar_t ch, Glyph &c)
 
 void TextureFontPrivate::initCommonGlyphs()
 {
-    if (m_glyphs.size() > 0)
+    if (!m_glyphs.empty())
         return;
 
     m_glyphs.reserve(256);
@@ -230,7 +230,7 @@ bool TextureFontPrivate::buildAtlas()
         return false;
 
     glBindTexture(GL_TEXTURE_2D, m_texName);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, m_texWidth, m_texHeight, 0, GL_ALPHA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, m_texWidth, m_texHeight, 0, GL_ALPHA, GL_UNSIGNED_BYTE, nullptr);
 
     // We require 1 byte alignment when uploading texture data
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -642,12 +642,14 @@ std::shared_ptr<TextureFont> TextureFont::load(const Renderer *r, const fs::path
     if (!FT_IS_SCALABLE(face))
     {
         GetLogger()->error("Font is not scalable: {}\n", path);
+        FT_Done_Face(face);
         return nullptr;
     }
 
     if (FT_Set_Char_Size(face, 0, size << 6, dpi, dpi) != 0)
     {
         GetLogger()->error("Could not set font size {}\n", size);
+        FT_Done_Face(face);
         return nullptr;
     }
 
