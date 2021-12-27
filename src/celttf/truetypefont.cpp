@@ -28,7 +28,6 @@
 #include <fstream>
 #endif
 
-using namespace std;
 using celestia::util::GetLogger;
 using celestia::compat::from_chars;
 
@@ -77,7 +76,7 @@ struct TextureFontPrivate
     TextureFontPrivate& operator=(const TextureFontPrivate&) = default;
     TextureFontPrivate& operator=(TextureFontPrivate&&) = default;
 
-    float render(const string &s, float x, float y);
+    float render(const std::string &s, float x, float y);
     float render(wchar_t ch, float xoffset, float yoffset);
 
     bool buildAtlas();
@@ -105,10 +104,10 @@ struct TextureFontPrivate
     int m_texHeight;
 
     GLuint m_texName { 0 }; // texture object
-    vector<Glyph> m_glyphs; // character information
+    std::vector<Glyph> m_glyphs; // character information
     GLint m_maxTextureSize; // max supported texture size
 
-    array<UnicodeBlock, 2> m_unicodeBlocks;
+    std::array<UnicodeBlock, 2> m_unicodeBlocks;
     int m_commonGlyphsCount { 0 };
 
     int m_inserted { 0 };
@@ -116,7 +115,7 @@ struct TextureFontPrivate
     Eigen::Matrix4f m_projection;
     Eigen::Matrix4f m_modelView;
     bool m_shaderInUse { false };
-    vector<FontVertex> m_fontVertices;
+    std::vector<FontVertex> m_fontVertices;
 };
 
 inline float pt_to_px(float pt, int dpi = 96)
@@ -198,16 +197,16 @@ void TextureFontPrivate::computeTextureSize()
 
         if (roww + c.bw + 1 >= m_maxTextureSize)
         {
-            w = max(w, roww);
+            w = std::max(w, roww);
             h += rowh;
             roww = 0;
             rowh = 0;
         }
         roww += c.bw + 1;
-        rowh = max(rowh, (int)c.bh);
+        rowh = std::max(rowh, (int)c.bh);
     }
 
-    w = max(w, roww);
+    w = std::max(w, roww);
     h += rowh;
 
     m_texWidth = w;
@@ -271,7 +270,7 @@ bool TextureFontPrivate::buildAtlas()
         c.tx = (float)ox / (float)m_texWidth;
         c.ty = (float)oy / (float)m_texHeight;
 
-        rowh = max(rowh, (int)g->bitmap.rows);
+        rowh = std::max(rowh, (int)g->bitmap.rows);
         ox += g->bitmap.width + 1;
     }
 
@@ -364,7 +363,7 @@ void TextureFontPrivate::optimize()
  * Rendering starts at coordinates (x, y), z is always 0.
  * The pixel coordinates that the FreeType2 library uses are scaled by (sx, sy).
  */
-float TextureFontPrivate::render(const string &s, float x, float y)
+float TextureFontPrivate::render(const std::string &s, float x, float y)
 {
     if (m_texName == 0)
         return 0;
@@ -454,7 +453,7 @@ void TextureFontPrivate::flush()
     if (m_fontVertices.size() < 4)
         return;
 
-    vector<unsigned short> indexes;
+    std::vector<unsigned short> indexes;
     indexes.reserve(m_fontVertices.size() / 4 * 6);
     for (unsigned short index = 0;
          index < (unsigned short) m_fontVertices.size();
@@ -517,7 +516,7 @@ float TextureFont::render(wchar_t ch, float xoffset, float yoffset) const
  * @param xoffset -- horizontal offset
  * @param yoffset -- vertical offset
  */
-float TextureFont::render(const string &s, float xoffset, float yoffset) const
+float TextureFont::render(const std::string &s, float xoffset, float yoffset) const
 {
     return impl->render(s, xoffset, yoffset);
 }
@@ -530,7 +529,7 @@ float TextureFont::render(const string &s, float xoffset, float yoffset) const
  * @param s -- string to calculate width
  * @return string width in pixels
  */
-int TextureFont::getWidth(const string& s) const
+int TextureFont::getWidth(const std::string& s) const
 {
     int width = 0;
     int len = s.length();
@@ -671,13 +670,13 @@ static fs::path ParseFontName(const fs::path &filename, int &collectionIndex, in
     // Format with font path/collection index(if any)/font size(if any)
     auto fn = filename.string();
     auto posSize = fn.rfind(',');
-    if (posSize != string::npos)
+    if (posSize != std::string::npos)
     {
         auto [ptr, ec] = from_chars(&fn[posSize + 1], &fn[fn.size()], size);
         if (ec == std::errc())
         {
             auto posCI = fn.rfind(',', posSize - 1);
-            if (posCI != string::npos)
+            if (posCI != std::string::npos)
             {
                 auto [ptr, ec] = from_chars(&fn[posCI + 1], &fn[posSize], collectionIndex);
                 if (ec == std::errc())
