@@ -28,8 +28,11 @@
 #include <fstream>
 #endif
 
-using celestia::util::GetLogger;
-using celestia::compat::from_chars;
+namespace celestia
+{
+
+using util::GetLogger;
+using compat::from_chars;
 
 static FT_Library ft = nullptr;
 
@@ -81,12 +84,12 @@ struct TextureFontPrivate
 
     bool buildAtlas();
     void computeTextureSize();
-    bool loadGlyphInfo(wchar_t, Glyph&) const;
+    bool loadGlyphInfo(wchar_t /*ch*/, Glyph& /*c*/) const;
     void initCommonGlyphs();
     int getCommonGlyphsCount();
-    Glyph& getGlyph(wchar_t);
-    Glyph& getGlyph(wchar_t, wchar_t);
-    [[nodiscard]] int toPos(wchar_t) const;
+    Glyph& getGlyph(wchar_t /*ch*/);
+    Glyph& getGlyph(wchar_t /*ch*/, wchar_t /*fallback*/);
+    [[nodiscard]] int toPos(wchar_t /*ch*/) const;
     void optimize();
     CelestiaGLProgram* getProgram();
     void flush();
@@ -139,7 +142,7 @@ TextureFontPrivate::TextureFontPrivate(const Renderer *renderer) :
 
 TextureFontPrivate::~TextureFontPrivate()
 {
-    if (m_face)
+    if (m_face != nullptr)
         FT_Done_Face(m_face);
     if (m_texName != 0)
         glDeleteTextures(1, &m_texName);
@@ -252,7 +255,7 @@ bool TextureFontPrivate::buildAtlas()
     {
         if (c.ch == 0) continue; // skip bad glyphs
 
-        if (FT_Load_Char(m_face, c.ch, FT_LOAD_RENDER))
+        if (FT_Load_Char(m_face, c.ch, FT_LOAD_RENDER) != 0)
         {
            GetLogger()->warn("Loading character {:x} failed!\n", static_cast<unsigned>(c.ch));
            c.ch = 0;
@@ -697,7 +700,7 @@ std::shared_ptr<TextureFont> LoadTextureFont(const Renderer *r, const fs::path &
 
     if (ft == nullptr)
     {
-        if (FT_Init_FreeType(&ft))
+        if (FT_Init_FreeType(&ft) != 0)
         {
             GetLogger()->error("Could not init freetype library\n");
             return nullptr;
@@ -717,3 +720,5 @@ std::shared_ptr<TextureFont> LoadTextureFont(const Renderer *r, const fs::path &
     }
     return tf;
 }
+
+} // namespace celestia

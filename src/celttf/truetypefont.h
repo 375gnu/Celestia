@@ -15,6 +15,9 @@
 
 class Renderer;
 
+namespace celestia
+{
+
 struct TextureFontPrivate;
 class TextureFont
 {
@@ -55,3 +58,5 @@ class TextureFont
 };
 
 std::shared_ptr<TextureFont> LoadTextureFont(const Renderer*, const fs::path&, int index = 0, int size = 0);
+
+} // namespace celestia
