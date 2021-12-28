@@ -147,9 +147,8 @@ SpiceRotation::computeSpin(double jd) const
     {
         return Quaterniond::Identity();
     }
-    else
-    {
-        // Input time for SPICE is seconds after J2000
+    
+            // Input time for SPICE is seconds after J2000
         double t = astro::daysToSecs(jd - astro::J2000);
         double xform[3][3];
 
@@ -180,5 +179,5 @@ SpiceRotation::computeSpin(double jd) const
 
         // Transform into Celestia's coordinate system
         return Ry180 * Rx90.conjugate() * q.conjugate() * Rx90;
-    }
+   
 }

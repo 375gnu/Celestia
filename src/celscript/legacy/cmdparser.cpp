@@ -29,9 +29,9 @@ using namespace celestia::scripts;
 using celestia::util::GetLogger;
 
 
-static uint64_t parseRenderFlags(const string&, const FlagMap64&);
-static int parseLabelFlags(const string&, const FlagMap&);
-static int parseOrbitFlags(const string&, const FlagMap&);
+static uint64_t parseRenderFlags(const string& /*s*/, const FlagMap64& /*RenderFlagMap*/);
+static int parseLabelFlags(const string& /*s*/, const FlagMap& /*LabelFlagMap*/);
+static int parseOrbitFlags(const string& /*s*/, const FlagMap& /*BodyTypeMap*/);
 static int parseConstellations(CommandConstellations* cmd, const string &s, int act);
 int parseConstellationColor(CommandConstellationColor* cmd, const string &s, Eigen::Vector3d *col, int act);
 
@@ -58,7 +58,7 @@ CommandParser::~CommandParser()
 
 CommandSequence* CommandParser::parse()
 {
-    CommandSequence* seq = new CommandSequence();
+    auto* seq = new CommandSequence();
 
     if (tokenizer->nextToken() != Tokenizer::TokenBeginGroup)
     {
@@ -78,10 +78,9 @@ CommandSequence* CommandParser::parse()
             delete seq;
             return nullptr;
         }
-        else
-        {
-            seq->push_back(cmd);
-        }
+        
+                    seq->push_back(cmd);
+       
 
         ttype = tokenizer->nextToken();
     }
@@ -117,7 +116,7 @@ static ObserverFrame::CoordinateSystem parseCoordinateSystem(const string& name)
     // maintained here for compatibility with older scripts.
     if (compareIgnoringCase(name, "observer") == 0)
         return ObserverFrame::ObserverLocal;
-    else if (compareIgnoringCase(name, "bodyfixed") == 0)
+    if (compareIgnoringCase(name, "bodyfixed") == 0)
         return ObserverFrame::BodyFixed;
     else if (compareIgnoringCase(name, "geographic") == 0)
         return ObserverFrame::BodyFixed;
@@ -546,7 +545,7 @@ Command* CommandParser::parseCommand()
     else if (commandName == "constellations")
     {
         string s;
-        CommandConstellations *cmdcons= new CommandConstellations();
+        auto *cmdcons= new CommandConstellations();
 
         if (paramList->getString("set", s))
             parseConstellations(cmdcons, s, 1);
@@ -558,7 +557,7 @@ Command* CommandParser::parseCommand()
     else if (commandName == "constellationcolor")
     {
         string s;
-        CommandConstellationColor *cmdconcol= new CommandConstellationColor();
+        auto *cmdconcol= new CommandConstellationColor();
 
         Eigen::Vector3d colorv(Eigen::Vector3d::UnitX());
         paramList->getVector("color", colorv);
@@ -964,7 +963,7 @@ int parseConstellations(CommandConstellations* cmd, const string &s, int act)
             else if (compareIgnoringCase(name, "all") == 0 && act==0)
                 cmd->flags.none = true;
             else
-                cmd->setValues(name, act);
+                cmd->setValues(name, act != 0);
 
             ttype = tokenizer.nextToken();
             if (ttype == Tokenizer::TokenBar)
@@ -988,7 +987,7 @@ int parseConstellationColor(CommandConstellationColor* cmd, const string &s, Eig
     Tokenizer tokenizer(&in);
     int flags = 0;
 
-    if(!act)
+    if(act == 0)
         cmd->unsetColor();
     else
         cmd->setColor((float)col->x(), (float)col->y(), (float)col->z());

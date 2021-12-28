@@ -165,7 +165,7 @@ static int bufferVertices(VertexObject& vo, GLfloat* data, int vertexCount, int&
 static int bufferLineVertices(VertexObject& vo, GLfloat* data, int vertexSize, int vertexCount, int& offset)
 {
     int dataSize = vertexCount * 3 * (2 * vertexSize + 1) * sizeof(GLfloat);
-    GLfloat* tranformed = new GLfloat[dataSize];
+    auto* tranformed = new GLfloat[dataSize];
     GLfloat* ptr = tranformed;
     for (int i = 0; i < vertexCount; i += 2)
     {
@@ -195,7 +195,7 @@ ptr += 2 * vertexSize + 1;\
 static int bufferLineLoopVertices(VertexObject& vo, GLfloat* data, int vertexSize, int vertexCount, int& offset)
 {
     int dataSize = vertexCount * 6 * (2 * vertexSize + 1) * sizeof(GLfloat);
-    GLfloat* tranformed = new GLfloat[dataSize];
+    auto* tranformed = new GLfloat[dataSize];
     GLfloat* ptr = tranformed;
     for (int i = 0; i < vertexCount; i += 1)
     {
@@ -502,7 +502,7 @@ void Renderer::renderSelectionPointer(const Observer& observer,
     enableBlending();
     setBlendingFactors(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    float vfov = (float) observer.getFOV();
+    auto vfov = (float) observer.getFOV();
     float h = tan(vfov / 2);
     float w = h * getAspectRatio();
     float diag = sqrt(h * h + w * w);

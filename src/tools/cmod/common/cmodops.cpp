@@ -29,9 +29,8 @@ namespace
 {
 struct Vertex
 {
-    Vertex() :
-        index(0),
-        attributes(nullptr)
+    Vertex() 
+        
     {};
 
     Vertex(std::uint32_t _index, const cmod::VWord* _attributes) :
@@ -39,8 +38,8 @@ struct Vertex
         attributes(_attributes)
     {};
 
-    std::uint32_t index;
-    const cmod::VWord* attributes;
+    std::uint32_t index{0};
+    const cmod::VWord* attributes{nullptr};
 };
 
 
@@ -54,7 +53,7 @@ struct Face
 
 struct VertexComparator
 {
-    virtual bool compare(const Vertex& a, const Vertex& b) const = 0;
+    [[nodiscard]] virtual bool compare(const Vertex& a, const Vertex& b) const = 0;
     virtual ~VertexComparator() = default;
 
     bool operator()(const Vertex& a, const Vertex& b) const
@@ -72,7 +71,7 @@ public:
     {
     }
 
-    bool compare(const Vertex& a, const Vertex& b) const override
+    [[nodiscard]] bool compare(const Vertex& a, const Vertex& b) const override
     {
         return std::lexicographical_compare(a.attributes, a.attributes + vertexSize,
                                             b.attributes, b.attributes + vertexSize);
@@ -86,7 +85,7 @@ private:
 class PointOrderingPredicate : public VertexComparator
 {
 public:
-    bool compare(const Vertex& a, const Vertex& b) const override
+    [[nodiscard]] bool compare(const Vertex& a, const Vertex& b) const override
     {
         std::array<float, 3> p0;
         std::memcpy(p0.data(), a.attributes, sizeof(float) * 3);
@@ -114,7 +113,7 @@ public:
     {
     }
 
-    bool compare(const Vertex& a, const Vertex& b) const override
+    [[nodiscard]] bool compare(const Vertex& a, const Vertex& b) const override
     {
         std::array<float, 5> ptc0;
         std::memcpy(ptc0.data(), a.attributes + posOffset, sizeof(float) * 3);
@@ -150,7 +149,7 @@ public:
     {
     }
 
-    bool compare(const Vertex& a, const Vertex& b) const override
+    [[nodiscard]] bool compare(const Vertex& a, const Vertex& b) const override
     {
         std::array<float, 3> p0;
         std::memcpy(p0.data(), a.attributes + posOffset, sizeof(float) * 3);
@@ -182,7 +181,7 @@ public:
     {
     }
 
-    bool compare(const Vertex& a, const Vertex& b) const override
+    [[nodiscard]] bool compare(const Vertex& a, const Vertex& b) const override
     {
         std::array<float, 5> ptc0;
         std::memcpy(ptc0.data(), a.attributes + posOffset, sizeof(float) * 3);
@@ -249,7 +248,7 @@ getTexCoord(const cmod::VWord* vertexData,
 Eigen::Vector3f
 averageFaceVectors(const std::vector<Face>& faces,
                    std::uint32_t thisFace,
-                   std::uint32_t* vertexFaces,
+                   const std::uint32_t* vertexFaces,
                    std::uint32_t vertexFaceCount,
                    float cosSmoothingAngle)
 {
@@ -318,7 +317,7 @@ augmentVertexDescription(cmod::VertexDescription& desc,
         foundMatch |= (semantic == i->semantic);
         i->offsetWords = stride;
         stride += cmod::VertexAttribute::getFormatSizeWords(i->format);
-        *it++ = std::move(*i);
+        *it++ = *i;
     }
 
     desc.attributes.erase(it, end);
@@ -359,7 +358,7 @@ joinVertices(std::vector<Face>& faces,
              const U& equivalencePredicate)
 {
     // Don't do anything if we're given no data
-    if (faces.size() == 0)
+    if (faces.empty())
         return;
 
     // Must have a position
@@ -684,7 +683,7 @@ GenerateNormals(const cmod::Mesh& mesh, float smoothAngle, bool weld, float weld
     newMesh.setVertices(nFaces * 3, std::move(newVertexData));
 
     std::uint32_t firstIndex = 0;
-    for (std::uint32_t groupIndex = 0; mesh.getGroup(groupIndex) != 0; ++groupIndex)
+    for (std::uint32_t groupIndex = 0; mesh.getGroup(groupIndex) != nullptr; ++groupIndex)
     {
         const cmod::PrimitiveGroup* group = mesh.getGroup(groupIndex);
         unsigned int faceCount = 0;
@@ -825,8 +824,8 @@ GenerateTangents(const cmod::Mesh& mesh, bool weld)
     }
 
     // For each vertex, create a list of faces that contain it
-    std::uint32_t* faceCounts = new std::uint32_t[nVertices];
-    std::uint32_t** vertexFaces = new std::uint32_t*[nVertices];
+    auto* faceCounts = new std::uint32_t[nVertices];
+    auto** vertexFaces = new std::uint32_t*[nVertices];
 
     // Initialize the lists
     for (i = 0; i < nVertices; i++)
@@ -954,7 +953,7 @@ GenerateTangents(const cmod::Mesh& mesh, bool weld)
     newMesh.setVertices(nFaces * 3, std::move(newVertexData));
 
     std::uint32_t firstIndex = 0;
-    for (std::uint32_t groupIndex = 0; mesh.getGroup(groupIndex) != 0; ++groupIndex)
+    for (std::uint32_t groupIndex = 0; mesh.getGroup(groupIndex) != nullptr; ++groupIndex)
     {
         const cmod::PrimitiveGroup* group = mesh.getGroup(groupIndex);
         unsigned int faceCount = 0;

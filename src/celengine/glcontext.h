@@ -25,8 +25,8 @@ class GLContext
 
     GLRenderPath getRenderPath() const { return renderPath; };
     bool setRenderPath(GLRenderPath);
-    bool renderPathSupported(GLRenderPath) const;
-    GLRenderPath nextRenderPath();
+    static bool renderPathSupported(GLRenderPath) ;
+    static GLRenderPath nextRenderPath();
 
     int getMaxTextures() const { return maxSimultaneousTextures; };
 

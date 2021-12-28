@@ -33,7 +33,7 @@ typedef struct
     std::uint32_t offset;
 } BMPFileHeader;
 
-typedef struct
+using BMPImageHeader = struct
 {
     std::uint32_t size;
     std::int32_t width;
@@ -46,7 +46,7 @@ typedef struct
     std::int32_t heightPPM;
     std::uint32_t colorsUsed;
     std::uint32_t colorsImportant;
-} BMPImageHeader;
+};
 
 
 Image* LoadBMPImage(std::istream& in)

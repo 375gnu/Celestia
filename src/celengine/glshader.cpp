@@ -15,7 +15,7 @@ using namespace std;
 using celestia::util::GetLogger;
 
 
-static const string GetInfoLog(GLuint obj);
+static string GetInfoLog(GLuint obj);
 
 
 ostream* g_shaderLogFile = nullptr;
@@ -35,7 +35,7 @@ GLShader::getID() const
 
 
 GLShaderStatus
-GLShader::compile(const vector<string>& source)
+GLShader::compile(const vector<string>& source) const
 {
     if (source.empty())
         return ShaderStatus_EmptyProgram;
@@ -205,14 +205,14 @@ GLProgram::use() const
 
 
 void
-GLProgram::attach(const GLShader& shader)
+GLProgram::attach(const GLShader& shader) const
 {
     glAttachShader(id, shader.getID());
 }
 
 
 GLShaderStatus
-GLProgram::link()
+GLProgram::link() const
 {
     glLinkProgram(id);
 
@@ -376,7 +376,7 @@ GLShaderLoader::CreateProgram(const string& vsSource,
 }
 
 
-const string
+string
 GetInfoLog(GLuint obj)
 {
     GLint logLength = 0;

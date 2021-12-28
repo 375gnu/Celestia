@@ -51,7 +51,7 @@ void dialogStarBrowser(AppData* app)
                                                      GTK_DIALOG_DESTROY_WITH_PARENT,
                                                      GTK_STOCK_OK, GTK_RESPONSE_OK,
                                                      NULL);
-    app->simulation->setSelection(Selection((Star *) NULL));
+    app->simulation->setSelection(Selection((Star *) nullptr));
 
     /* Star System Browser */
     GtkWidget *mainbox = gtk_dialog_get_content_area(GTK_DIALOG(browser));
@@ -170,13 +170,13 @@ static void listStarSelect(GtkTreeSelection* sel, AppData* app)
     Star *selStar = (Star *)g_value_get_pointer(&value);
     g_value_unset(&value);
 
-    if (selStar)
+    if (selStar != nullptr)
         app->simulation->setSelection(Selection(selStar));
 }
 
 
 /* CALLBACK: Refresh button is pressed. */
-static void refreshBrowser(GtkWidget*, sbData* sb)
+static void refreshBrowser(GtkWidget* /*unused*/, sbData* sb)
 {
     addStars(sb);
 }
@@ -239,7 +239,7 @@ static void listStarSliderChange(GtkRange *range, sbData* sb)
 
 
 /* CALLBACK: Destroy Window */
-static void starDestroy(GtkWidget* w, gint, sbData*)
+static void starDestroy(GtkWidget* w, gint /*unused*/, sbData* /*unused*/)
 {
     gtk_widget_destroy(GTK_WIDGET(w));
 

@@ -38,7 +38,7 @@ void WarpMesh::scopedDataForRendering(const function<void (float*, int)>& f) con
 {
     int step = 5 * 6;
     int size = (nx - 1) * (ny - 1) * step * sizeof(float);
-    float *renderingData = new float[size];
+    auto *renderingData = new float[size];
     for (int y = 0; y < ny - 1; y += 1)
     {
         for (int x = 0; x < nx - 1; x += 1)
@@ -170,7 +170,7 @@ WarpMesh* WarpMeshInfo::load(const fs::path& name)
         return nullptr;
     }
 
-    float *data = new float[nx * ny * 5];
+    auto *data = new float[nx * ny * 5];
     for (int y = 0; y < ny; y += 1)
     {
         for (int x = 0; x < nx; x += 1)

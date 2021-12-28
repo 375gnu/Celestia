@@ -41,14 +41,14 @@ Body::Body(PlanetarySystem* _system, const string& _name) :
 
 Body::~Body()
 {
-    if (system)
+    if (system != nullptr)
         system->removeBody(this);
     // Remove from frame hierarchy
 
     // Clean up the reference mark list
-    if (referenceMarks)
+    if (referenceMarks != nullptr)
     {
-        for (const auto r : *referenceMarks)
+        for (auto *const r : *referenceMarks)
             delete r;
         delete referenceMarks;
     }
@@ -57,7 +57,7 @@ Body::~Body()
     delete satellites;
     delete frameTree;
 
-    if(altSurfaces)
+    if(altSurfaces != nullptr)
     {
         for (const auto &s : *altSurfaces)
             delete s.second;
@@ -184,7 +184,7 @@ FrameTree* Body::getFrameTree() const
 
 FrameTree* Body::getOrCreateFrameTree()
 {
-    if (!frameTree)
+    if (frameTree == nullptr)
         frameTree = new FrameTree(this);
     return frameTree;
 }
@@ -209,14 +209,14 @@ void Body::setTimeline(Timeline* newTimeline)
 
 void Body::markChanged()
 {
-    if (timeline)
+    if (timeline != nullptr)
         timeline->markChanged();
 }
 
 
 void Body::markUpdated()
 {
-    if (frameTree)
+    if (frameTree != nullptr)
         frameTree->markUpdated();
 }
 
@@ -534,7 +534,7 @@ RingSystem* Body::getRings() const
 
 void Body::setRings(const RingSystem& _rings)
 {
-    if (!rings)
+    if (rings == nullptr)
         rings = new RingSystem(_rings);
     else
         *rings = _rings;
@@ -554,7 +554,7 @@ Atmosphere* Body::getAtmosphere()
 
 void Body::setAtmosphere(const Atmosphere& _atmosphere)
 {
-    if (!atmosphere)
+    if (atmosphere == nullptr)
         atmosphere = new Atmosphere();
     *atmosphere = _atmosphere;
     recomputeCullingRadius();
@@ -593,10 +593,9 @@ UniversalCoord Body::getPosition(double tdb) const
 
     position += frame->getOrientation(tdb).conjugate() * p;
 
-    if (frame->getCenter().star())
+    if (frame->getCenter().star() != nullptr)
         return frame->getCenter().star()->getPosition(tdb).offsetKm(position);
-    else
-        return frame->getCenter().getPosition(tdb).offsetKm(position);
+            return frame->getCenter().getPosition(tdb).offsetKm(position);
 }
 
 
@@ -881,7 +880,7 @@ void Body::setClassification(int _classification)
  */
 int Body::getOrbitClassification() const
 {
-    if (classification != Invisible || !frameTree)
+    if (classification != Invisible || (frameTree == nullptr))
         return classification;
 
     int orbitClass = frameTree->childClassMask();
@@ -914,7 +913,7 @@ void Body::setInfoURL(const string& _infoURL)
 
 Surface* Body::getAlternateSurface(const string& name) const
 {
-    if (!altSurfaces)
+    if (altSurfaces == nullptr)
         return nullptr;
 
     auto iter = altSurfaces->find(name);
@@ -927,7 +926,7 @@ Surface* Body::getAlternateSurface(const string& name) const
 
 void Body::addAlternateSurface(const string& name, Surface* surface)
 {
-    if (!altSurfaces)
+    if (altSurfaces == nullptr)
         altSurfaces = new AltSurfaceTable();
 
     //altSurfaces->insert(AltSurfaceTable::value_type(name, surface));
@@ -937,8 +936,8 @@ void Body::addAlternateSurface(const string& name, Surface* surface)
 
 vector<string>* Body::getAlternateSurfaceNames() const
 {
-    vector<string>* names = new vector<string>();
-    if (altSurfaces)
+    auto* names = new vector<string>();
+    if (altSurfaces != nullptr)
     {
         for (const auto& s : *altSurfaces)
             names->push_back(s.first);
@@ -951,10 +950,10 @@ vector<string>* Body::getAlternateSurfaceNames() const
 void Body::addLocation(Location* loc)
 {
     assert(loc != nullptr);
-    if (!loc)
+    if (loc == nullptr)
         return;
 
-    if (!locations)
+    if (locations == nullptr)
         locations = new vector<Location*>();
     locations->push_back(loc);
     loc->setParentBody(this);
@@ -969,14 +968,14 @@ vector<Location*>* Body::getLocations() const
 
 Location* Body::findLocation(const string& name, bool i18n) const
 {
-    if (!locations)
+    if (locations == nullptr)
         return nullptr;
 
-    for (const auto location : *locations)
+    for (auto *const location : *locations)
     {
-        if (!UTF8StringCompare(name, location->getName(false)))
+        if (UTF8StringCompare(name, location->getName(false)) == 0)
             return location;
-        if (i18n && !UTF8StringCompare(name, location->getName(true)))
+        if (i18n && (UTF8StringCompare(name, location->getName(true)) == 0))
             return location;
     }
 
@@ -1000,14 +999,14 @@ void Body::computeLocations()
     if (geometry == InvalidResource)
         return;
     Geometry* g = GetGeometryManager()->find(geometry);
-    if (!g)
+    if (g == nullptr)
         return;
 
     // TODO: Implement separate radius and bounding radius so that this hack is
     // not necessary.
     double boundingRadius = 2.0;
 
-    for (const auto location : *locations)
+    for (auto *const location : *locations)
     {
         Vector3f v = location->getPosition();
         float alt = v.norm() - radius;
@@ -1031,7 +1030,7 @@ void Body::computeLocations()
 void
 Body::addReferenceMark(ReferenceMark* refMark)
 {
-    if (!referenceMarks)
+    if (referenceMarks == nullptr)
         referenceMarks = new list<ReferenceMark*>();
     referenceMarks->push_back(refMark);
     recomputeCullingRadius();
@@ -1043,10 +1042,10 @@ Body::addReferenceMark(ReferenceMark* refMark)
 void
 Body::removeReferenceMark(const string& tag)
 {
-    if (referenceMarks)
+    if (referenceMarks != nullptr)
     {
         ReferenceMark* refMark = findReferenceMark(tag);
-        if (refMark)
+        if (refMark != nullptr)
         {
             referenceMarks->remove(refMark);
             delete refMark;
@@ -1063,9 +1062,9 @@ Body::removeReferenceMark(const string& tag)
 ReferenceMark*
 Body::findReferenceMark(const string& tag) const
 {
-    if (referenceMarks)
+    if (referenceMarks != nullptr)
     {
-        for (const auto rm : *referenceMarks)
+        for (auto *const rm : *referenceMarks)
         {
             if (rm->getTag() == tag)
                 return rm;
@@ -1174,15 +1173,15 @@ void Body::recomputeCullingRadius()
 {
     float r = getBoundingRadius();
 
-    if (atmosphere)
+    if (atmosphere != nullptr)
         r += max(atmosphere->height, atmosphere->cloudHeight);
 
-    if (rings)
+    if (rings != nullptr)
         r = max(r, rings->outerRadius);
 
-    if (referenceMarks)
+    if (referenceMarks != nullptr)
     {
-        for (const auto rm : *referenceMarks)
+        for (auto *const rm : *referenceMarks)
         {
             r = max(r, rm->boundingSphereRadius());
         }
@@ -1211,7 +1210,7 @@ PlanetarySystem::PlanetarySystem(Body* _primary) :
     star(nullptr),
     primary(_primary)
 {
-    if (primary && primary->getSystem())
+    if ((primary != nullptr) && (primary->getSystem() != nullptr))
         star = primary->getSystem()->getStar();
 }
 
@@ -1242,7 +1241,7 @@ void PlanetarySystem::removeAlias(const Body* body, const string& alias)
 {
     assert(body->getSystem() == this);
 
-    ObjectIndex::iterator iter = objectIndex.find(alias);
+    auto iter = objectIndex.find(alias);
     if (iter != objectIndex.end())
     {
         if (iter->second == body)
@@ -1328,16 +1327,16 @@ Body* PlanetarySystem::find(const string& _name, bool deepSearch, bool i18n) con
 
     if (deepSearch)
     {
-        for (const auto sat : satellites)
+        for (auto *const sat : satellites)
         {
-            if (!UTF8StringCompare(sat->getName(false), _name))
+            if (UTF8StringCompare(sat->getName(false), _name) == 0)
                 return sat;
-            if (i18n && !UTF8StringCompare(sat->getName(true), _name))
+            if (i18n && (UTF8StringCompare(sat->getName(true), _name) == 0))
                 return sat;
-            if (sat->getSatellites())
+            if (sat->getSatellites() != nullptr)
             {
                 Body* body = sat->getSatellites()->find(_name, deepSearch, i18n);
-                if (body)
+                if (body != nullptr)
                     return body;
             }
         }
@@ -1355,7 +1354,7 @@ bool PlanetarySystem::traverse(TraversalFunc func, void* info) const
         // assert(body != nullptr);
         if (!func(body, info))
             return false;
-        if (body->getSatellites())
+        if (body->getSatellites() != nullptr)
         {
             if (!body->getSatellites()->traverse(func, info))
                 return false;
@@ -1375,12 +1374,12 @@ std::vector<std::string> PlanetarySystem::getCompletion(const std::string& _name
     {
         const string& alias = index.first;
 
-        if (!UTF8StringCompare(alias, _name, _name_length))
+        if (UTF8StringCompare(alias, _name, _name_length) == 0)
             completion.push_back(alias);
         else if (i18n)
         {
             std::string lname = D_(alias.c_str());
-            if (lname != alias && !UTF8StringCompare(lname, _name, _name_length))
+            if (lname != alias && (UTF8StringCompare(lname, _name, _name_length) == 0))
                 completion.push_back(lname);
         }
     }
@@ -1388,9 +1387,9 @@ std::vector<std::string> PlanetarySystem::getCompletion(const std::string& _name
     // Scan child objects
     if (deepSearch)
     {
-        for (const auto sat : satellites)
+        for (auto *const sat : satellites)
         {
-            if (sat->getSatellites())
+            if (sat->getSatellites() != nullptr)
             {
                 auto bodies = sat->getSatellites()->getCompletion(_name, i18n);
                 completion.insert(completion.end(), bodies.begin(), bodies.end());

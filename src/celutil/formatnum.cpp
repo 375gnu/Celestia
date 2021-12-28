@@ -36,7 +36,7 @@ double FormattedNumber::getValue() const
 
 double FormattedNumber::getRoundedValue() const
 {
-    if (flags & SignificantDigits)
+    if ((flags & SignificantDigits) != 0u)
     {
         if (value == 0.0)
             return 0.0;
@@ -44,10 +44,9 @@ double FormattedNumber::getRoundedValue() const
         double m = pow(10.0, floor(log10(fabs(value))) - precision + 1);
         return floor(value / m + 0.5) * m;
     }
-    else
-    {
-        return value;
-    }
+    
+            return value;
+   
 }
 
 
@@ -55,7 +54,7 @@ std::ostream& operator<<(std::ostream& out, const FormattedNumber& num)
 {
     char fmt[32];
     char buf[32];
-    char obuf[64];
+    char obuf[65];
     int fmtPrecision;
     double value = num.getRoundedValue();
     char *decimal_point = localeconv()->decimal_point;
@@ -64,7 +63,7 @@ std::ostream& operator<<(std::ostream& out, const FormattedNumber& num)
 
     memset(obuf, 0, sizeof(obuf));
 
-    if (num.flags & FormattedNumber::SignificantDigits)
+    if ((num.flags & FormattedNumber::SignificantDigits) != 0u)
     {
         if (value == 0.0)
         {
@@ -86,7 +85,7 @@ std::ostream& operator<<(std::ostream& out, const FormattedNumber& num)
 
     snprintf(buf, sizeof(buf)/sizeof(char), fmt, value);
 
-    if (num.flags & FormattedNumber::GroupThousands)
+    if ((num.flags & FormattedNumber::GroupThousands) != 0u)
     {
         const char* decimalPosition = strstr(buf, decimal_point);
         int j = sizeof(obuf) - 1;
@@ -97,7 +96,7 @@ std::ostream& operator<<(std::ostream& out, const FormattedNumber& num)
             int len = strlen(decimalPosition);
             j -= len;
             i -= len;
-            memcpy(obuf + j, decimalPosition, len);
+            strcpy(obuf + j, decimalPosition);
             --i;
             --j;
         }
@@ -106,7 +105,7 @@ std::ostream& operator<<(std::ostream& out, const FormattedNumber& num)
         bool does_grouping = *g != 0;
         while (i >= 0)
         {
-            if (isdigit(buf[i]))
+            if (isdigit(buf[i]) != 0)
             {
                 if (does_grouping && *g != CHAR_MAX)
                 {

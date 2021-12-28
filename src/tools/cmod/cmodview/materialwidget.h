@@ -32,13 +32,13 @@ public:
         return m_material;
     }
 
-    void setMaterial(const cmod::Material& material);
+    static void setMaterial(const cmod::Material& material);
     void setTextureSearchPath(const QString& path);
 
 public slots:
     void editDiffuse();
-    void editSpecular();
-    void editEmissive();
+    static void editSpecular();
+    static void editEmissive();
     void editBaseTexture();
     void editSpecularMap();
     void editEmissiveMap();
@@ -46,7 +46,7 @@ public slots:
     void setDiffuse(const QColor& color);
     void setSpecular(const QColor& color);
     void setEmissive(const QColor& color);
-    void changeMaterialParameters();
+    static void changeMaterialParameters();
 
 signals:
     // Emitted when the material changes for any reason

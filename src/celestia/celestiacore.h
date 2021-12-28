@@ -202,7 +202,7 @@ class CelestiaCore // : public Watchable<CelestiaCore>
     bool initRenderer();
     void start(double t);
     void start();
-    void getLightTravelDelay(double distanceKm, int&, int&, float&);
+    static void getLightTravelDelay(double distanceKm, int&, int&, float&);
     void setLightTravelDelay(double distanceKm);
 
     // URLs and history navigation
@@ -248,7 +248,7 @@ class CelestiaCore // : public Watchable<CelestiaCore>
     void addFavoriteFolder(const std::string&, FavoritesList::iterator* iter=nullptr);
     FavoritesList* getFavorites();
 
-    bool viewUpdateRequired() const;
+    static bool viewUpdateRequired() ;
     void setViewChanged();
 
     const DestinationList* getDestinations();
@@ -265,13 +265,13 @@ class CelestiaCore // : public Watchable<CelestiaCore>
     void recordPause();
     void recordEnd();
     bool isCaptureActive();
-    bool isRecording();
+    bool isRecording() const;
 
     void runScript(const fs::path& filename, bool i18n = true);
     void cancelScript();
     void resumeScript();
 
-    int getHudDetail();
+    int getHudDetail() const;
     void setHudDetail(int);
     Color getTextColor();
     void setTextColor(Color);
@@ -371,8 +371,8 @@ class CelestiaCore // : public Watchable<CelestiaCore>
     bool setRendererFont(const fs::path& fontPath, int collectionIndex, int fontSize, Renderer::FontStyle fontStyle);
     void clearFonts();
 
-    void toggleReferenceMark(const std::string& refMark, Selection sel = Selection());
-    bool referenceMarkEnabled(const std::string& refMark, Selection sel = Selection()) const;
+    void toggleReferenceMark(const std::string& refMark, const Selection& sel = Selection()) const;
+    bool referenceMarkEnabled(const std::string& refMark, const Selection& sel = Selection()) const;
 
     void fatalError(const std::string&, bool visual = true);
 

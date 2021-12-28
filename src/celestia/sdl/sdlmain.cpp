@@ -23,7 +23,7 @@ class SDL_Alerter : public CelestiaCore::Alerter
     SDL_Window* window { nullptr };
 
  public:
-    void fatalError(const std::string& msg)
+    void fatalError(const std::string& msg) override
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
                                  "Fatal Error",
@@ -36,7 +36,7 @@ class SDL_Application
 {
  public:
     SDL_Application() = delete;
-    SDL_Application(const std::string name, int w, int h) :
+    SDL_Application(const std::string& name, int w, int h) :
         m_appName       { name },
         m_windowWidth   { w },
         m_windowHeight  { h }
@@ -44,13 +44,13 @@ class SDL_Application
     }
     ~SDL_Application();
 
-    static std::shared_ptr<SDL_Application> init(const std::string, int, int);
+    static std::shared_ptr<SDL_Application> init(std::string /*name*/&, int /*w*/, int /*h*/);
 
-    bool createOpenGLWindow();
+    static bool createOpenGLWindow();
 
     bool initCelestiaCore();
     void run();
-    const char* getError() const;
+    [[nodiscard]] const char* getError() const;
 
  private:
     void display();
@@ -84,7 +84,7 @@ class SDL_Application
 };
 
 std::shared_ptr<SDL_Application>
-SDL_Application::init(const std::string name, int w, int h)
+SDL_Application::init(const std::string& name, int w, int h)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
         return nullptr;
@@ -357,7 +357,7 @@ toCelestiaButton(int button)
     }
 }
 
-void
+static void
 SDL_Application::handleMousePressEvent(const SDL_MouseButtonEvent &event)
 {
     int button = toCelestiaButton(event.button);
@@ -376,7 +376,7 @@ SDL_Application::handleMouseReleaseEvent(const SDL_MouseButtonEvent &event)
     if (button == -1)
         return;
 
-    if (button & (CelestiaCore::LeftButton | CelestiaCore::RightButton))
+    if ((button & (CelestiaCore::LeftButton | CelestiaCore::RightButton)) != 0)
     {
         if (!m_cursorVisible)
         {

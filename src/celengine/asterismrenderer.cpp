@@ -104,7 +104,7 @@ bool AsterismRenderer::prepare(std::vector<LineEnds> &data)
 {
     // calculate required vertices number
     GLsizei vtx_num = 0;
-    for (const auto ast : *m_asterisms)
+    for (auto *const ast : *m_asterisms)
     {
         GLsizei ast_vtx_num = 0;
         for (int k = 0; k < ast->getChainCount(); k++)
@@ -129,7 +129,7 @@ bool AsterismRenderer::prepare(std::vector<LineEnds> &data)
     // we reserve 6 times the space so we can allow to
     // draw a line segment with two triangles
     data.reserve(m_totalLineCount * 6);
-    for (const auto ast : *m_asterisms)
+    for (auto *const ast : *m_asterisms)
     {
         for (int k = 0; k < ast->getChainCount(); k++)
         {

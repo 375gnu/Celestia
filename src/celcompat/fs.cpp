@@ -1,4 +1,5 @@
 #include "fs.h"
+#include <memory>
 #include <vector>
 #ifdef _WIN32
 #include <celutil/winutil.h>
@@ -23,9 +24,7 @@
 #define W(s) s
 #endif
 
-namespace celestia
-{
-namespace filesystem
+namespace celestia::filesystem
 {
 
 // we should skip "." and ".."
@@ -170,7 +169,7 @@ struct directory_iterator::SearchImpl
     };
     ~SearchImpl();
 
-    bool advance(directory_entry&, std::error_code*);
+    bool advance(directory_entry& /*entry*/, std::error_code* /*ec*/);
 };
 
 directory_iterator::SearchImpl::~SearchImpl()
@@ -268,7 +267,7 @@ bool directory_iterator::SearchImpl::advance(directory_entry& entry, std::error_
     }
     while (is_special_dir(ent->d_name));
 
-    entry = directory_entry(std::move(m_path / ent->d_name));
+    entry = directory_entry(m_path / ent->d_name);
     return true;
 #endif
 }
@@ -358,7 +357,7 @@ recursive_directory_iterator::recursive_directory_iterator(const path& p, direct
     m_options = options;
 
     if (m_dirs == nullptr)
-        m_dirs = std::shared_ptr<DirStack>(new DirStack);
+        m_dirs = std::make_shared<DirStack>();
 
     m_iter = directory_iterator(p, options, ec, false);
     __increment(ec); // advance to the first element
@@ -650,6 +649,5 @@ void current_path(const path& p, std::error_code& ec) noexcept
     if (ret != 0)
         ec = std::error_code(errno, std::system_category());
 #endif
-}
 }
 }

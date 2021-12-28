@@ -179,7 +179,7 @@ static void dlgCheck(HWND hDlg, WORD item, uint64_t flags, uint64_t f)
 }
 
 
-void LocationsDialog::SetControls(HWND hDlg)
+void LocationsDialog::SetControls(HWND hDlg) const
 {
     Observer* obs = appCore->getSimulation()->getActiveObserver();
     uint64_t locFilter = obs->getLocationFilter();
@@ -225,7 +225,7 @@ void LocationsDialog::RestoreSettings(HWND hDlg)
 {
 }
 
-void LocationsDialog::notifyChange(CelestiaCore*, int)
+void LocationsDialog::notifyChange(CelestiaCore* /*unused*/, int /*unused*/)
 {
     if (parent != NULL)
         SetControls(hwnd);

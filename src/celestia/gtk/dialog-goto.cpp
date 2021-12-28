@@ -65,7 +65,7 @@ void dialogGotoObject(AppData* app)
     app->simulation->getSelectionLongLat(distance, longitude, latitude);
 
     /* Display information in format appropriate for object */
-    if (app->simulation->getSelection().body() != NULL)
+    if (app->simulation->getSelection().body() != nullptr)
     {
         char temp[20];
         distance = distance - (double) app->simulation->getSelection().body()->getRadius();
@@ -166,16 +166,16 @@ static gboolean GetEntryFloat(GtkWidget* w, float& f)
     GtkEntry* entry = GTK_ENTRY(w);
     bool tmp;
     if (entry == NULL)
-        return false;
+        return 0;
 
     gchar* text = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1);
     f = 0.0;
     if (text == NULL)
-        return false;
+        return 0;
 
     tmp = sscanf(text, " %f", &f) == 1;
     g_free(text);
-    return tmp;
+    return static_cast<int>(tmp);
 }
 
 
@@ -194,7 +194,7 @@ static void GotoObject(gotoObjectData* gotoObjectDlg)
             simulation->setSelection(sel);
             simulation->follow();
 
-            float distance = (float) (sel.radius() * 5.0f);
+            auto distance = (float) (sel.radius() * 5.0f);
             if (GetEntryFloat(gotoObjectDlg->distEntry, distance))
             {
                 /* Adjust for km (0), radii (1), au (2) */

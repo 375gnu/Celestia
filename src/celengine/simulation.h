@@ -58,15 +58,15 @@ class Simulation
     void setTrackedObject(const Selection&);
 
     void selectPlanet(int);
-    Selection findObject(std::string s, bool i18n = false);
-    Selection findObjectFromPath(std::string s, bool i18n = false);
-    std::vector<std::string> getObjectCompletion(std::string s, bool i18n, bool withLocations = false);
+    Selection findObject(const std::string& s, bool i18n = false);
+    Selection findObjectFromPath(const std::string& s, bool i18n = false);
+    std::vector<std::string> getObjectCompletion(const std::string& s, bool i18n, bool withLocations = false);
     void gotoSelection(double gotoTime,
                        const Eigen::Vector3f& up,
                        ObserverFrame::CoordinateSystem upFrame);
     void gotoSelection(double gotoTime, double distance,
                        const Eigen::Vector3f& up,
-                       ObserverFrame::CoordinateSystem upFrame);
+                       ObserverFrame::CoordinateSystem upCoordSys);
     void gotoSelectionLongLat(double gotoTime,
                               double distance,
                               float longitude, float latitude,

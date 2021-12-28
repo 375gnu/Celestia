@@ -85,7 +85,7 @@ static gint glarea_idle(AppData* app)
 
 
 /* CALLBACK: GL Function for event "configure_event" */
-static gint glarea_configure(GtkWidget* widget, GdkEventConfigure*, AppData* app)
+static gint glarea_configure(GtkWidget* widget, GdkEventConfigure* /*unused*/, AppData* app)
 {
 #ifdef GTKGLEXT
     GdkGLContext *glcontext = gtk_widget_get_gl_context (widget);
@@ -124,7 +124,7 @@ static gint glarea_expose(GtkWidget*, GdkEventExpose* event, AppData* app)
 }
 #else
 /* CALLBACK: GL Function for event "draw" */
-static gint glarea_draw(GtkWidget*, cairo_t*, AppData* app)
+static gint glarea_draw(GtkWidget* /*unused*/, cairo_t* /*unused*/, AppData* app)
 {
     return glDrawFrame(app);
 }
@@ -132,7 +132,7 @@ static gint glarea_draw(GtkWidget*, cairo_t*, AppData* app)
 
 
 /* CALLBACK: GL Function for event "motion_notify_event" */
-static gint glarea_motion_notify(GtkWidget*, GdkEventMotion* event, AppData* app)
+static gint glarea_motion_notify(GtkWidget* /*unused*/, GdkEventMotion* event, AppData* app)
 {
     int x = (int) event->x;
     int y = (int) event->y;
@@ -159,7 +159,7 @@ static gint glarea_motion_notify(GtkWidget*, GdkEventMotion* event, AppData* app
 
 
 /* CALLBACK: GL Function for event "scroll_event" */
-static gint glarea_mouse_scroll(GtkWidget*, GdkEventScroll* event, AppData* app)
+static gint glarea_mouse_scroll(GtkWidget* /*unused*/, GdkEventScroll* event, AppData* app)
 {
     if (event->direction == GDK_SCROLL_UP)
         app->core->mouseWheel(-1.0f, 0);
@@ -171,7 +171,7 @@ static gint glarea_mouse_scroll(GtkWidget*, GdkEventScroll* event, AppData* app)
 
 
 /* CALLBACK: GL Function for event "button_press_event" */
-static gint glarea_button_press(GtkWidget*, GdkEventButton* event, AppData* app)
+static gint glarea_button_press(GtkWidget* /*unused*/, GdkEventButton* event, AppData* app)
 {
     app->lastX = (int) event->x;
     app->lastY = (int) event->y;
@@ -188,7 +188,7 @@ static gint glarea_button_press(GtkWidget*, GdkEventButton* event, AppData* app)
 
 
 /* CALLBACK: GL Function for event "button_release_event" */
-static gint glarea_button_release(GtkWidget*, GdkEventButton* event, AppData* app)
+static gint glarea_button_release(GtkWidget* /*unused*/, GdkEventButton* event, AppData* app)
 {
     app->lastX = (int) event->x;
     app->lastY = (int) event->y;
@@ -412,8 +412,7 @@ static bool handleSpecialKey(int key, int state, bool down, AppData* app)
             app->core->keyUp(k);
         return (k < 'A' || k > 'Z');
     }
-    else
-    {
-        return false;
-    }
+    
+            return false;
+   
 }

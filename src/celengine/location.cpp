@@ -101,7 +101,7 @@ FeatureNameEntry FeatureNames[] =
 
 string Location::getName(bool i18n) const
 {
-    if (!i18n || i18nName == "") return name;
+    if (!i18n || i18nName.empty()) return name;
     return i18nName;
 }
 
@@ -156,7 +156,7 @@ const string& Location::getInfoURL() const
 }
 
 
-void Location::setInfoURL(const string&)
+void Location::setInfoURL(const string& /*unused*/)
 {
 }
 
@@ -177,9 +177,9 @@ static void initFeatureTypeTable()
 {
     featureTableInitialized = true;
 
-    for (int i = 0; i < (int)(sizeof(FeatureNames) / sizeof(FeatureNames[0])); i++)
+    for (auto & FeatureName : FeatureNames)
     {
-        FeatureNameToFlag[string(FeatureNames[i].name)] = FeatureNames[i].flag;
+        FeatureNameToFlag[string(FeatureName.name)] = FeatureName.flag;
     }
 }
 

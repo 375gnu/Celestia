@@ -29,15 +29,15 @@ class FFMPEGCapturePrivate
     FFMPEGCapturePrivate() = default;
     ~FFMPEGCapturePrivate();
 
-    bool init(const fs::path& fn);
+    bool init(const fs::path& filename);
     bool addStream(int w, int h, float fps);
     bool openVideo();
     bool start();
-    bool writeVideoFrame(bool = false);
+    bool writeVideoFrame(bool  /*finalize*/= false);
     void finish();
     void setVideoCodec(int);
 
-    bool isSupportedPixelFormat(enum AVPixelFormat) const;
+    [[nodiscard]] bool isSupportedPixelFormat(enum AVPixelFormat /*format*/) const;
 
     int writePacket();
 
@@ -283,7 +283,7 @@ bool FFMPEGCapturePrivate::addStream(int width, int height, float fps)
     }
 
     // Some formats want stream headers to be separate.
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
+    if ((oc->oformat->flags & AVFMT_GLOBALHEADER) != 0)
         enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 #if AVCODEC_DEBUG
@@ -497,7 +497,7 @@ void FFMPEGCapturePrivate::finish()
     // av_codec_close().
     av_write_trailer(oc);
 
-    if (!(oc->oformat->flags & AVFMT_NOFILE))
+    if ((oc->oformat->flags & AVFMT_NOFILE) == 0)
         avio_closep(&oc->pb);
 }
 

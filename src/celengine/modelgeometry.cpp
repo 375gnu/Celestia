@@ -31,7 +31,7 @@ public:
     {
         for (auto vboId : vbos)
         {
-            if (vboId.second)
+            if (vboId.second != 0u)
             {
                 glDeleteBuffers(1, &vboId.second);
             }

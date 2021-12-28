@@ -76,7 +76,7 @@ static void process(const fs::path& p, vector<ScriptMenuItem>* menuItems)
 vector<ScriptMenuItem>*
 ScanScriptsDirectory(const fs::path& scriptsDir, bool deep)
 {
-    vector<ScriptMenuItem>* scripts = new vector<ScriptMenuItem>;
+    auto* scripts = new vector<ScriptMenuItem>;
 
     if (scriptsDir.empty())
         return scripts;

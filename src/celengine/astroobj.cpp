@@ -39,8 +39,7 @@ bool AstroObject::addToCategory(const std::string &s, bool create, const std::st
     {
         if (!create)
             return false;
-        else
-            c = UserCategory::newCategory(s, nullptr, d);
+                    c = UserCategory::newCategory(s, nullptr, d);
     }
     return addToCategory(c);
 }
@@ -118,7 +117,7 @@ bool AstroObject::loadCategories(Hash *hash, DataDisposition disposition, const 
     if (v == nullptr)
         return false;
     bool ret = true;
-    for (auto it : *v)
+    for (auto *it : *v)
     {
         cn = it->getString();
         if (!addToCategory(cn, true, domain))

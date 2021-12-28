@@ -23,7 +23,7 @@
 class Image
 {
  public:
-    Image(celestia::PixelFormat format, int w, int h, int mip = 1);
+    Image(celestia::PixelFormat fmt, int w, int h, int mip = 1);
     ~Image() = default;
     Image(Image&&) = default;
     Image(const Image&) = delete;

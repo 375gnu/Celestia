@@ -39,7 +39,7 @@
 #define LUM_V      6
 #define LUM_VI     7
 
-#define ID_NONE -1
+#define ID_NONE (-1)
 
 #define HD_CATALOG          0x00000000
 #define HIPPARCOS_CATALOG   0x10000000
@@ -54,7 +54,7 @@ typedef struct {
     float colorIndex;
 } SpectralType;
 
-typedef struct {
+using Star = struct {
     int HIP;          /* HIPPARCOS catalogue number */
     int HD;           /* HD catalogue number */
     float appMag;     /* Apparent magnitude  */
@@ -63,13 +63,13 @@ typedef struct {
     float parallax;   /* in milliarcseconds  */
     char spectral[13];
     unsigned char parallaxError;
-} Star;
+};
 
-typedef struct {
+using HDNameEnt = struct {
     int HD;
     char *commonName;
     char *altName;
-} HDNameEnt;
+};
 
 /* Hardcoded file names */
 #define HIPPARCOS_MAIN_DB "hip_main.dat"
@@ -90,8 +90,7 @@ int CompareHDNameEnt(const void *a, const void *b)
         return -1;
     if (hda > hdb)
         return 1;
-    else
-        return 0;
+            return 0;
 }
 
 
@@ -303,7 +302,7 @@ Star *ReadHipparcosCatalog(FILE *fp)
     int nBright = 0, nGood = 0;
     char nameBuf[20];
 
-    fprintf(stderr, "Attempting to allocate %d bytes\n", maxStars * sizeof(Star));
+    fprintf(stderr, "Attempting to allocate %lu bytes\n", maxStars * sizeof(Star));
     stars = (Star *) malloc(maxStars * sizeof(Star));
     if (stars == nullptr) {
         fprintf(stderr, "Unable to allocate memory for stars.\n");

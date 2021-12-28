@@ -11,7 +11,7 @@
  */
 
 #include <gtk/gtk.h>
-#include <time.h>
+#include <ctime>
 
 #include <celengine/astro.h>
 #include <celengine/simulation.h>
@@ -107,7 +107,7 @@ void dialogSetTime(AppData* app)
 
     if (button == GTK_RESPONSE_ACCEPT)
         /* Set current time and exit. */
-        app->simulation->setTime((double)time(NULL) / 86400.0 + (double)astro::Date(1970, 1, 1));
+        app->simulation->setTime((double)time(nullptr) / 86400.0 + (double)astro::Date(1970, 1, 1));
     else if (button == GTK_RESPONSE_OK)
         /* Set entered time and exit */
         app->simulation->setTime((double)date - ((timezone == 1) ? 0 : astro::secondsToJulianDate(tzOffsetAtDate(date))));
@@ -119,7 +119,7 @@ void dialogSetTime(AppData* app)
 /* CALLBACK: spinner value changed */
 static gboolean intAdjChanged(GtkAdjustment* adj, int *val)
 {
-    if (val)
+    if (val != nullptr)
     {
         *val = (int)gtk_adjustment_get_value(adj);
         return TRUE;
@@ -153,7 +153,7 @@ static void chooseOption(GtkWidget *hbox, const char *str, char *choices[], int 
     gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
     GtkWidget* combo = gtk_combo_box_text_new();
 
-    for(unsigned int i = 0; choices[i]; i++)
+    for(unsigned int i = 0; choices[i] != nullptr; i++)
     {
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo), choices[i]);
     }
@@ -185,7 +185,7 @@ static void intSpin(GtkWidget *hbox, const char *str, int min, int max, int *val
     gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX (hbox), vbox, FALSE, FALSE, 0);
 
-    if ((sep) && (*sep))
+    if (((sep) != nullptr) && ((*sep) != 0))
     {
         gtk_widget_show (label);
         GtkWidget *hbox2 = gtk_hbox_new(FALSE, 3);

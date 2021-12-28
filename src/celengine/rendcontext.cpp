@@ -443,7 +443,7 @@ GLSL_RenderContext::initLightingEnvironment()
     unsigned int totalShadows = 0;
     for (unsigned int li = 0; li < lightingState.nLights; li++)
     {
-        if (lightingState.shadows[li] && !lightingState.shadows[li]->empty())
+        if ((lightingState.shadows[li] != nullptr) && !lightingState.shadows[li]->empty())
         {
             unsigned int nShadows = static_cast<unsigned int>(std::min(static_cast<std::size_t>(MaxShaderEclipseShadows),
                                                                        lightingState.shadows[li]->size()));
@@ -509,7 +509,7 @@ GLSL_RenderContext::makeCurrent(const cmod::Material& m)
         if (bumpTex != nullptr)
         {
             shaderProps.texUsage |= ShaderProperties::NormalTexture;
-            if (bumpTex->getFormatOptions() & Texture::DXT5NormalMap)
+            if ((bumpTex->getFormatOptions() & Texture::DXT5NormalMap) != 0u)
             {
                 shaderProps.texUsage |= ShaderProperties::CompressedNormalTexture;
             }
@@ -543,7 +543,7 @@ GLSL_RenderContext::makeCurrent(const cmod::Material& m)
         }
     }
 
-    if (lightingState.shadowingRingSystem)
+    if (lightingState.shadowingRingSystem != nullptr)
     {
         Texture* ringsTex = lightingState.shadowingRingSystem->texture.find(medres);
         if (ringsTex != nullptr)
@@ -650,7 +650,7 @@ GLSL_RenderContext::makeCurrent(const cmod::Material& m)
 
     prog->setLightParameters(lightingState, diffuse, specular, emissive);
 
-    if (shaderProps.hasEclipseShadows() != 0)
+    if (static_cast<int>(shaderProps.hasEclipseShadows()) != 0)
         prog->setEclipseShadowParameters(lightingState, objScale, objOrientation);
 
     // TODO: handle emissive color

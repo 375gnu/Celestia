@@ -49,7 +49,7 @@ public:
     bool omitBarycenters{true};
     bool spectralTypeFilterEnabled{false};
     QRegExp spectralTypeFilter;
-    SolarSystemCatalog* solarSystems;
+    SolarSystemCatalog* solarSystems{nullptr};
 };
 
 
@@ -82,20 +82,20 @@ class StarTableModel : public QAbstractTableModel, public ModelHelper
 {
 public:
     StarTableModel(const Universe* _universe) : universe(_universe) {};
-    virtual ~StarTableModel() = default;
+    ~StarTableModel() override = default;
 
-    Selection objectAtIndex(const QModelIndex& index) const;
+    [[nodiscard]] Selection objectAtIndex(const QModelIndex& index) const;
 
     // Methods from QAbstractTableModel
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    int rowCount(const QModelIndex& index) const override;
-    int columnCount(const QModelIndex& index) const override;
+    [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override;
+    [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] int rowCount(const QModelIndex& index) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& index) const override;
     void sort(int column, Qt::SortOrder order) override;
 
     // Methods from ModelHelper
-    Selection itemForInfoPanel(const QModelIndex&) override;
+    Selection itemForInfoPanel(const QModelIndex& /*_index*/) override;
 
     enum Predicate
     {
@@ -119,7 +119,7 @@ public:
                   StarPredicate::Criterion criterion,
                   unsigned int nStars);
 
-    Selection itemAtRow(unsigned int row) const;
+    [[nodiscard]] Selection itemAtRow(unsigned int row) const;
 
 private:
     const Universe* universe;
@@ -195,8 +195,7 @@ QVariant StarTableModel::data(const QModelIndex& index, int role) const
                 auto hdCatNo  = universe->getStarCatalog()->crossIndex(StarDatabase::HenryDraper, hipCatNo);
                 if (hdCatNo != AstroCatalog::InvalidIndex)
                     return QString("HD %1").arg(hdCatNo);
-                else
-                    return QVariant();
+                                    return QVariant();
             }
         default:
             return QVariant();
@@ -306,9 +305,9 @@ bool StarPredicate::operator()(const Star* star0, const Star* star1) const
 }
 
 
-StarFilterPredicate::StarFilterPredicate() :
+StarFilterPredicate::StarFilterPredicate() 
 
-    solarSystems(nullptr)
+    
 {
 }
 
@@ -326,14 +325,14 @@ bool StarFilterPredicate::operator()(const Star* star) const
         if (solarSystems == nullptr)
             return true;
 
-        SolarSystemCatalog::iterator iter = solarSystems->find(star->getIndex());
+        auto iter = solarSystems->find(star->getIndex());
         if (iter == solarSystems->end())
             return true;
     }
 
     if (multipleFilterEnabled)
     {
-        if (!star->getOrbitBarycenter() || star->getIndex() == 0)
+        if ((star->getOrbitBarycenter() == nullptr) || star->getIndex() == 0)
             return true;
     }
 
@@ -419,7 +418,7 @@ void StarTableModel::populate(const UniversalCoord& _observerPos,
         nStars = filteredStars.size();
 
     // Clear out the results of the previous populate() call
-    if (stars.size() != 0)
+    if (!stars.empty())
     {
         beginResetModel();
         stars.clear();
@@ -469,8 +468,7 @@ Selection StarTableModel::itemAtRow(unsigned int row) const
 {
     if (row >= stars.size())
         return Selection();
-    else
-        return Selection(stars[row]);
+            return Selection(stars[row]);
 }
 
 
@@ -504,14 +502,14 @@ CelestialBrowser::CelestialBrowser(CelestiaCore* _appCore, QWidget* parent, Info
     connect(treeView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this, SLOT(slotSelectionChanged(const QItemSelection&, const QItemSelection&)));
 
-    QVBoxLayout* layout = new QVBoxLayout();
+    auto* layout = new QVBoxLayout();
     layout->addWidget(treeView);
 
     searchResultLabel = new QLabel("");
     layout->addWidget(searchResultLabel);
 
-    QGroupBox* starGroup = new QGroupBox();
-    QGridLayout* starGroupLayout = new QGridLayout();
+    auto* starGroup = new QGroupBox();
+    auto* starGroupLayout = new QGridLayout();
 
     // Buttons to select filtering criterion for stars
     closestButton = new QRadioButton(_("Closest Stars"));
@@ -528,8 +526,8 @@ CelestialBrowser::CelestialBrowser(CelestiaCore* _appCore, QWidget* parent, Info
     closestButton->setChecked(true);
 
     // Additional filtering controls
-    QGroupBox* filterGroup = new QGroupBox(_("Filter"));
-    QGridLayout* filterGroupLayout = new QGridLayout();
+    auto* filterGroup = new QGroupBox(_("Filter"));
+    auto* filterGroupLayout = new QGridLayout();
 
     withPlanetsFilterBox = new QCheckBox(_("With Planets"));
     connect(withPlanetsFilterBox, SIGNAL(clicked()), this, SLOT(slotRefreshTable()));
@@ -553,25 +551,25 @@ CelestialBrowser::CelestialBrowser(CelestiaCore* _appCore, QWidget* parent, Info
     layout->addWidget(filterGroup);
     // End filtering controls
 
-    QPushButton* refreshButton = new QPushButton(_("Refresh"));
+    auto* refreshButton = new QPushButton(_("Refresh"));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(slotRefreshTable()));
     layout->addWidget(refreshButton);
 
     // Controls for marking selected objects
-    QGroupBox* markGroup = new QGroupBox(_("Markers"));
-    QGridLayout* markGroupLayout = new QGridLayout();
+    auto* markGroup = new QGroupBox(_("Markers"));
+    auto* markGroupLayout = new QGridLayout();
 
-    QPushButton* markSelectedButton = new QPushButton(_("Mark Selected"));
+    auto* markSelectedButton = new QPushButton(_("Mark Selected"));
     connect(markSelectedButton, SIGNAL(clicked()), this, SLOT(slotMarkSelected()));
     markSelectedButton->setToolTip(_("Mark stars selected in list view"));
     markGroupLayout->addWidget(markSelectedButton, 0, 0, 1, 2);
 
-    QPushButton* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
+    auto* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
     unmarkSelectedButton->setToolTip(_("Unmark stars selected in list view"));
     connect(unmarkSelectedButton, &QPushButton::clicked, this, &CelestialBrowser::slotUnmarkSelected);
     markGroupLayout->addWidget(unmarkSelectedButton, 0, 2, 1, 2);
 
-    QPushButton* clearMarkersButton = new QPushButton(_("Clear Markers"));
+    auto* clearMarkersButton = new QPushButton(_("Clear Markers"));
     connect(clearMarkersButton, SIGNAL(clicked()), this, SLOT(slotClearMarkers()));
     clearMarkersButton->setToolTip(_("Remove all existing markers"));
     markGroupLayout->addWidget(clearMarkersButton, 0, 5, 1, 2);
@@ -700,9 +698,9 @@ void CelestialBrowser::slotMarkSelected()
     bool labelMarker = labelMarkerBox->checkState() == Qt::Checked;
     bool convertOK = false;
     QVariant markerData = markerSymbolBox->itemData(markerSymbolBox->currentIndex());
-    MarkerRepresentation::Symbol markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
+    auto markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
     QVariant markerSize = markerSizeBox->itemData(markerSizeBox->currentIndex());
-    float size = (float) markerSize.toInt(&convertOK);
+    auto size = (float) markerSize.toInt(&convertOK);
     QColor markerColor = colorSwatch->color();
     Color color((float) markerColor.redF(),
                 (float) markerColor.greenF(),
@@ -762,6 +760,6 @@ void CelestialBrowser::slotClearMarkers()
 
 void CelestialBrowser::slotSelectionChanged(const QItemSelection& newSel, const QItemSelection& oldSel)
 {
-    if (infoPanel)
+    if (infoPanel != nullptr)
         infoPanel->updateHelper(starModel, newSel, oldSel);
 }

@@ -39,7 +39,7 @@ class GLShader
  private:
     GLuint id;
 
-    GLShaderStatus compile(const std::vector<std::string>& source);
+    GLShaderStatus compile(const std::vector<std::string>& source) const;
 
     friend class GLShaderLoader;
 };
@@ -68,12 +68,12 @@ class GLProgram
  private:
     GLProgram(GLuint _id);
 
-    void attach(const GLShader&);
+    void attach(const GLShader&) const;
 
  public:
     virtual ~GLProgram();
 
-    GLShaderStatus link();
+    GLShaderStatus link() const;
 
     void use() const;
     GLuint getID() const { return id; }

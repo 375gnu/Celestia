@@ -140,7 +140,7 @@ class Renderer
     void resize(int, int);
     float getAspectRatio() const;
 
-    float calcPixelSize(float fovY, float windowHeight);
+    float calcPixelSize(float fovY, float windowHeight) const;
     void setFaintestAM45deg(float);
     float getFaintestAM45deg() const;
 
@@ -148,14 +148,14 @@ class Renderer
     void autoMag(float& faintestMag);
     void render(const Observer&,
                 const Universe&,
-                float faintestVisible,
+                float faintestMagNight,
                 const Selection& sel);
     void draw(const Observer&,
               const Universe&,
-              float faintestVisible,
+              float faintestMagNight,
               const Selection& sel);
 
-    bool getInfo(std::map<std::string, std::string>& info) const;
+    static bool getInfo(std::map<std::string, std::string>& info) ;
 
     enum {
         NoLabels            = 0x000,
@@ -283,10 +283,10 @@ class Renderer
     bool shouldDrawLineAsTriangles(float multiplier = 1.0f) const;
 
     // GL wrappers
-    void getViewport(int* x, int* y, int* w, int* h) const;
-    void getViewport(std::array<int, 4>& viewport) const;
-    void setViewport(int x, int y, int w, int h) const;
-    void setViewport(const std::array<int, 4>& viewport) const;
+    static void getViewport(int* x, int* y, int* w, int* h) ;
+    static void getViewport(std::array<int, 4>& viewport) ;
+    static void setViewport(int x, int y, int w, int h) ;
+    static void setViewport(const std::array<int, 4>& viewport) ;
     void setScissor(int x, int y, int w, int h);
     void removeScissor();
 
@@ -304,19 +304,19 @@ class Renderer
     void enableDepthTest() noexcept;
     void disableDepthTest() noexcept;
 
-    celestia::PixelFormat getPreferredCaptureFormat() const noexcept;
+    static celestia::PixelFormat getPreferredCaptureFormat() noexcept;
 
-    void drawRectangle(const celestia::Rect& r, int fishEyeOverrideMode, const Eigen::Matrix4f& p, const Eigen::Matrix4f& m = Eigen::Matrix4f::Identity());
+    void drawRectangle(const celestia::Rect& r, int fishEyeOverrideMode, const Eigen::Matrix4f& p, const Eigen::Matrix4f& m = Eigen::Matrix4f::Identity()) const;
     void setRenderRegion(int x, int y, int width, int height, bool withScissor = true);
 
     const ColorTemperatureTable* getStarColorTable() const;
     void setStarColorTable(const ColorTemperatureTable*);
-    [[deprecated]] bool getVideoSync() const;
+    [[deprecated]] static bool getVideoSync() ;
     [[deprecated]] void setVideoSync(bool);
     void setSolarSystemMaxDistance(float);
     void setShadowMapSize(unsigned);
 
-    bool captureFrame(int, int, int, int, celestia::PixelFormat format, unsigned char*) const;
+    static bool captureFrame(int, int, int, int, celestia::PixelFormat format, unsigned char*) ;
 
     void renderMarker(celestia::MarkerRepresentation::Symbol symbol,
                       float size,
@@ -373,7 +373,7 @@ class Renderer
     void setResolution(unsigned int resolution);
     unsigned int getResolution() const;
 
-    void loadTextures(Body*);
+    void loadTextures(Body*) const;
 
     // Label related methods
     enum LabelAlignment
@@ -437,7 +437,7 @@ class Renderer
     const Eigen::Quaternionf& getCameraOrientation() const;
     float getNearPlaneDistance() const;
 
-    void clearAnnotations(std::vector<Annotation>&);
+    static void clearAnnotations(std::vector<Annotation>&);
 
     void invalidateOrbitCache();
 
@@ -555,7 +555,7 @@ class Renderer
  private:
     void setFieldOfView(float);
     void renderPointStars(const StarDatabase& starDB,
-                          float faintestVisible,
+                          float faintestMagNight,
                           const Observer& observer);
     void renderDeepSkyObjects(const Universe&,
                               const Observer&,
@@ -569,12 +569,12 @@ class Renderer
     void renderAsterisms(const Universe&, float, const Matrices&);
     void renderBoundaries(const Universe&, float, const Matrices&);
     void renderEclipticLine();
-    void renderCrosshair(float size, double tsec, const Color &color, const Matrices &m);
+    void renderCrosshair(float selectionSizeInPixels, double tsec, const Color &color, const Matrices &m);
 
     void buildNearSystemsLists(const Universe &universe,
                                const Observer &observer,
                                const celmath::Frustum &xfrustum,
-                               double jd);
+                               double now);
 
     void buildRenderLists(const Eigen::Vector3d& astrocentricObserverPos,
                           const celmath::Frustum& viewFrustum,
@@ -641,7 +641,7 @@ class Renderer
                          float discSizeInPixels,
                          const Matrices&);
 
-    void renderObjectAsPoint(const Eigen::Vector3f& center,
+    void renderObjectAsPoint(const Eigen::Vector3f& position,
                              float radius,
                              float appMag,
                              float _faintestMag,
@@ -657,7 +657,7 @@ class Renderer
                                    const Eigen::Vector3f& semiAxes,
                                    const Eigen::Vector3f& sunDirection,
                                    const LightingState& ls,
-                                   float fade,
+                                   float pixSize,
                                    bool lit,
                                    const Matrices&);
 
@@ -672,7 +672,7 @@ class Renderer
                     float farPlaneDistance,
                     const Matrices&);
 
-    bool testEclipse(const Body& receiver,
+    static bool testEclipse(const Body& receiver,
                      const Body& caster,
                      LightingState& lightingState,
                      unsigned int lightIndex,
@@ -701,7 +701,7 @@ class Renderer
                                int hOffset,
                                int vOffset,
                                float depth,
-                               const Matrices&);
+                               const Matrices&) const;
     void renderAnnotations(const std::vector<Annotation>&,
                            FontStyle fs);
     void renderBackgroundAnnotations(FontStyle fs);
@@ -718,19 +718,19 @@ class Renderer
 
     void markersToAnnotations(const celestia::MarkerList &markers,
                               const Observer &observer,
-                              double now);
+                              double jd);
 
     bool selectionToAnnotation(const Selection &sel,
                                const Observer &observer,
                                const celmath::Frustum &xfrustum,
-                               double now);
+                               double jd);
 
     void adjustMagnitudeInsideAtmosphere(float &faintestMag,
                                          float &saturationMag,
                                          double now);
 
     void renderOrbit(const OrbitPathListEntry&,
-                     double now,
+                     double t,
                      const Eigen::Quaterniond& cameraOrientation,
                      const celmath::Frustum& frustum,
                      float nearDist,

@@ -29,7 +29,7 @@ Simulation::Simulation(Universe* _universe) :
 
 Simulation::~Simulation()
 {
-    for (const auto observer : observers)
+    for (auto *const observer : observers)
         delete observer;
 }
 
@@ -37,7 +37,7 @@ Simulation::~Simulation()
 static const Star* getSun(Body* body)
 {
     PlanetarySystem* system = body->getSystem();
-    return system ? system->getStar() : nullptr;
+    return system != nullptr ? system->getStar() : nullptr;
 }
 
 
@@ -84,7 +84,7 @@ void Simulation::setTime(double jd)
 {
     if (syncTime)
     {
-        for (const auto observer : observers)
+        for (auto *const observer : observers)
         {
             observer->setTime(jd);
         }
@@ -114,7 +114,7 @@ void Simulation::update(double dt)
 {
     realTime += dt;
 
-    for (const auto observer : observers)
+    for (auto *const observer : observers)
     {
         observer->update(dt, timeScale);
     }
@@ -172,7 +172,7 @@ Observer& Simulation::getObserver()
 
 Observer* Simulation::addObserver()
 {
-    Observer* o = new Observer();
+    auto* o = new Observer();
     observers.push_back(o);
     return o;
 }
@@ -408,7 +408,7 @@ void Simulation::selectPlanet(int index)
 //   3. Search the planets and moons in the planetary system of the currently selected
 //      star
 //   4. Search the planets and moons in any 'nearby' (< 0.1 ly) planetary systems
-Selection Simulation::findObject(string s, bool i18n)
+Selection Simulation::findObject(const string& s, bool i18n)
 {
     Selection path[2];
     int nPathEntries = 0;
@@ -426,7 +426,7 @@ Selection Simulation::findObject(string s, bool i18n)
 // Find an object from a path, for example Sol/Earth/Moon or Upsilon And/b
 // Currently, 'absolute' paths starting with a / are not supported nor are
 // paths that contain galaxies.
-Selection Simulation::findObjectFromPath(string s, bool i18n)
+Selection Simulation::findObjectFromPath(const string& s, bool i18n)
 {
     Selection path[2];
     int nPathEntries = 0;
@@ -441,7 +441,7 @@ Selection Simulation::findObjectFromPath(string s, bool i18n)
 }
 
 
-vector<std::string> Simulation::getObjectCompletion(string s, bool i18n, bool withLocations)
+vector<std::string> Simulation::getObjectCompletion(const string& s, bool i18n, bool withLocations)
 {
     Selection path[2];
     int nPathEntries = 0;
@@ -524,7 +524,7 @@ void Simulation::setPauseState(bool state)
 // Synchronize all observers to active observer time
 void Simulation::synchronizeTime()
 {
-    for (const auto observer : observers)
+    for (auto *const observer : observers)
     {
         observer->setTime(activeObserver->getTime());
     }

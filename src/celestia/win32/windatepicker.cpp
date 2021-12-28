@@ -71,7 +71,7 @@ public:
     LRESULT resize(WORD flags, int width, int height);
 
     bool sendNotify(UINT code);
-    bool notifyDateChanged();
+    static bool notifyDateChanged();
 
     LRESULT setSystemTime(DWORD flag, SYSTEMTIME* sysTime);
     LRESULT getSystemTime(SYSTEMTIME* sysTime);
@@ -83,7 +83,7 @@ private:
     void incrementField();
     void decrementField();
 
-private:
+
     HWND hwnd;
     HWND parent;
     astro::Date date;
@@ -120,8 +120,7 @@ DatePicker::DatePicker(HWND _hwnd, CREATESTRUCT& cs) :
 
 
 DatePicker::~DatePicker()
-{
-}
+= default;
 
 
 LRESULT
@@ -207,10 +206,9 @@ static bool isLeapYear(unsigned int year)
     {
         return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
     }
-    else
-    {
-        return year % 4 == 0;
-    }
+    
+            return year % 4 == 0;
+   
 }
 
 
@@ -221,8 +219,7 @@ static unsigned int daysInMonth(unsigned int month, unsigned int year)
 
     if (month == 2)
         return isLeapYear(year) ? 29 : 28;
-    else
-        return daysPerMonth[month - 1];
+            return daysPerMonth[month - 1];
 }
 
 
@@ -436,13 +433,13 @@ DatePicker::notify(int id, const NMHDR& nmhdr)
 
 
 LRESULT
-DatePicker::command(WPARAM, LPARAM)
+DatePicker::command(WPARAM /*unused*/, LPARAM /*unused*/)
 {
     return 0;
 }
 
 
-bool
+static bool
 DatePicker::sendNotify(UINT code)
 {
     NMHDR nmhdr;
@@ -477,7 +474,7 @@ DatePicker::notifyDateChanged()
 }
 
 
-int
+static int
 DatePicker::getFieldWidth(DatePickerField field, HDC hdc)
 {
     const char* maxWidthText = "\0";

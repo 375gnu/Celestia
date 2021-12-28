@@ -152,7 +152,7 @@ public:
     cmod::Model* model() { return m_model.get(); }
     const cmod::Model* model() const { return m_model.get(); }
 
-    void resetCamera();
+    static void resetCamera();
 
     enum RenderStyle
     {
@@ -171,7 +171,7 @@ public:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent* event);
 
-    void select(const Eigen::Vector2f& point);
+    static void select(const Eigen::Vector2f& point);
     QSet<const cmod::PrimitiveGroup*> selection()
     {
         return m_selection;
@@ -192,9 +192,9 @@ public:
         return m_backgroundColor;
     }
 
-    Eigen::Affine3d cameraTransform() const;
+    static Eigen::Affine3d cameraTransform() ;
 
-    void setMaterial(unsigned int index, const cmod::Material& material);
+    static void setMaterial(unsigned int index, const cmod::Material& material);
 
     struct LightSource
     {
@@ -221,21 +221,21 @@ public slots:
     void setShadows(bool enable);
 
 protected:
-    void initializeGL();
+    static void initializeGL();
     void paintGL();
-    void resizeGL(int width, int height);
+    static void resizeGL(int width, int height);
 
 private:
     void renderModel(cmod::Model* model);
     void renderSelection(cmod::Model* model);
-    void renderDepthOnly(cmod::Model* model);
-    void renderShadow(unsigned int lightIndex);
+    static void renderDepthOnly(cmod::Model* model);
+    static void renderShadow(unsigned int lightIndex);
     void bindMaterial(const cmod::Material* material,
                       const LightingEnvironment* lighting,
                       const cmod::VertexDescription* vertexDesc);
 
-    void setupDefaultLightSources();
-    GLShaderProgram* createShader(const ShaderKey& shaderKey);
+    static void setupDefaultLightSources();
+    static GLShaderProgram* createShader(const ShaderKey& shaderKey);
 
 private:
     std::unique_ptr<cmod::Model> m_model;

@@ -41,7 +41,7 @@ Orbit* CreateOrbit(const Selection& centralObject,
                    const fs::path& path,
                    bool usePlanetUnits);
 
-RotationModel* CreateRotationModel(Hash* rotationData,
+RotationModel* CreateRotationModel(Hash* planetData,
                                    const fs::path& path,
                                    double syncRotationPeriod);
 

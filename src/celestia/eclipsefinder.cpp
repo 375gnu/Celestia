@@ -65,11 +65,11 @@ bool testEclipse(const Body& receiver, const Body& caster, double now)
         const Star* sun = receiver.getSystem()->getStar();
         assert(sun != nullptr);
         double distToSun = posReceiver.norm();
-        float appSunRadius = (float) (sun->getRadius() / distToSun);
+        auto appSunRadius = (float) (sun->getRadius() / distToSun);
 
         Vector3d dir = posCaster - posReceiver;
         double distToCaster = dir.norm() - receiver.getRadius();
-        float appOccluderRadius = (float) (caster.getRadius() / distToCaster);
+        auto appOccluderRadius = (float) (caster.getRadius() / distToCaster);
 
         // The shadow radius is the radius of the occluder plus some additional
         // amount that depends upon the apparent radius of the sun.  For
@@ -254,10 +254,10 @@ void EclipseFinder::findEclipses(double startDate,
             if (t <= previousEclipseEndTimes[i])
                 continue;
 
-            if (eclipseTypeMask & Eclipse::Solar)
+            if ((eclipseTypeMask & Eclipse::Solar) != 0)
                 addEclipse(*body, *testBodies[i], t, searchStep, durationPrecision, eclipses, previousEclipseEndTimes, i);
 
-            if (eclipseTypeMask & Eclipse::Lunar)
+            if ((eclipseTypeMask & Eclipse::Lunar) != 0)
                 addEclipse(*testBodies[i], *body, t, searchStep, durationPrecision, eclipses, previousEclipseEndTimes, i);
         }
     }

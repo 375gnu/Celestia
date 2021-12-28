@@ -80,7 +80,7 @@ CelestiaActions::CelestiaActions(QObject* parent,
     connect(orbitsAction,           SIGNAL(triggered()), this, SLOT(slotToggleRenderFlag()));
 
     // Orbit actions
-    QMenu* orbitsMenu = new QMenu();
+    auto* orbitsMenu = new QMenu();
     starOrbitsAction        = createCheckableAction(_("Stars"),         orbitsMenu, Body::Stellar);
     planetOrbitsAction      = createCheckableAction(_("Planets"),       orbitsMenu, Body::Planet);
     dwarfPlanetOrbitsAction = createCheckableAction(_("Dwarf Planets"), orbitsMenu, Body::DwarfPlanet);
@@ -107,7 +107,7 @@ CelestiaActions::CelestiaActions(QObject* parent,
     labelsAction = new QAction(_("L"), this);
     labelsAction->setToolTip(_("Labels"));
 
-    QMenu* labelsMenu = new QMenu();
+    auto* labelsMenu = new QMenu();
     labelStarsAction          = createCheckableAction(_("Stars"),           labelsMenu, Renderer::StarLabels);
     labelPlanetsAction        = createCheckableAction(_("Planets"),         labelsMenu, Renderer::PlanetLabels);
     labelDwarfPlanetsAction   = createCheckableAction(_("Dwarf Planets"),   labelsMenu, Renderer::DwarfPlanetLabels);
@@ -174,7 +174,7 @@ CelestiaActions::CelestiaActions(QObject* parent,
     lowResAction          = createCheckableAction(_("Low"),    lores);
     mediumResAction       = createCheckableAction(_("Medium"), medres);
     highResAction         = createCheckableAction(_("High"),   hires);
-    QActionGroup *texResGroup = new QActionGroup(this);
+    auto *texResGroup = new QActionGroup(this);
     texResGroup->addAction(lowResAction);
     texResGroup->addAction(mediumResAction);
     texResGroup->addAction(highResAction);
@@ -200,7 +200,7 @@ CelestiaActions::CelestiaActions(QObject* parent,
     pointStarAction      = createCheckableAction(_("Points"),         Renderer::PointStars);
     fuzzyPointStarAction = createCheckableAction(_("Fuzzy Points"),   Renderer::FuzzyPointStars);
     scaledDiscStarAction = createCheckableAction(_("Scaled Discs"),   Renderer::ScaledDiscStars);
-    QActionGroup *starStyleGroup = new QActionGroup(this);
+    auto *starStyleGroup = new QActionGroup(this);
     starStyleGroup->addAction(pointStarAction);
     starStyleGroup->addAction(fuzzyPointStarAction);
     starStyleGroup->addAction(scaledDiscStarAction);
@@ -226,7 +226,7 @@ CelestiaActions::~CelestiaActions()
 }
 
 
-void CelestiaActions::syncWithRenderer(const Renderer* renderer)
+void CelestiaActions::syncWithRenderer(const Renderer* renderer) const
 {
     auto renderFlags = renderer->getRenderFlags();
     int labelMode   = renderer->getLabelMode();
@@ -234,39 +234,39 @@ void CelestiaActions::syncWithRenderer(const Renderer* renderer)
     int textureRes  = renderer->getResolution();
     Renderer::StarStyle starStyle = renderer->getStarStyle();
 
-    equatorialGridAction->setChecked(renderFlags & Renderer::ShowCelestialSphere);
-    galacticGridAction->setChecked(renderFlags & Renderer::ShowGalacticGrid);
-    eclipticGridAction->setChecked(renderFlags & Renderer::ShowEclipticGrid);
-    horizonGridAction->setChecked(renderFlags & Renderer::ShowHorizonGrid);
-    eclipticAction->setChecked(renderFlags & Renderer::ShowEcliptic);
-    markersAction->setChecked(renderFlags & Renderer::ShowMarkers);
-    constellationsAction->setChecked(renderFlags & Renderer::ShowDiagrams);
-    boundariesAction->setChecked(renderFlags & Renderer::ShowBoundaries);
-    orbitsAction->setChecked(renderFlags & Renderer::ShowOrbits);
+    equatorialGridAction->setChecked((renderFlags & Renderer::ShowCelestialSphere) != 0u);
+    galacticGridAction->setChecked((renderFlags & Renderer::ShowGalacticGrid) != 0u);
+    eclipticGridAction->setChecked((renderFlags & Renderer::ShowEclipticGrid) != 0u);
+    horizonGridAction->setChecked((renderFlags & Renderer::ShowHorizonGrid) != 0u);
+    eclipticAction->setChecked((renderFlags & Renderer::ShowEcliptic) != 0u);
+    markersAction->setChecked((renderFlags & Renderer::ShowMarkers) != 0u);
+    constellationsAction->setChecked((renderFlags & Renderer::ShowDiagrams) != 0u);
+    boundariesAction->setChecked((renderFlags & Renderer::ShowBoundaries) != 0u);
+    orbitsAction->setChecked((renderFlags & Renderer::ShowOrbits) != 0u);
 
-    labelGalaxiesAction->setChecked(labelMode & Renderer::GalaxyLabels);
-    labelGlobularsAction->setChecked(labelMode & Renderer::GlobularLabels);
-    labelOpenClustersAction->setChecked(labelMode & Renderer::OpenClusterLabels);
-    labelNebulaeAction->setChecked(labelMode & Renderer::NebulaLabels);
-    labelStarsAction->setChecked(labelMode & Renderer::StarLabels);
-    labelPlanetsAction->setChecked(labelMode & Renderer::PlanetLabels);
-    labelDwarfPlanetsAction->setChecked(labelMode & Renderer::DwarfPlanetLabels);
-    labelMoonsAction->setChecked(labelMode & Renderer::MoonLabels);
-    labelMinorMoonsAction->setChecked(labelMode & Renderer::MinorMoonLabels);
-    labelAsteroidsAction->setChecked(labelMode & Renderer::AsteroidLabels);
-    labelCometsAction->setChecked(labelMode & Renderer::CometLabels);
-    labelSpacecraftAction->setChecked(labelMode & Renderer::SpacecraftLabels);
-    labelLocationsAction->setChecked(labelMode & Renderer::LocationLabels);
-    labelConstellationsAction->setChecked(labelMode & Renderer::ConstellationLabels);
+    labelGalaxiesAction->setChecked((labelMode & Renderer::GalaxyLabels) != 0);
+    labelGlobularsAction->setChecked((labelMode & Renderer::GlobularLabels) != 0);
+    labelOpenClustersAction->setChecked((labelMode & Renderer::OpenClusterLabels) != 0);
+    labelNebulaeAction->setChecked((labelMode & Renderer::NebulaLabels) != 0);
+    labelStarsAction->setChecked((labelMode & Renderer::StarLabels) != 0);
+    labelPlanetsAction->setChecked((labelMode & Renderer::PlanetLabels) != 0);
+    labelDwarfPlanetsAction->setChecked((labelMode & Renderer::DwarfPlanetLabels) != 0);
+    labelMoonsAction->setChecked((labelMode & Renderer::MoonLabels) != 0);
+    labelMinorMoonsAction->setChecked((labelMode & Renderer::MinorMoonLabels) != 0);
+    labelAsteroidsAction->setChecked((labelMode & Renderer::AsteroidLabels) != 0);
+    labelCometsAction->setChecked((labelMode & Renderer::CometLabels) != 0);
+    labelSpacecraftAction->setChecked((labelMode & Renderer::SpacecraftLabels) != 0);
+    labelLocationsAction->setChecked((labelMode & Renderer::LocationLabels) != 0);
+    labelConstellationsAction->setChecked((labelMode & Renderer::ConstellationLabels) != 0);
 
-    starOrbitsAction->setChecked(orbitMask & Body::Stellar);
-    planetOrbitsAction->setChecked(orbitMask & Body::Planet);
-    dwarfPlanetOrbitsAction->setChecked(orbitMask & Body::DwarfPlanet);
-    moonOrbitsAction->setChecked(orbitMask & Body::Moon);
-    minorMoonOrbitsAction->setChecked(orbitMask & Body::MinorMoon);
-    asteroidOrbitsAction->setChecked(orbitMask & Body::Asteroid);
-    cometOrbitsAction->setChecked(orbitMask & Body::Comet);
-    spacecraftOrbitsAction->setChecked(orbitMask & Body::Spacecraft);
+    starOrbitsAction->setChecked((orbitMask & Body::Stellar) != 0);
+    planetOrbitsAction->setChecked((orbitMask & Body::Planet) != 0);
+    dwarfPlanetOrbitsAction->setChecked((orbitMask & Body::DwarfPlanet) != 0);
+    moonOrbitsAction->setChecked((orbitMask & Body::Moon) != 0);
+    minorMoonOrbitsAction->setChecked((orbitMask & Body::MinorMoon) != 0);
+    asteroidOrbitsAction->setChecked((orbitMask & Body::Asteroid) != 0);
+    cometOrbitsAction->setChecked((orbitMask & Body::Comet) != 0);
+    spacecraftOrbitsAction->setChecked((orbitMask & Body::Spacecraft) != 0);
 
     // Texture resolution
     lowResAction->setChecked(textureRes == lores);
@@ -279,24 +279,24 @@ void CelestiaActions::syncWithRenderer(const Renderer* renderer)
     scaledDiscStarAction->setChecked(starStyle == Renderer::ScaledDiscStars);
 
     // Features
-    cloudsAction->setChecked(renderFlags & Renderer::ShowCloudMaps);
-    cometTailsAction->setChecked(renderFlags & Renderer::ShowCometTails);
-    atmospheresAction->setChecked(renderFlags & Renderer::ShowAtmospheres);
-    nightSideLightsAction->setChecked(renderFlags & Renderer::ShowNightMaps);
+    cloudsAction->setChecked((renderFlags & Renderer::ShowCloudMaps) != 0u);
+    cometTailsAction->setChecked((renderFlags & Renderer::ShowCometTails) != 0u);
+    atmospheresAction->setChecked((renderFlags & Renderer::ShowAtmospheres) != 0u);
+    nightSideLightsAction->setChecked((renderFlags & Renderer::ShowNightMaps) != 0u);
 
     // Deep sky object visibility
-    galaxiesAction->setChecked(renderFlags & Renderer::ShowGalaxies);
-    globularsAction->setChecked(renderFlags & Renderer::ShowGlobulars);
-    openClustersAction->setChecked(renderFlags & Renderer::ShowOpenClusters);
-    nebulaeAction->setChecked(renderFlags & Renderer::ShowNebulae);
+    galaxiesAction->setChecked((renderFlags & Renderer::ShowGalaxies) != 0u);
+    globularsAction->setChecked((renderFlags & Renderer::ShowGlobulars) != 0u);
+    openClustersAction->setChecked((renderFlags & Renderer::ShowOpenClusters) != 0u);
+    nebulaeAction->setChecked((renderFlags & Renderer::ShowNebulae) != 0u);
 
     // Shadows
-    ringShadowsAction->setChecked(renderFlags & Renderer::ShowRingShadows);
-    eclipseShadowsAction->setChecked(renderFlags & Renderer::ShowEclipseShadows);
-    cloudShadowsAction->setChecked(renderFlags & Renderer::ShowCloudShadows);
+    ringShadowsAction->setChecked((renderFlags & Renderer::ShowRingShadows) != 0u);
+    eclipseShadowsAction->setChecked((renderFlags & Renderer::ShowEclipseShadows) != 0u);
+    cloudShadowsAction->setChecked((renderFlags & Renderer::ShowCloudShadows) != 0u);
 
     // Star visibility
-    autoMagAction->setChecked(renderFlags & Renderer::ShowAutoMag);
+    autoMagAction->setChecked((renderFlags & Renderer::ShowAutoMag) != 0u);
 }
 
 
@@ -314,7 +314,7 @@ void CelestiaActions::notifyRenderSettingsChanged(const Renderer* renderer)
 
 void CelestiaActions::slotToggleRenderFlag()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         uint64_t renderFlag = act->data().toULongLong();
@@ -325,7 +325,7 @@ void CelestiaActions::slotToggleRenderFlag()
 
 void CelestiaActions::slotToggleLabel()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         int label = act->data().toInt();
@@ -336,7 +336,7 @@ void CelestiaActions::slotToggleLabel()
 
 void CelestiaActions::slotToggleOrbit()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         int orbit = act->data().toInt();
@@ -347,7 +347,7 @@ void CelestiaActions::slotToggleOrbit()
 
 void CelestiaActions::slotSetStarStyle()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         Renderer::StarStyle starStyle = (Renderer::StarStyle) act->data().toInt();
@@ -358,7 +358,7 @@ void CelestiaActions::slotSetStarStyle()
 
 void CelestiaActions::slotSetTextureResolution()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         int textureResolution = act->data().toInt();
@@ -369,7 +369,7 @@ void CelestiaActions::slotSetTextureResolution()
 
 void CelestiaActions::slotAdjustLimitingMagnitude()
 {
-    QAction* act = qobject_cast<QAction*>(sender());
+    auto* act = qobject_cast<QAction*>(sender());
     if (act != nullptr)
     {
         // HACK!HACK!HACK!
@@ -385,7 +385,7 @@ void CelestiaActions::slotAdjustLimitingMagnitude()
         float change = (float) act->data().toDouble();
 
         QString notification;
-        if (renderer->getRenderFlags() & Renderer::ShowAutoMag)
+        if ((renderer->getRenderFlags() & Renderer::ShowAutoMag) != 0u)
         {
             float newLimitingMag = qBound(6.0f, renderer->getFaintestAM45deg() + change, 12.0f);
             renderer->setFaintestAM45deg(newLimitingMag);
@@ -418,7 +418,7 @@ void CelestiaActions::slotSetLightTimeDelay()
 // to the specified integer value.
 QAction* CelestiaActions::createCheckableAction(const QString& text, QMenu* menu, int data)
 {
-    QAction* act = new QAction(text, menu);
+    auto* act = new QAction(text, menu);
     act->setCheckable(true);
     act->setData(data);
     menu->addAction(act);
@@ -431,7 +431,7 @@ QAction* CelestiaActions::createCheckableAction(const QString& text, QMenu* menu
 // to the specified integer value.
 QAction* CelestiaActions::createCheckableAction(const QString& text, int data)
 {
-    QAction* act = new QAction(text, this);
+    auto* act = new QAction(text, this);
     act->setCheckable(true);
     act->setData(data);
 

@@ -91,10 +91,9 @@ struct SolarSystemPredicate
             Vector3f v1 = p1 * 1.0e6f - pos;
             return (v0.squaredNorm() < v1.squaredNorm());
         }
-        else
-        {
-            return hasPlanets0;
-        }
+        
+                    return hasPlanets0;
+       
     }
 };
 
@@ -104,7 +103,7 @@ struct SolarSystemPredicate
 template<class Pred> static std::vector<const Star*>*
 findStars(const StarDatabase& stardb, Pred pred, int nStars)
 {
-    std::vector<const Star*>* finalStars = new std::vector<const Star*>();
+    auto* finalStars = new std::vector<const Star*>();
     if (nStars == 0)
         return finalStars;
     if(nStars > 500)
@@ -184,7 +183,7 @@ StarBrowser::listStars(unsigned int nStars)
     case StarsWithPlanets:
         {
             SolarSystemCatalog* solarSystems = univ->getSolarSystemCatalog();
-            if (!solarSystems)
+            if (solarSystems == nullptr)
                 return nullptr;
             SolarSystemPredicate solarSysPred;
             solarSysPred.pos = pos;

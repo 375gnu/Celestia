@@ -42,13 +42,13 @@ class CelScriptWrapper : public ExecutionEnvironment
         }
     }
 
-    virtual ~CelScriptWrapper()
+    ~CelScriptWrapper() override
     {
         delete script;
         delete cmdSequence;
     }
 
-    string getErrorMessage() const
+    [[nodiscard]] string getErrorMessage() const
     {
         return errorMessage;
     }
@@ -67,25 +67,25 @@ class CelScriptWrapper : public ExecutionEnvironment
         return script->tick(dt);
     }
 
-    Simulation* getSimulation() const
+    [[nodiscard]] Simulation* getSimulation() const override
     {
         return core.getSimulation();
     }
 
-    Renderer* getRenderer() const
+    [[nodiscard]] Renderer* getRenderer() const override
     {
         return core.getRenderer();
     }
 
-    CelestiaCore* getCelestiaCore() const
+    [[nodiscard]] CelestiaCore* getCelestiaCore() const override
     {
         return &core;
     }
 
     void showText(string s, int horig, int vorig, int hoff, int voff,
-                  double duration)
+                  double duration) override
     {
-        core.showText(std::move(s), horig, vorig, hoff, voff, duration);
+        core.showText(s, horig, vorig, hoff, voff, duration);
     }
 
  private:
@@ -99,7 +99,7 @@ class CelScriptWrapper : public ExecutionEnvironment
 // ==================== Celscript-object ====================
 
 
-int celxClassId(CelScriptWrapper*)
+int celxClassId(CelScriptWrapper* /*unused*/)
 {
     return Celx_CelScript;
 }
@@ -111,8 +111,8 @@ int celscript_from_string(lua_State* l, string& script_text)
     istringstream scriptfile(script_text);
 
     CelestiaCore* appCore = celx.appCore(AllErrors);
-    CelScriptWrapper* celscript = new CelScriptWrapper(*appCore, scriptfile);
-    if (celscript->getErrorMessage() != "")
+    auto* celscript = new CelScriptWrapper(*appCore, scriptfile);
+    if (!celscript->getErrorMessage().empty())
     {
         string error = celscript->getErrorMessage();
         delete celscript;
@@ -136,7 +136,7 @@ static int celscript_tostring(lua_State* l)
 static int celscript_tick(lua_State* l)
 {
     CelxLua celx(l);
-    auto script = *celx.getThis<CelScriptWrapper*>();
+    auto *script = *celx.getThis<CelScriptWrapper*>();
     LuaState* stateObject = celx.getLuaStateObject();
     double t = stateObject->getTime();
     return celx.push(!(script->tick(t)));
@@ -146,7 +146,7 @@ static int celscript_gc(lua_State* l)
 {
     CelxLua celx(l);
 
-    auto script = *celx.getThis<CelScriptWrapper*>();
+    auto *script = *celx.getThis<CelScriptWrapper*>();
     delete script;
     return 0;
 }
@@ -261,7 +261,7 @@ static int image_new(lua_State* l, Image* i)
 }
 #endif
 
-int celxClassId(Image*)
+int celxClassId(Image* /*unused*/)
 {
     return Celx_Image;
 }
@@ -272,7 +272,7 @@ static int image_getheight(lua_State* l)
 
     celx.checkArgs(1, 1, "No arguments expected for image:getheight()");
 
-    auto image = *celx.getThis<Image*>();
+    auto *image = *celx.getThis<Image*>();
     return celx.push(image->getHeight());
 }
 
@@ -289,7 +289,7 @@ static int image_getwidth(lua_State* l)
 static int image_tostring(lua_State* l)
 {
     CelxLua celx(l);
-    auto image = *celx.getThis<Image*>();
+    auto *image = *celx.getThis<Image*>();
     std::string s = fmt::sprintf("[Image:%dx%d]", image->getWidth(), image->getHeight());
     return celx.push(s.c_str());
 }
@@ -315,7 +315,7 @@ static int texture_bind(lua_State* l)
 
     celx.checkArgs(1, 1, "No arguments expected for texture:bind()");
 
-    auto texture = *celx.getThis<Texture*>();
+    auto *texture = *celx.getThis<Texture*>();
     texture->bind();
     return 0;
 }
@@ -326,7 +326,7 @@ static int texture_getheight(lua_State* l)
 
     celx.checkArgs(1, 1, "No arguments expected for texture:getheight()");
 
-    auto texture = *celx.getThis<Texture*>();
+    auto *texture = *celx.getThis<Texture*>();
     return celx.push(texture->getHeight());
 }
 
@@ -336,7 +336,7 @@ static int texture_getwidth(lua_State* l)
 
     celx.checkArgs(1, 1, "No arguments expected for texture:getwidth()");
 
-    auto texture = *celx.getThis<Texture*>();
+    auto *texture = *celx.getThis<Texture*>();
     return celx.push(texture->getWidth());
 }
 
@@ -344,7 +344,7 @@ static int texture_tostring(lua_State* l)
 {
     CelxLua celx(l);
 
-    auto tex = *celx.getThis<Texture*>();
+    auto *tex = *celx.getThis<Texture*>();
     std::string s = fmt::sprintf("[Texture:%dx%d]", tex->getWidth(), tex->getHeight());
     return celx.push(s.c_str());
 }

@@ -97,7 +97,7 @@ public:
 private:
     Quaternionf getOrientation(double tjd) const;
 
-private:
+
     OrientationSampleVector samples;
     mutable int lastSample{0};
 
@@ -153,7 +153,7 @@ Quaternionf
 SampledOrientation::getOrientation(double tjd) const
 {
     Quaternionf orientation;
-    if (samples.size() == 0)
+    if (samples.empty())
     {
         orientation = Quaternionf::Identity();
     }
@@ -172,7 +172,7 @@ SampledOrientation::getOrientation(double tjd) const
         // the search if the covers the requested time.
         if (n < 1 || n >= (int) samples.size() || tjd < samples[n - 1].t || tjd > samples[n].t)
         {
-            OrientationSampleVector::const_iterator iter = lower_bound(samples.begin(),
+            auto iter = lower_bound(samples.begin(),
                                                                        samples.end(),
                                                                        samp);
             if (iter == samples.end())

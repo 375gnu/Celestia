@@ -221,7 +221,7 @@ void gcSetLabelMode(int flag, gboolean state, GConfClient* client)
 
 
 /* GCONF CALLBACK: Reloads labels upon change */
-static void confLabels(GConfClient*, guint, GConfEntry*, AppData* app)
+static void confLabels(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* /*unused*/, AppData* app)
 {
     int oldLabels = app->renderer->getLabelMode();
 
@@ -235,7 +235,7 @@ static void confLabels(GConfClient*, guint, GConfEntry*, AppData* app)
 
 
 /* GCONF CALLBACK: Reloads render flags upon change */
-static void confRender(GConfClient*, guint, GConfEntry*, AppData* app)
+static void confRender(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* /*unused*/, AppData* app)
 {
     int oldRender = app->renderer->getRenderFlags();
 
@@ -249,7 +249,7 @@ static void confRender(GConfClient*, guint, GConfEntry*, AppData* app)
 
 
 /* GCONF CALLBACK: Reloads orbits upon change */
-static void confOrbits(GConfClient*, guint, GConfEntry*, AppData* app)
+static void confOrbits(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* /*unused*/, AppData* app)
 {
     int oldOrbit = app->renderer->getOrbitMask();
 
@@ -263,7 +263,7 @@ static void confOrbits(GConfClient*, guint, GConfEntry*, AppData* app)
 
 
 /* GCONF CALLBACK: Sets window width upon change */
-static void confWinWidth(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confWinWidth(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int w = gconf_value_get_int(e->value);
 
@@ -273,7 +273,7 @@ static void confWinWidth(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets window height upon change */
-static void confWinHeight(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confWinHeight(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int h = gconf_value_get_int(e->value);
 
@@ -283,7 +283,7 @@ static void confWinHeight(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets window X position upon change */
-static void confWinX(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confWinX(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int x = gconf_value_get_int(e->value);
 
@@ -293,7 +293,7 @@ static void confWinX(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets window Y position upon change */
-static void confWinY(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confWinY(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int y = gconf_value_get_int(e->value);
 
@@ -303,7 +303,7 @@ static void confWinY(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Reloads ambient light setting upon change */
-static void confAmbientLight(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confAmbientLight(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     float value = gconf_value_get_float(e->value);
 
@@ -316,7 +316,7 @@ static void confAmbientLight(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Reloads visual magnitude setting upon change */
-static void confVisualMagnitude(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confVisualMagnitude(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     float value = gconf_value_get_float(e->value);
 
@@ -328,7 +328,7 @@ static void confVisualMagnitude(GConfClient*, guint, GConfEntry* e, AppData* app
 
 
 /* GCONF CALLBACK: Reloads galaxy light gain setting upon change */
-static void confGalaxyLightGain(GConfClient*, guint, GConfEntry* e, AppData*)
+static void confGalaxyLightGain(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* /*unused*/)
 {
     float value = gconf_value_get_float(e->value);
 
@@ -340,7 +340,7 @@ static void confGalaxyLightGain(GConfClient*, guint, GConfEntry* e, AppData*)
 
 
 /* GCONF CALLBACK: Sets texture resolution when changed */
-static void confDistanceLimit(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confDistanceLimit(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int value = gconf_value_get_int(e->value);
 
@@ -352,7 +352,7 @@ static void confDistanceLimit(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets "show local time" setting upon change */
-static void confShowLocalTime(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confShowLocalTime(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     gboolean value = gconf_value_get_bool(e->value);
 
@@ -365,7 +365,7 @@ static void confShowLocalTime(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets HUD detail when changed */
-static void confVerbosity(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confVerbosity(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int value = gconf_value_get_int(e->value);
 
@@ -377,7 +377,7 @@ static void confVerbosity(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets window to fullscreen when change occurs */
-static void confFullScreen(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confFullScreen(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     gboolean value = gconf_value_get_bool(e->value);
 
@@ -395,7 +395,7 @@ static void confFullScreen(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets star style when changed */
-static void confStarStyle(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confStarStyle(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int value = gconf_value_get_int(e->value);
 
@@ -407,7 +407,7 @@ static void confStarStyle(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets texture resolution when changed */
-static void confTextureResolution(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confTextureResolution(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     int value = gconf_value_get_int(e->value);
 
@@ -419,7 +419,7 @@ static void confTextureResolution(GConfClient*, guint, GConfEntry* e, AppData* a
 
 
 /* GCONF CALLBACK: Sets alternate surface texture when changed */
-static void confAltSurfaceName(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confAltSurfaceName(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     const char* value = gconf_value_get_string(e->value);
 
@@ -431,7 +431,7 @@ static void confAltSurfaceName(GConfClient*, guint, GConfEntry* e, AppData* app)
 
 
 /* GCONF CALLBACK: Sets video framerate sync when changed */
-static void confVideoSync(GConfClient*, guint, GConfEntry* e, AppData* app)
+static void confVideoSync(GConfClient* /*unused*/, guint /*unused*/, GConfEntry* e, AppData* app)
 {
     gboolean value = gconf_value_get_bool(e->value);
 

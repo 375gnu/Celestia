@@ -89,7 +89,7 @@ public:
         }
     }
 
-    inline bool cullSphere(const Vector3d& center,
+    [[nodiscard]] inline bool cullSphere(const Vector3d& center,
                            double radius) const
     {
         return (center.z() - radius > m_nearZ ||
@@ -100,7 +100,7 @@ public:
                 center.dot(m_planeNormals[3].head(3)) < -radius);
     }
 
-    inline bool cullSphere(const Vector4d& center,
+    [[nodiscard]] inline bool cullSphere(const Vector4d& center,
                            double radius) const
     {
         return (center.z() - radius > m_nearZ ||
@@ -111,8 +111,8 @@ public:
                 center.dot(m_planeNormals[3]) < -radius);
     }
 
-    inline double nearZ() const { return m_nearZ; }
-    inline double farZ() const { return m_farZ; }
+    [[nodiscard]] inline double nearZ() const { return m_nearZ; }
+    [[nodiscard]] inline double farZ() const { return m_farZ; }
 
 private:
     double m_nearZ;
@@ -160,13 +160,8 @@ class HighPrec_VertexBuffer
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    HighPrec_VertexBuffer() :
-        currentPosition(0),
-        capacity(4096),
-        data(nullptr),
-        vbobj(0),
-        currentStripLength(0),
-        lineAsTriangles(false)
+    HighPrec_VertexBuffer() 
+        
     {
         data = new Vertex[(capacity + 1) * 2];
     }
@@ -184,7 +179,7 @@ public:
         currentPosition = 0;
 
         this->lineAsTriangles = lineAsTriangles;
-        if (vbobj)
+        if (vbobj != 0u)
         {
             glBindBuffer(GL_ARRAY_BUFFER, vbobj);
         }
@@ -193,11 +188,11 @@ public:
         glEnableVertexAttribArray(CelestiaGLProgram::ColorAttributeIndex);
         int stride = lineAsTriangles ? sizeof(Vertex) :  sizeof(Vertex) * 2;
 
-        Vector4f* vertexBase = vbobj ? (Vector4f*) offsetof(Vertex, position) : &data[0].position;
+        Vector4f* vertexBase = vbobj != 0u ? (Vector4f*) offsetof(Vertex, position) : &data[0].position;
         glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
                               3, GL_FLOAT, GL_FALSE, stride, vertexBase);
 
-        Vector4f* colorBase = vbobj ? (Vector4f*) offsetof(Vertex, color) : &data[0].color;
+        Vector4f* colorBase = vbobj != 0u ? (Vector4f*) offsetof(Vertex, color) : &data[0].color;
         glVertexAttribPointer(CelestiaGLProgram::ColorAttributeIndex,
                               4, GL_FLOAT, GL_FALSE, stride, colorBase);
         if (lineAsTriangles)
@@ -206,18 +201,18 @@ public:
             glEnableVertexAttribArray(CelestiaGLProgram::NextVCoordAttributeIndex);
             glEnableVertexAttribArray(CelestiaGLProgram::ScaleFactorAttributeIndex);
 
-            float* scaleBase = vbobj ? (float*) offsetof(Vertex, scale) : &data[0].scale;
+            float* scaleBase = vbobj != 0u ? (float*) offsetof(Vertex, scale) : &data[0].scale;
             glVertexAttribPointer(CelestiaGLProgram::ScaleFactorAttributeIndex,
                                   1, GL_FLOAT, GL_FALSE, stride, scaleBase);
 
-            Vector4f* nextVertexBase = vbobj ? (Vector4f*) (offsetof(Vertex, position) + (2 * sizeof(Vertex))) : &data[2].position;
+            Vector4f* nextVertexBase = vbobj != 0u ? (Vector4f*) (offsetof(Vertex, position) + (2 * sizeof(Vertex))) : &data[2].position;
             glVertexAttribPointer(CelestiaGLProgram::NextVCoordAttributeIndex,
                                   4, GL_FLOAT, GL_FALSE, stride, nextVertexBase);
         }
 #endif
     }
 
-    void finish()
+    void finish() const
     {
 #if USE_VERTEX_BUFFER
         glDisableVertexAttribArray(CelestiaGLProgram::ColorAttributeIndex);
@@ -227,7 +222,7 @@ public:
             glDisableVertexAttribArray(CelestiaGLProgram::NextVCoordAttributeIndex);
             glDisableVertexAttribArray(CelestiaGLProgram::ScaleFactorAttributeIndex);
         }
-        if (vbobj)
+        if (vbobj != 0u)
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif
     }
@@ -342,9 +337,8 @@ public:
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * currentPosition * 2, data);
 
             unsigned int startIndex = 0;
-            for (vector<unsigned int>::const_iterator iter = stripLengths.begin(); iter != stripLengths.end(); ++iter)
+            for (int lineCount : stripLengths)
             {
-                int lineCount = *iter;
                 if (lineAsTriangles)
                     glDrawArrays(GL_TRIANGLE_STRIP, startIndex * 2, lineCount * 2);
                 else
@@ -363,7 +357,7 @@ public:
     void createVertexBuffer()
     {
 #if USE_VERTEX_BUFFER
-        if (!vbobj)
+        if (vbobj == 0u)
         {
             glGenBuffers(1, &vbobj);
             glBindBuffer(GL_ARRAY_BUFFER, vbobj);
@@ -385,8 +379,8 @@ public:
     }
 
 private:
-    unsigned int currentPosition;
-    unsigned int capacity;
+    unsigned int currentPosition{0};
+    unsigned int capacity{4096};
     struct Vertex
     {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -394,12 +388,12 @@ private:
         Vector4f color;
         float scale;
     };
-    Vertex* data;
-    GLuint vbobj;
-    unsigned int currentStripLength;
+    Vertex* data{nullptr};
+    GLuint vbobj{0};
+    unsigned int currentStripLength{0};
     vector<unsigned int> stripLengths;
     Vector4f color;
-    bool lineAsTriangles;
+    bool lineAsTriangles{false};
 };
 
 
@@ -426,7 +420,7 @@ public:
     // Return the GL restart status: true if the last segment of the
     // curve was culled and we need to start a new primitive sequence
     // with glBegin().
-    bool renderCubic(bool restartCurve,
+    [[nodiscard]] bool renderCubic(bool restartCurve,
                      const Matrix4d& coeff,
                      double t0, double t1,
                      double curveBoundingRadius,
@@ -496,7 +490,7 @@ public:
     // Return the GL restart status: true if the last segment of the
     // curve was culled and we need to start a new primitive sequence
     // with glBegin().
-    bool renderCubicFaded(bool restartCurve,
+    [[nodiscard]] bool renderCubicFaded(bool restartCurve,
                           const Matrix4d& coeff,
                           double t0, double t1,
                           const Vector4f& color,
@@ -585,8 +579,7 @@ static HighPrec_VertexBuffer vbuf;
 
 
 CurvePlot::CurvePlot()
-{
-}
+= default;
 
 
 /** Add a new sample to the path. If the sample time is less than the first time,

@@ -55,7 +55,7 @@ InfoPanel::InfoPanel(CelestiaCore* _appCore, const QString& title, QWidget* pare
 }
 
 
-void InfoPanel::buildInfoPage(Selection sel,
+void InfoPanel::buildInfoPage(const Selection& sel,
                               Universe* universe,
                               double tdb)
 {
@@ -364,7 +364,7 @@ static void StateVectorToElements(const Vector3d& position,
                                   double GM,
                                   OrbitalElements* elements)
 {
-    Vector3d R = position;
+    const Vector3d& R = position;
     Vector3d L = R.cross(v);
     double magR = R.norm();
     double magL = L.norm();
@@ -447,7 +447,7 @@ static void CalculateOsculatingElements(const Orbit& orbit,
     Vector3d v1 = orbit.velocityAtTime(t + sdt);
 
     double accel = ((v1 - v0) / sdt).norm();
-    Vector3d r = p0;
+    const Vector3d& r = p0;
     double GM = accel * r.squaredNorm();
 
     GetLogger()->debug("vel: {}\n", v0.norm() / 86400.0);

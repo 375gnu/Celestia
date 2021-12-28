@@ -66,9 +66,8 @@ VirtualTexture::VirtualTexture(const fs::path& _tilePath,
     tilePath(_tilePath),
     tilePrefix(_tilePrefix),
     baseSplit(_baseSplit),
-    tileSize(_tileSize),
-    ticks(0),
-    nResolutionLevels(0)
+    tileSize(_tileSize)
+    
 {
     assert(tileSize != 0 && isPow2(tileSize));
     tileTree[0] = new TileQuadtreeNode();
@@ -81,7 +80,7 @@ VirtualTexture::VirtualTexture(const fs::path& _tilePath,
 }
 
 
-const TextureTile VirtualTexture::getTile(int lod, int u, int v)
+TextureTile VirtualTexture::getTile(int lod, int u, int v)
 {
     tilesRequested++;
 #if 0
@@ -106,7 +105,7 @@ const TextureTile VirtualTexture::getTile(int lod, int u, int v)
         unsigned int mask = 1 << (lod - n - 1);
         unsigned int child = (((v & mask) << 1) | (u & mask)) >> (lod - n - 1);
         //int child = (((v << 1) | u) >> (lod - n - 1)) & 3;
-        if (!node->children[child])
+        if (node->children[child] == nullptr)
             break;
 
         node = node->children[child];
@@ -118,7 +117,7 @@ const TextureTile VirtualTexture::getTile(int lod, int u, int v)
     }
 
     // No tile was found at all--not even the base texture was found
-    if (!tile)
+    if (tile == nullptr)
         return TextureTile(0);
 
     // Make the tile resident.
@@ -130,7 +129,7 @@ const TextureTile VirtualTexture::getTile(int lod, int u, int v)
     // because the texture file was bad, or there was an unresolvable
     // out of memory situation.  In that case there is nothing else to
     // do but return a texture tile with a null texture name.
-    if (!tile->tex)
+    if (tile->tex == nullptr)
         return TextureTile(0);
 
     // Set up the texture subrect to be the entire texture
@@ -269,7 +268,7 @@ void VirtualTexture::populateTileTree()
             int uLimit = 2 << maxLevel;
             int vLimit = 1 << maxLevel;
 
-            for (auto& d : fs::directory_iterator(path, ec))
+            for (const auto & d : fs::directory_iterator(path, ec))
             {
                 int u = -1, v = -1;
                 if (sscanf(d.path().filename().string().c_str(), pattern.c_str(), &u, &v) == 2)
@@ -297,7 +296,7 @@ void VirtualTexture::addTileToTree(Tile* tile, unsigned int lod, unsigned int u,
     {
         unsigned int mask = 1 << (lod - i - 1);
         unsigned int child = (((v & mask) << 1) | (u & mask)) >> (lod - i - 1);
-        if (!node->children[child])
+        if (node->children[child] == nullptr)
             node->children[child] = new TileQuadtreeNode();
         node = node->children[child];
     }
@@ -306,7 +305,7 @@ void VirtualTexture::addTileToTree(Tile* tile, unsigned int lod, unsigned int u,
 #endif
 
     // Verify that the tile doesn't already exist
-    if (!node->tile)
+    if (node->tile == nullptr)
         node->tile = tile;
 }
 

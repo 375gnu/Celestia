@@ -47,7 +47,7 @@ void dialogSolarBrowser(AppData* app)
                                                      GTK_STOCK_CLOSE,
                                                      GTK_RESPONSE_CLOSE,
                                                      NULL);
-    app->simulation->setSelection(Selection((Star *) NULL));
+    app->simulation->setSelection(Selection((Star *) nullptr));
 
     /* Solar System Browser */
     GtkWidget *mainbox = gtk_dialog_get_content_area(GTK_DIALOG(browser));
@@ -202,7 +202,7 @@ static void loadNearestStarSystem(AppData* app, GtkWidget* solarTree, GtkTreeSto
     gtk_tree_store_clear(solarTreeStore);
     gtk_tree_store_append(solarTreeStore, &top, NULL);
 
-    if (solarSys != NULL)
+    if (solarSys != nullptr)
     {
         nearestStar = solarSys->getStar();
 

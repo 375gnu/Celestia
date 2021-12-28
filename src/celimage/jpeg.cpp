@@ -10,7 +10,7 @@
 
 #include <cstdio>  // fopen, fclose
 #include <cstring> // memcpy
-#include <setjmp.h>
+#include <csetjmp>
 extern "C" {
 #include <jpeglib.h>
 }
@@ -33,7 +33,7 @@ using my_error_ptr = struct my_error_mgr *;
 METHODDEF(void) my_error_exit(j_common_ptr cinfo)
 {
     // cinfo->err really points to a my_error_mgr struct, so coerce pointer
-    auto myerr = (my_error_ptr) cinfo->err;
+    auto *myerr = (my_error_ptr) cinfo->err;
 
     // Always display the message.
     // We could postpone this until after returning, if we chose.
@@ -72,7 +72,7 @@ Image* LoadJPEGImage(const fs::path& filename, int /*unused*/)
 #else
     in = fopen(filename.c_str(), "rb");
 #endif
-    if (!in)
+    if (in == nullptr)
         return nullptr;
 
     // Step 1: allocate and initialize JPEG decompression object

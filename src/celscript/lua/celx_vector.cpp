@@ -22,7 +22,7 @@ int vector_new(lua_State* l, const Vector3d& v)
 {
     CelxLua celx(l);
 
-    auto v3 = reinterpret_cast<Vector3d*>(lua_newuserdata(l, aligned_sizeof<Vector3d>()));
+    auto *v3 = reinterpret_cast<Vector3d*>(lua_newuserdata(l, aligned_sizeof<Vector3d>()));
     *aligned_addr(v3) = v;
     celx.setClass(Celx_Vec3);
 
@@ -32,7 +32,7 @@ int vector_new(lua_State* l, const Vector3d& v)
 Vector3d* to_vector(lua_State* l, int index)
 {
     CelxLua celx(l);
-    auto v = reinterpret_cast<Vector3d*>(celx.checkUserData(index, Celx_Vec3));
+    auto *v = reinterpret_cast<Vector3d*>(celx.checkUserData(index, Celx_Vec3));
 
     return aligned_addr(v);
 }
@@ -41,7 +41,7 @@ static Vector3d* this_vector(lua_State* l)
 {
     CelxLua celx(l);
 
-    auto v3 = to_vector(l, 1);
+    auto *v3 = to_vector(l, 1);
     if (v3 == nullptr)
     {
         celx.doError("Bad vector object!");
@@ -56,8 +56,8 @@ static int vector_sub(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(2, 2, "Need two operands for sub");
-    auto op1 = celx.toVector(1);
-    auto op2 = celx.toVector(2);
+    auto *op1 = celx.toVector(1);
+    auto *op2 = celx.toVector(2);
     if (op1 == nullptr || op2 == nullptr)
     {
         celx.doError("Subtraction only defined for two vectors");
@@ -75,7 +75,7 @@ static int vector_get(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(2, 2, "Invalid access of vector-component");
-    auto v3 = this_vector(l);
+    auto *v3 = this_vector(l);
     string key = celx.safeGetString(2, AllErrors, "Invalid key in vector-access");
     double value = 0.0;
     if (key == "x")
@@ -86,7 +86,7 @@ static int vector_get(lua_State* l)
         value = v3->z();
     else
     {
-        if (!lua_getmetatable(l, 1))
+        if (lua_getmetatable(l, 1) == 0)
         {
             celx.doError("Internal error: couldn't get metatable");
             return 0;
@@ -105,7 +105,7 @@ static int vector_set(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(3, 3, "Invalid access of vector-component");
-    auto v3 = this_vector(l);
+    auto *v3 = this_vector(l);
     string key = celx.safeGetString(2, AllErrors, "Invalid key in vector-access");
     double value = celx.safeGetNumber(3, AllErrors, "Vector components must be numbers");
     if (key == "x")
@@ -126,7 +126,7 @@ static int vector_getx(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for vector:getx");
-    auto v3 = this_vector(l);
+    auto *v3 = this_vector(l);
     lua_Number x;
     x = static_cast<lua_Number>(v3->x());
     lua_pushnumber(l, x);
@@ -139,7 +139,7 @@ static int vector_gety(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for vector:gety");
-    auto v3 = this_vector(l);
+    auto *v3 = this_vector(l);
     lua_Number y;
     y = static_cast<lua_Number>(v3->y());
     lua_pushnumber(l, y);
@@ -152,7 +152,7 @@ static int vector_getz(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for vector:getz");
-    auto v3 = this_vector(l);
+    auto *v3 = this_vector(l);
     lua_Number z;
     z = static_cast<lua_Number>(v3->z());
     lua_pushnumber(l, z);
@@ -165,7 +165,7 @@ static int vector_normalize(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for vector:normalize");
-    auto v = this_vector(l);
+    auto *v = this_vector(l);
     celx.newVector(v->normalized());
     return 1;
 }
@@ -175,7 +175,7 @@ static int vector_length(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for vector:length");
-    auto v = this_vector(l);
+    auto *v = this_vector(l);
     double length = v->norm();
     lua_pushnumber(l, (lua_Number)length);
     return 1;
@@ -226,7 +226,7 @@ static int vector_mult(lua_State* l)
         lua_pushnumber(l, (lua_Number)v1->dot(*v2));
     }
     else
-        if (celx.isType(1, Celx_Vec3) && lua_isnumber(l, 2))
+        if (celx.isType(1, Celx_Vec3) && (lua_isnumber(l, 2) != 0))
         {
             v1 = celx.toVector(1);
             s = lua_tonumber(l, 2);
@@ -240,7 +240,7 @@ static int vector_mult(lua_State* l)
             celx.newRotation(Quaterniond(0, v1->x(), v1->y(), v1->z()) * *q);
         }
     else
-        if (lua_isnumber(l, 1) && celx.isType(2, Celx_Vec3))
+        if ((lua_isnumber(l, 1) != 0) && celx.isType(2, Celx_Vec3))
         {
             s = lua_tonumber(l, 1);
             v1 = celx.toVector(2);

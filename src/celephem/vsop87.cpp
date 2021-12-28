@@ -10853,7 +10853,7 @@ static VSOPTerm sun_Z2[] = {
 };
 
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define VSOP_SERIES(s) VSOPSeries(s, ARRAY_SIZE(s))
 
 static VSOPSeries mercury_L[] = {
@@ -11224,7 +11224,7 @@ Orbit* CreateVSOP87Orbit(const string& name)
         return new MixedOrbit(o, yearToJD(-4000), yearToJD(4000),
                               astro::SolarMass);
     }
-    else if (name == "vsop87-venus")
+    if (name == "vsop87-venus")
     {
         Orbit* o = new VSOP87Orbit(venus_L, 6,
                                    venus_B, 6,

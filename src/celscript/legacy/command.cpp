@@ -20,6 +20,7 @@
 #include <celutil/logger.h>
 #include <celmath/mathlib.h>
 #include <iostream>
+#include <memory>
 #include <utility>
 #include <algorithm>
 #include <Eigen/Geometry>
@@ -581,7 +582,7 @@ void CommandSet::process(ExecutionEnvironment& env)
 // Mark object command
 
 CommandMark::CommandMark(string _target,
-                         celestia::MarkerRepresentation _rep,
+                         const celestia::MarkerRepresentation& _rep,
                          bool _occludable) :
     target(std::move(_target)),
     rep(_rep),
@@ -895,7 +896,7 @@ RepeatCommand::RepeatCommand(CommandSequence* _body, int _repeatCount) :
     body(_body),
     repeatCount(_repeatCount)
 {
-    for (const auto b : *body)
+    for (auto *const b : *body)
     {
         bodyDuration += b->getDuration();
     }
@@ -955,19 +956,19 @@ CommandScriptImage::CommandScriptImage(float _duration, float _fadeafter,
     xoffset(_xoffset),
     yoffset(_yoffset),
     filename(_filename),
-    fitscreen(_fitscreen)
+    fitscreen(static_cast<int>(_fitscreen))
 {
     copy(_colors.begin(), _colors.end(), colors.begin());
 }
 
 void CommandScriptImage::process(ExecutionEnvironment& env)
 {
-    auto image = unique_ptr<OverlayImage>(new OverlayImage(filename, env.getRenderer()));
+    auto image = std::make_unique<OverlayImage>(filename, env.getRenderer());
     image->setDuration(duration);
     image->setFadeAfter(fadeafter);
     image->setOffset(xoffset, yoffset);
     image->setColor(colors);
-    image->fitScreen(fitscreen);
+    image->fitScreen(fitscreen != 0);
     env.getCelestiaCore()->setScriptImage(std::move(image));
 }
 
@@ -993,7 +994,7 @@ void CommandConstellations::process(ExecutionEnvironment& env)
         return;
 
     AsterismList& asterisms = *u->getAsterisms();
-    for (const auto ast : asterisms)
+    for (auto *const ast : asterisms)
     {
         if (flags.none)
         {
@@ -1041,7 +1042,7 @@ void CommandConstellationColor::process(ExecutionEnvironment& env)
         return;
 
     AsterismList& asterisms = *u->getAsterisms();
-    for (const auto ast : asterisms)
+    for (auto *const ast : asterisms)
     {
         if (flags.none)
         {

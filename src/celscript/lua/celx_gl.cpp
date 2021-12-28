@@ -22,15 +22,15 @@ static int glu_LookAt(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(9, 9, "Nine arguments expected for glu.LookAt()");
-    float ix = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Frustum must be a number", 0.0);
-    float iy = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Frustum must be a number", 0.0);
-    float iz = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Frustum must be a number", 0.0);
-    float cx = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
-    float cy = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
-    float cz = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
-    float ux = (float)celx.safeGetNumber(7, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
-    float uy = (float)celx.safeGetNumber(8, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
-    float uz = (float)celx.safeGetNumber(9, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
+    auto ix = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Frustum must be a number", 0.0);
+    auto iy = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Frustum must be a number", 0.0);
+    auto iz = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Frustum must be a number", 0.0);
+    auto cx = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
+    auto cy = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
+    auto cz = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
+    auto ux = (float)celx.safeGetNumber(7, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
+    auto uy = (float)celx.safeGetNumber(8, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
+    auto uz = (float)celx.safeGetNumber(9, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
     gluLookAt(ix,iy,iz,cx,cy,cz,ux,uy,uz);
     return 0;
 }
@@ -39,12 +39,12 @@ static int gl_Frustum(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(6, 6, "Six arguments expected for gl.Frustum()");
-    float ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Frustum must be a number", 0.0);
-    float r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Frustum must be a number", 0.0);
-    float b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Frustum must be a number", 0.0);
-    float t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
-    float n = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
-    float f = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
+    auto ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Frustum must be a number", 0.0);
+    auto r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Frustum must be a number", 0.0);
+    auto b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Frustum must be a number", 0.0);
+    auto t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Frustum must be a number", 0.0);
+    auto n = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Frustum must be a number", 0.0);
+    auto f = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Frustum must be a number", 0.0);
     glFrustum(ll,r,b,t,n,f);
     return 0;
 }
@@ -53,12 +53,12 @@ static int gl_Ortho(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(6, 6, "Six arguments expected for gl.Ortho()");
-    float ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Ortho must be a number", 0.0);
-    float r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Ortho must be a number", 0.0);
-    float b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Ortho must be a number", 0.0);
-    float t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Ortho must be a number", 0.0);
-    float n = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Ortho must be a number", 0.0);
-    float f = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Ortho must be a number", 0.0);
+    auto ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Ortho must be a number", 0.0);
+    auto r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Ortho must be a number", 0.0);
+    auto b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Ortho must be a number", 0.0);
+    auto t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Ortho must be a number", 0.0);
+    auto n = (float)celx.safeGetNumber(5, WrongType, "argument 5 to gl.Ortho must be a number", 0.0);
+    auto f = (float)celx.safeGetNumber(6, WrongType, "argument 6 to gl.Ortho must be a number", 0.0);
     glOrtho(ll,r,b,t,n,f);
     return 0;
 }
@@ -67,10 +67,10 @@ static int glu_Ortho2D(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(4, 4, "Six arguments expected for gl.Ortho2D()");
-    float ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Ortho must be a number", 0.0);
-    float r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Ortho must be a number", 0.0);
-    float b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Ortho must be a number", 0.0);
-    float t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Ortho must be a number", 0.0);
+    auto ll = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Ortho must be a number", 0.0);
+    auto r = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Ortho must be a number", 0.0);
+    auto b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Ortho must be a number", 0.0);
+    auto t = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Ortho must be a number", 0.0);
     gluOrtho2D(ll,r,b,t);
     return 0;
 }
@@ -79,8 +79,8 @@ static int gl_TexCoord(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(2, 2, "Two arguments expected for gl.TexCoord()");
-    float x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.TexCoord must be a number", 0.0);
-    float y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.TexCoord must be a number", 0.0);
+    auto x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.TexCoord must be a number", 0.0);
+    auto y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.TexCoord must be a number", 0.0);
     glTexCoord2f(x,y);
     return 0;
 }
@@ -92,9 +92,9 @@ static int gl_TexParameter(lua_State* l)
 
     // TODO: Need to ensure that these values are integers, or better yet use
     // names.
-    float x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.TexParameter must be a number", 0.0);
-    float y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.TexParameter must be a number", 0.0);
-    float z = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.TexParameter must be a number", 0.0);
+    auto x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.TexParameter must be a number", 0.0);
+    auto y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.TexParameter must be a number", 0.0);
+    auto z = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.TexParameter must be a number", 0.0);
     glTexParameteri((GLint) x, (GLenum) y, (GLenum) z);
     return 0;
 }
@@ -103,8 +103,8 @@ static int gl_Vertex(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(2, 2, "Two arguments expected for gl.Vertex()");
-    float x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Vertex must be a number", 0.0);
-    float y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Vertex must be a number", 0.0);
+    auto x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Vertex must be a number", 0.0);
+    auto y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Vertex must be a number", 0.0);
     glVertex2f(x,y);
     return 0;
 }
@@ -113,10 +113,10 @@ static int gl_Color(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(4, 4, "Four arguments expected for gl.Color()");
-    float r = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Color must be a number", 0.0);
-    float g = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Color must be a number", 0.0);
-    float b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Color must be a number", 0.0);
-    float a = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Color must be a number", 0.0);
+    auto r = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Color must be a number", 0.0);
+    auto g = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Color must be a number", 0.0);
+    auto b = (float)celx.safeGetNumber(3, WrongType, "argument 3 to gl.Color must be a number", 0.0);
+    auto a = (float)celx.safeGetNumber(4, WrongType, "argument 4 to gl.Color must be a number", 0.0);
     glColor4f(r,g,b,a);
     //    glColor4f(0.8f, 0.5f, 0.5f, 1.0f);
     glVertexAttrib4f(CelestiaGLProgram::ColorAttributeIndex, r, g, b, a);
@@ -127,7 +127,7 @@ static int gl_LineWidth(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(1, 1, "One argument expected for gl.LineWidth()");
-    float n = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.LineWidth must be a number", 1.0);
+    auto n = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.LineWidth must be a number", 1.0);
     glLineWidth(n);
     return 0;
 }
@@ -136,8 +136,8 @@ static int gl_Translate(lua_State* l)
 {
     CelxLua celx(l);
     celx.checkArgs(2, 2, "Two arguments expected for gl.Translate()");
-    float x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Translate must be a number", 0.0);
-    float y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Translate must be a number", 0.0);
+    auto x = (float)celx.safeGetNumber(1, WrongType, "argument 1 to gl.Translate must be a number", 0.0);
+    auto y = (float)celx.safeGetNumber(2, WrongType, "argument 2 to gl.Translate must be a number", 0.0);
     glTranslatef(x,y,0.0f);
     return 0;
 }

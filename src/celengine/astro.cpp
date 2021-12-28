@@ -351,7 +351,7 @@ astro::Date::Date(double jd)
     }
     else
     {
-        double b = (double) ((int64_t) floor((a - 1867216.25) / 36524.25));
+        auto b = (double) ((int64_t) floor((a - 1867216.25) / 36524.25));
         c = a + b - (int64_t) floor(b / 4) + 1525;
     }
 

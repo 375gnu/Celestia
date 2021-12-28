@@ -43,8 +43,8 @@ class FramebufferObject
     GLuint colorTexture() const;
     GLuint depthTexture() const;
 
-    bool bind();
-    bool unbind(GLint oldfboId);
+    bool bind() const;
+    static bool unbind(GLint oldfboId);
 
  private:
     void generateColorTexture();

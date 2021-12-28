@@ -64,7 +64,7 @@ static size_t initArrow(VertexObject &vo)
         Vector3f v0(shaftRadius * c, shaftRadius * s, 0.0f);
         if (i > 0)
             circle.push_back(v0);
-        circle.push_back(Vector3f::Zero());
+        circle.emplace_back(Vector3f::Zero());
         circle.push_back(v0);
 
         // shaft

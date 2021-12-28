@@ -67,13 +67,13 @@ public:
 class Vec3d
 {
 public:
-    Vec3d() : x(0.0), y(0.0), z(0.0) {}
+    Vec3d()  {}
     Vec3d(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
     Vec3d(const double v[]) : x(v[0]), y(v[1]), z(v[2]) {}
 
-    double length() const { return std::sqrt(x * x + y * y + z * z); }
+    [[nodiscard]] double length() const { return std::sqrt(x * x + y * y + z * z); }
 
-    double x, y, z;
+    double x{0.0}, y{0.0}, z{0.0};
 };
 
 // Vector add
@@ -140,7 +140,7 @@ istream& operator>>(istream& in, QuotedString& qs)
     char c = '\0';
 
     in >> c;
-    while (in && isspace(c))
+    while ((in != 0) && (isspace(c) != 0))
     {
         in >> c;
     }
@@ -154,13 +154,13 @@ istream& operator>>(istream& in, QuotedString& qs)
     string s;
 
     in >> c;
-    while (in && c != '"')
+    while ((in != 0) && c != '"')
     {
         s += c;
         in.get(c);
     }
 
-    if (in)
+    if (in != 0)
         qs.value = s;
 
     return in;
@@ -189,12 +189,12 @@ istream& operator>>(istream& in, QuotedStringList& qsl)
     }
 
     in >> c;
-    while (in && c == '"')
+    while ((in != 0) && c == '"')
     {
         in.unget();
 
         QuotedString qs;
-        if (in >> qs)
+        if (in >> qs != 0)
         {
             qsl.value.push_back(qs.value);
             in >> c;
@@ -277,15 +277,7 @@ bool bodyNameToId(const std::string& name, SpiceInt* naifId)
     istringstream str(name, istringstream::in);
     int id = 0;
     str >> id;
-    if (str.eof())
-    {
-        *naifId = id;
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return ;
 }
 
 

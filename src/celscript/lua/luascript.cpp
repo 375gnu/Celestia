@@ -7,6 +7,7 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
+#include <memory>
 #include <set>
 #include <string>
 #include <fstream>
@@ -91,7 +92,7 @@ unique_ptr<IScript> LuaScriptPlugin::loadScript(const fs::path &path)
         return nullptr;
     }
 
-    auto script = unique_ptr<LuaScript>(new LuaScript(appCore()));
+    auto script = std::make_unique<LuaScript>(appCore());
     string errMsg;
     if (!script->load(scriptfile, path, errMsg))
     {
@@ -141,7 +142,7 @@ class LuaPathFinder
     set<fs::path> dirs;
 
  public:
-    const string getLuaPath() const
+    [[nodiscard]] string getLuaPath() const
     {
         string out;
         for (const auto& dir : dirs)
@@ -198,7 +199,7 @@ bool CreateLuaEnvironment(CelestiaCore *appCore, const CelestiaConfig *config, P
 {
     auto LuaPath = lua_path(config);
 
-    LuaState *luaHook = new LuaState();
+    auto *luaHook = new LuaState();
     luaHook->init(appCore);
 
     // Always grant access for the Lua hook
@@ -245,7 +246,7 @@ bool CreateLuaEnvironment(CelestiaCore *appCore, const CelestiaConfig *config, P
 
         if (luaHook != nullptr)
         {
-            auto lh = unique_ptr<LuaHook>(new LuaHook(appCore));
+            auto lh = std::make_unique<LuaHook>(appCore);
             lh->m_state = unique_ptr<LuaState>(luaHook);
             appCore->setScriptHook(std::move(lh));
 
@@ -263,7 +264,7 @@ bool CreateLuaEnvironment(CelestiaCore *appCore, const CelestiaConfig *config, P
     }
     else
     {
-        auto luaSandbox = new LuaState();
+        auto *luaSandbox = new LuaState();
         luaSandbox->init(appCore);
 
         // Allow access to functions in package because we need 'require'

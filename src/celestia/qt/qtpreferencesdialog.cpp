@@ -117,14 +117,14 @@ PreferencesDialog::PreferencesDialog(QWidget* parent, CelestiaCore* core) :
 
     ui.orbitsCheck->setChecked((renderFlags & Renderer::ShowOrbits) != 0);
     ui.fadingOrbitsCheck->setChecked((renderFlags & Renderer::ShowFadingOrbits) != 0);
-    ui.starOrbitsCheck->setChecked(orbitMask & Body::Stellar);
-    ui.planetOrbitsCheck->setChecked(orbitMask & Body::Planet);
-    ui.dwarfPlanetOrbitsCheck->setChecked(orbitMask & Body::DwarfPlanet);
-    ui.moonOrbitsCheck->setChecked(orbitMask & Body::Moon);
-    ui.minorMoonOrbitsCheck->setChecked(orbitMask & Body::MinorMoon);
-    ui.asteroidOrbitsCheck->setChecked(orbitMask & Body::Asteroid);
-    ui.cometOrbitsCheck->setChecked(orbitMask & Body::Comet);
-    ui.spacecraftOrbitsCheck->setChecked(orbitMask & Body::Spacecraft);
+    ui.starOrbitsCheck->setChecked((orbitMask & Body::Stellar) != 0);
+    ui.planetOrbitsCheck->setChecked((orbitMask & Body::Planet) != 0);
+    ui.dwarfPlanetOrbitsCheck->setChecked((orbitMask & Body::DwarfPlanet) != 0);
+    ui.moonOrbitsCheck->setChecked((orbitMask & Body::Moon) != 0);
+    ui.minorMoonOrbitsCheck->setChecked((orbitMask & Body::MinorMoon) != 0);
+    ui.asteroidOrbitsCheck->setChecked((orbitMask & Body::Asteroid) != 0);
+    ui.cometOrbitsCheck->setChecked((orbitMask & Body::Comet) != 0);
+    ui.spacecraftOrbitsCheck->setChecked((orbitMask & Body::Spacecraft) != 0);
     ui.partialTrajectoriesCheck->setChecked((renderFlags & Renderer::ShowPartialTrajectories) != 0);
 
     ui.equatorialGridCheck->setChecked((renderFlags & Renderer::ShowCelestialSphere) != 0);
@@ -134,24 +134,24 @@ PreferencesDialog::PreferencesDialog(QWidget* parent, CelestiaCore* core) :
 
     ui.diagramsCheck->setChecked((renderFlags & Renderer::ShowDiagrams) != 0);
     ui.boundariesCheck->setChecked((renderFlags & Renderer::ShowBoundaries) != 0);
-    ui.latinNamesCheck->setChecked(!(labelMode & Renderer::I18nConstellationLabels));
+    ui.latinNamesCheck->setChecked((labelMode & Renderer::I18nConstellationLabels) == 0);
 
     ui.markersCheck->setChecked((renderFlags & Renderer::ShowMarkers) != 0);
     ui.eclipticLineCheck->setChecked((renderFlags & Renderer::ShowEcliptic) != 0);
 
-    ui.starLabelsCheck->setChecked(labelMode & Renderer::StarLabels);
-    ui.planetLabelsCheck->setChecked(labelMode & Renderer::PlanetLabels);
-    ui.dwarfPlanetLabelsCheck->setChecked(labelMode & Renderer::DwarfPlanetLabels);
-    ui.moonLabelsCheck->setChecked(labelMode & Renderer::MoonLabels);
-    ui.minorMoonLabelsCheck->setChecked(labelMode & Renderer::MinorMoonLabels);
-    ui.asteroidLabelsCheck->setChecked(labelMode & Renderer::AsteroidLabels);
-    ui.cometLabelsCheck->setChecked(labelMode & Renderer::CometLabels);
-    ui.spacecraftLabelsCheck->setChecked(labelMode & Renderer::SpacecraftLabels);
-    ui.galaxyLabelsCheck->setChecked(labelMode & Renderer::GalaxyLabels);
-    ui.nebulaLabelsCheck->setChecked(labelMode & Renderer::NebulaLabels);
-    ui.openClusterLabelsCheck->setChecked(labelMode & Renderer::OpenClusterLabels);
-    ui.globularClusterLabelsCheck->setChecked(labelMode & Renderer::GlobularLabels);
-    ui.constellationLabelsCheck->setChecked(labelMode & Renderer::ConstellationLabels);
+    ui.starLabelsCheck->setChecked((labelMode & Renderer::StarLabels) != 0);
+    ui.planetLabelsCheck->setChecked((labelMode & Renderer::PlanetLabels) != 0);
+    ui.dwarfPlanetLabelsCheck->setChecked((labelMode & Renderer::DwarfPlanetLabels) != 0);
+    ui.moonLabelsCheck->setChecked((labelMode & Renderer::MoonLabels) != 0);
+    ui.minorMoonLabelsCheck->setChecked((labelMode & Renderer::MinorMoonLabels) != 0);
+    ui.asteroidLabelsCheck->setChecked((labelMode & Renderer::AsteroidLabels) != 0);
+    ui.cometLabelsCheck->setChecked((labelMode & Renderer::CometLabels) != 0);
+    ui.spacecraftLabelsCheck->setChecked((labelMode & Renderer::SpacecraftLabels) != 0);
+    ui.galaxyLabelsCheck->setChecked((labelMode & Renderer::GalaxyLabels) != 0);
+    ui.nebulaLabelsCheck->setChecked((labelMode & Renderer::NebulaLabels) != 0);
+    ui.openClusterLabelsCheck->setChecked((labelMode & Renderer::OpenClusterLabels) != 0);
+    ui.globularClusterLabelsCheck->setChecked((labelMode & Renderer::GlobularLabels) != 0);
+    ui.constellationLabelsCheck->setChecked((labelMode & Renderer::ConstellationLabels) != 0);
 
     ui.locationsCheck->setChecked((labelMode & Renderer::LocationLabels) != 0);
     ui.citiesCheck->setChecked((locationFlags & Location::City) != 0);
@@ -178,8 +178,8 @@ PreferencesDialog::PreferencesDialog(QWidget* parent, CelestiaCore* core) :
     ui.renderPathBox->addItem(_("OpenGL 2.1"), 0);
 #endif
 
-    ui.antialiasLinesCheck->setChecked(renderFlags & Renderer::ShowSmoothLines);
-    ui.tintedIlluminationCheck->setChecked(renderFlags & Renderer::ShowTintedIllumination);
+    ui.antialiasLinesCheck->setChecked((renderFlags & Renderer::ShowSmoothLines) != 0u);
+    ui.tintedIlluminationCheck->setChecked((renderFlags & Renderer::ShowTintedIllumination) != 0u);
 
     switch (renderer->getResolution())
     {
@@ -218,7 +218,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent, CelestiaCore* core) :
     ui.starColorBox->addItem(_("Classic colors"), ColorTable_Enhanced);
     SetComboBoxValue(ui.starColorBox, colors);
 
-    ui.autoMagnitudeCheck->setChecked(renderFlags & Renderer::ShowAutoMag);
+    ui.autoMagnitudeCheck->setChecked((renderFlags & Renderer::ShowAutoMag) != 0u);
 
 #ifndef _WIN32
     ui.dateFormatBox->addItem(_("Local format"), astro::Date::Locale);
@@ -699,7 +699,7 @@ void PreferencesDialog::on_featureSizeSlider_valueChanged(int value)
 }
 
 
-void PreferencesDialog::on_featureSizeEdit_textEdited(const QString& text)
+void PreferencesDialog::on_featureSizeEdit_textEdited(const QString& text) const
 {
     int featureSize = text.toInt();
     ui.featureSizeSlider->setValue(featureSize);
@@ -819,7 +819,7 @@ void PreferencesDialog::on_starColorBox_currentIndexChanged(int index)
 {
     Renderer* renderer = appCore->getRenderer();
     QVariant itemData = ui.starColorBox->itemData(index, Qt::UserRole);
-    ColorTableType value = (ColorTableType) itemData.toInt();
+    auto value = (ColorTableType) itemData.toInt();
     renderer->setStarColorTable(GetStarColorTable(value));
 }
 
@@ -829,6 +829,6 @@ void PreferencesDialog::on_starColorBox_currentIndexChanged(int index)
 void PreferencesDialog::on_dateFormatBox_currentIndexChanged(int index)
 {
     QVariant itemData = ui.dateFormatBox->itemData(index, Qt::UserRole);
-    astro::Date::Format dateFormat = (astro::Date::Format) itemData.toInt();
+    auto dateFormat = (astro::Date::Format) itemData.toInt();
     appCore->setDateFormat(dateFormat);
 }

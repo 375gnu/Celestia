@@ -12,7 +12,7 @@
 
 #include <fstream>
 #include <gtk/gtk.h>
-#include <time.h>
+#include <ctime>
 
 #include <celengine/astro.h>
 #include <celengine/galaxy.h>
@@ -237,9 +237,9 @@ void setSaneTextureResolution(AppData* app, int value)
 
 
 /* Sanitizes and sets Altername Surface Name */
-void setSaneAltSurface(AppData* app, char* value)
+void setSaneAltSurface(AppData* app, const char* value)
 {
-    if (value == NULL)
+    if (value == nullptr)
         value = (char*)"";
 
     app->simulation->getActiveObserver()->setDisplayedSurface(value);

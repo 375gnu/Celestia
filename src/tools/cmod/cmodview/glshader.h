@@ -140,14 +140,14 @@ public:
 
     static bool hasOpenGLShaderPrograms();
 
-    void setUniformValue(const char* name, float value);
-    void setSampler(const char* name, int value);
-    void setSamplerArray(const char* name, const GLint* values, int count);
+    void setUniformValue(const char* name, float value) const;
+    void setSampler(const char* name, int value) const;
+    void setSamplerArray(const char* name, const GLint* values, int count) const;
     template<typename DERIVED> void setUniformValue(const char* name, const Eigen::MatrixBase<DERIVED>& value);
-    void setUniformValueArray(const char* name, const Eigen::Vector3f* values, int count);
-    void setUniformValueArray(const char* name, const Eigen::Vector4f* values, int count);
-    void setUniformValueArray(const char* name, const Eigen::Matrix4f* values, int count);
-    void bindAttributeLocation(const char* name, int location);
+    void setUniformValueArray(const char* name, const Eigen::Vector3f* values, int count) const;
+    void setUniformValueArray(const char* name, const Eigen::Vector4f* values, int count) const;
+    void setUniformValueArray(const char* name, const Eigen::Matrix4f* values, int count) const;
+    void bindAttributeLocation(const char* name, int location) const;
 
 private:
     GLVertexShader* m_vertexShader;

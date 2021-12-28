@@ -103,7 +103,7 @@ void renderGeometryShadow_GLSL(Geometry* geometry,
     // Re-enable the color buffer
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glCullFace(GL_BACK);
-    shadowFbo->unbind(oldFboId);
+    FramebufferObject::unbind(oldFboId);
 }
 
 } // end unnamed namespace
@@ -142,7 +142,7 @@ void renderEllipsoid_GLSL(const RenderInfo& ri,
     {
         shadprop.texUsage |= ShaderProperties::NormalTexture;
         textures[nTextures++] = ri.bumpTex;
-        if (ri.bumpTex->getFormatOptions() & Texture::DXT5NormalMap)
+        if ((ri.bumpTex->getFormatOptions() & Texture::DXT5NormalMap) != 0u)
             shadprop.texUsage |= ShaderProperties::CompressedNormalTexture;
     }
 
@@ -245,7 +245,7 @@ void renderEllipsoid_GLSL(const RenderInfo& ri,
 
     for (unsigned int li = 0; li < ls.nLights; li++)
     {
-        if (ls.shadows[li] && !ls.shadows[li]->empty())
+        if ((ls.shadows[li] != nullptr) && !ls.shadows[li]->empty())
         {
             unsigned int nShadows = static_cast<unsigned int>(std::min(static_cast<std::size_t>(MaxShaderEclipseShadows),
                                                                        ls.shadows[li]->size()));
@@ -254,7 +254,7 @@ void renderEllipsoid_GLSL(const RenderInfo& ri,
         }
     }
 
-    if (ls.shadowingRingSystem)
+    if (ls.shadowingRingSystem != nullptr)
     {
         Texture* ringsTex = ls.shadowingRingSystem->texture.find(textureRes);
         if (ringsTex != nullptr)
@@ -382,7 +382,7 @@ void renderGeometry_GLSL(Geometry* geometry,
     if (shadowBuffer != nullptr && shadowBuffer->isValid())
     {
         std::array<int, 4> viewport;
-        renderer->getViewport(viewport);
+        Renderer::getViewport(viewport);
 
         float range[2];
         glGetFloatv(GL_DEPTH_RANGE, range);
@@ -400,7 +400,7 @@ void renderGeometry_GLSL(Geometry* geometry,
 
         renderGeometryShadow_GLSL(geometry, shadowBuffer, ls, 0,
                                   tsec, renderer, &lightMatrix);
-        renderer->setViewport(viewport);
+        Renderer::setViewport(viewport);
 #ifdef DEPTH_BUFFER_DEBUG
         renderer->disableDepthTest();
         glMatrixMode(GL_PROJECTION);
@@ -554,7 +554,7 @@ void renderClouds_GLSL(const RenderInfo& ri,
     {
         shadprop.texUsage |= ShaderProperties::NormalTexture;
         textures[nTextures++] = cloudNormalMap;
-        if (cloudNormalMap->getFormatOptions() & Texture::DXT5NormalMap)
+        if ((cloudNormalMap->getFormatOptions() & Texture::DXT5NormalMap) != 0u)
             shadprop.texUsage |= ShaderProperties::CompressedNormalTexture;
     }
 
@@ -598,7 +598,7 @@ void renderClouds_GLSL(const RenderInfo& ri,
     unsigned int totalShadows = 0;
     for (unsigned int li = 0; li < ls.nLights; li++)
     {
-        if (ls.shadows[li] && !ls.shadows[li]->empty())
+        if ((ls.shadows[li] != nullptr) && !ls.shadows[li]->empty())
         {
             unsigned int nShadows = static_cast<unsigned int>(std::min(static_cast<std::size_t>(MaxShaderEclipseShadows),
                                                                        ls.shadows[li]->size()));
@@ -777,7 +777,7 @@ static void renderRingSystem(GLuint *vboId,
     glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
     glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
                           3, GL_FLOAT, GL_FALSE,
-                          sizeof(struct RingVertex), 0);
+                          sizeof(struct RingVertex), nullptr);
 
     // Celestia uses glCullFace(GL_BACK) by default so we just skip it here
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (nSections+1)*2);
@@ -918,7 +918,7 @@ void renderRings_GLSL(RingSystem& rings,
 
     if (rings.renderData == nullptr)
         rings.renderData = std::make_shared<GLRingRenderData>();
-    auto data = reinterpret_cast<GLRingRenderData*>(rings.renderData.get());
+    auto *data = reinterpret_cast<GLRingRenderData*>(rings.renderData.get());
 
     unsigned nSections = 180;
     std::size_t i = 0;

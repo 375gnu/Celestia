@@ -149,7 +149,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
             Array* solarSystems = solarSystemsVal->getArray();
             // assert(solarSystems != nullptr);
 
-            for (const auto catalogNameVal : *solarSystems)
+            for (auto *const catalogNameVal : *solarSystems)
             {
                 // assert(catalogNameVal != nullptr);
                 if (catalogNameVal->getType() == Value::StringType)
@@ -176,7 +176,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
             Array* starCatalogs = starCatalogsVal->getArray();
             assert(starCatalogs != nullptr);
 
-            for (const auto catalogNameVal : *starCatalogs)
+            for (auto *const catalogNameVal : *starCatalogs)
             {
                 assert(catalogNameVal != nullptr);
 
@@ -204,7 +204,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
             Array* dsoCatalogs = dsoCatalogsVal->getArray();
             assert(dsoCatalogs != nullptr);
 
-            for (const auto catalogNameVal : *dsoCatalogs)
+            for (auto *const catalogNameVal : *dsoCatalogs)
             {
                 assert(catalogNameVal != nullptr);
 
@@ -228,7 +228,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
             Array* extrasDirs = extrasDirsVal->getArray();
             assert(extrasDirs != nullptr);
 
-            for (const auto dirNameVal : *extrasDirs)
+            for (auto *const dirNameVal : *extrasDirs)
             {
                 if (dirNameVal->getType() == Value::StringType)
                 {
@@ -258,7 +258,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
             Array* skipExtras = skipExtrasVal->getArray();
             assert(skipExtras != nullptr);
 
-            for (const auto fileNameVal : *skipExtras)
+            for (auto *const fileNameVal : *skipExtras)
             {
                 if (fileNameVal->getType() == Value::StringType)
                 {
@@ -291,7 +291,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
         {
             Array* ignoreExt = ignoreExtVal->getArray();
 
-            for (const auto extVal : *ignoreExt)
+            for (auto *const extVal : *ignoreExt)
             {
                 if (extVal->getType() == Value::StringType)
                 {
@@ -354,7 +354,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
 
             for (unsigned int i = 0; i < (unsigned int) StellarClass::Spectral_Count; i++)
             {
-                if (starTexNames[i] != "")
+                if (!starTexNames[i].empty())
                 {
                     config->starTextures.starTex[i].setTexture(starTexNames[i], "textures");
                 }
@@ -374,7 +374,7 @@ CelestiaConfig* ReadCelestiaConfig(const fs::path& filename, CelestiaConfig *con
 
 
 float
-CelestiaConfig::getFloatValue(const string& name)
+CelestiaConfig::getFloatValue(const string& name) const
 {
     assert(params != nullptr);
 
@@ -385,8 +385,8 @@ CelestiaConfig::getFloatValue(const string& name)
 }
 
 
-const string
-CelestiaConfig::getStringValue(const string& name)
+string
+CelestiaConfig::getStringValue(const string& name) const
 {
     assert(params != nullptr);
 

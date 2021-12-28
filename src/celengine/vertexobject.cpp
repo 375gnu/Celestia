@@ -89,7 +89,7 @@ void VertexObject::unbind() noexcept
     m_currentAttributes = AttributesType::Invalid;
 }
 
-bool VertexObject::allocate(const void* data) noexcept
+bool VertexObject::allocate(const void* data) const noexcept
 {
     glBufferData(m_bufferType, m_bufferSize, data, m_streamType);
     return glGetError() != GL_NO_ERROR;
@@ -129,9 +129,9 @@ void VertexObject::enableAttribArrays() noexcept
     for (const auto& t : m_attribParams[(unsigned int)m_currentAttributes])
     {
         auto  n = t.first;
-        auto& p = t.second;
+        const auto & p = t.second;
         glEnableVertexAttribArray(n);
-        glVertexAttribPointer(n, p.count, p.type, p.normalized, p.stride, (GLvoid*) (size_t) p.offset);
+        glVertexAttribPointer(n, p.count, p.type, static_cast<GLboolean>(p.normalized), p.stride, (GLvoid*) (size_t) p.offset);
     }
 }
 

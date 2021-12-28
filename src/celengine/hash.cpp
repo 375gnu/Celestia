@@ -30,7 +30,7 @@ AssociativeArray::~AssociativeArray()
 
 Value* AssociativeArray::getValue(const string& key) const
 {
-    map<string, Value*>::const_iterator iter = assoc.find(key);
+    auto iter = assoc.find(key);
     if (iter == assoc.end())
         return nullptr;
 

@@ -42,13 +42,13 @@ DestinationList* ReadDestinationList(istream& in)
             GetLogger()->error("Error parsing destination.\n");
             for_each(destinations->begin(), destinations->end(), [](Destination* dest) { delete dest; });
             delete destinations;
-            if (destValue != nullptr)
+            
                 delete destValue;
             return nullptr;
         }
 
         Hash* destParams = destValue->getHash();
-        Destination* dest = new Destination();
+        auto* dest = new Destination();
 
         if (!destParams->getString("Name", dest->name))
         {
@@ -65,9 +65,9 @@ DestinationList* ReadDestinationList(istream& in)
             string distanceUnits;
             if (destParams->getString("DistanceUnits", distanceUnits))
             {
-                if (!compareIgnoringCase(distanceUnits, "km"))
+                if (compareIgnoringCase(distanceUnits, "km") == 0)
                     dest->distance = astro::kilometersToLightYears(dest->distance);
-                else if (!compareIgnoringCase(distanceUnits, "au"))
+                else if (compareIgnoringCase(distanceUnits, "au") == 0)
                     dest->distance = astro::AUtoLightYears(dest->distance);
             }
 

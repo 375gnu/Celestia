@@ -61,10 +61,10 @@ int main(int argc, char *argv[])
     QTranslator qtTranslator;
     qtTranslator.load("qt_" + QLocale::system().name(),
                       QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-    app.installTranslator(&qtTranslator);
+    QApplication::installTranslator(&qtTranslator);
 
     CelestiaQTranslator celestiaTranslator;
-    app.installTranslator(&celestiaTranslator);
+    QApplication::installTranslator(&celestiaTranslator);
 
     Q_INIT_RESOURCE(icons);
 
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
     // TODO: resolve issues with pixmap alpha channel
     splash.show();
-    app.processEvents();
+    QApplication::processEvents();
 
     // Gettext integration
     setlocale(LC_ALL, "");
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     // Set the main window to be the cel url handler
     QDesktopServices::setUrlHandler("cel", &window, "handleCelUrl");
 
-    return app.exec();
+    return QApplication::exec();
 }
 
 

@@ -66,7 +66,7 @@ class ODMenu
     void EnumMenuItems(HMENU hMenu);
     void DeleteSubMenu(HMENU hMenu);
     void SetMenuItemOwnerDrawn(HMENU hMenu, UINT item, UINT type);
-    void GenerateDisplayText(ODMENUITEM& item);
+    static void GenerateDisplayText(ODMENUITEM& item);
     void DrawItemText(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item);
     void DrawIconBar(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item);
     void ComputeMenuTextPos(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item, int& x, int& y, SIZE& size);

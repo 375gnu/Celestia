@@ -167,7 +167,7 @@ Globular::Globular()
     recomputeTidalRadius();
 }
 
-unsigned int Globular::cSlot(float conc) const
+unsigned int Globular::cSlot(float conc) 
 {
     // map the physical range of c, minC <= c <= maxC,
     // to 8 integers (bin numbers), 0 < cSlot <= 7:
@@ -489,7 +489,7 @@ void Globular::renderGlobularPointSprites(
      * or when distance from globular center decreases.
      */
 
-    GLsizei count = (GLsizei) (form->gblobs->size() * celmath::clamp(getDetail()));
+    auto count = (GLsizei) (form->gblobs->size() * celmath::clamp(getDetail()));
     float t = pow(2, 1 + log2(minimumFeatureSize / brightness) / log2(1/1.25f));
     count = min(count, (GLsizei) celmath::clamp(t, 128.0f, (float) max(count, 128)));
 
@@ -544,7 +544,7 @@ void Globular::recomputeTidalRadius()
 GlobularForm* buildGlobularForms(float c)
 {
     GBlob b{};
-    vector<GBlob>* globularPoints = new vector<GBlob>;
+    auto* globularPoints = new vector<GBlob>;
 
     float rRatio = pow(10.0f, c); //  = r_t / r_c
     float prob;

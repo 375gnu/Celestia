@@ -53,8 +53,7 @@ Model::getMaterial(unsigned int index) const
 {
     if (index < materials.size())
         return &materials[index];
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -77,7 +76,7 @@ Model::addMaterial(Material&& m)
         }
     }
 
-    materials.push_back(std::move(m));
+    materials.push_back(m);
     return materials.size();
 }
 
@@ -86,7 +85,7 @@ bool
 Model::setMaterial(unsigned int index, Material&& m)
 {
     if (index >= materials.size()) { return false; }
-    materials[index] = std::move(m);
+    materials[index] = m;
 
     // Regenerate the texture map usage for the model by rescanning all the meshes.
     for (int i = 0; i < static_cast<int>(TextureSemantic::TextureSemanticMax); ++i)
@@ -142,8 +141,7 @@ Model::getMesh(unsigned int index)
 {
     if (index < meshes.size())
         return &meshes[index];
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -152,8 +150,7 @@ Model::getMesh(unsigned int index) const
 {
     if (index < meshes.size())
         return &meshes[index];
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -273,7 +270,7 @@ Model::uniquifyMaterials()
         unsigned int index = indices[i];
         if (i == 0 || materials[index] != uniqueMaterials.back())
         {
-            uniqueMaterials.push_back(std::move(materials[index]));
+            uniqueMaterials.push_back(materials[index]);
         }
 
         materialMap[index] = uniqueMaterials.size() - 1;
@@ -294,10 +291,10 @@ Model::uniquifyMaterials()
 void
 Model::determineOpacity()
 {
-    for (unsigned int i = 0; i < materials.size(); i++)
+    for (auto & material : materials)
     {
-        if ((materials[i].opacity > 0.01f && materials[i].opacity < 1.0f) ||
-            materials[i].blend == BlendMode::AdditiveBlend)
+        if ((material.opacity > 0.01f && material.opacity < 1.0f) ||
+            material.blend == BlendMode::AdditiveBlend)
         {
             opaque = false;
             return;

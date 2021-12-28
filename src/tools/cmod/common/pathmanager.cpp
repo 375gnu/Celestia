@@ -13,10 +13,9 @@ PathManager::PathManager()
             handles.insert({ path, result });
             return result;
         }
-        else
-        {
-            return it->second;
-        }
+        
+                    return it->second;
+       
     };
     getSource = [&](ResourceHandle handle) { return paths[handle]; };
 }

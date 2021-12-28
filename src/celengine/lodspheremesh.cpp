@@ -411,9 +411,9 @@ void LODSphereMesh::renderPatches(int phi0, int theta0,
     normal.normalize();
     Frustum::PlaneType separatingPlane(normal, p0);
 
-    for (int k = 0; k < 8; k++)
+    for (const auto & k : ri.fp)
     {
-        if (separatingPlane.absDistance(ri.fp[k]) <= 0.0f)
+        if (separatingPlane.absDistance(k) <= 0.0f)
         {
             // If this patch is outside the view frustum,
             // so are all of its subpatches

@@ -45,7 +45,7 @@ public:
     DSOFilterPredicate();
     bool operator()(const DeepSkyObject* dso) const;
 
-    unsigned int objectTypeMask;
+    unsigned int objectTypeMask{Renderer::ShowGalaxies};
     bool typeFilterEnabled{false};
     QRegExp typeFilter;
 };
@@ -79,20 +79,20 @@ class DSOTableModel : public QAbstractTableModel, public ModelHelper
 {
 public:
     DSOTableModel(const Universe* _universe);
-    virtual ~DSOTableModel() = default;
+    ~DSOTableModel() override = default;
 
-    Selection objectAtIndex(const QModelIndex&) const;
+    [[nodiscard]] Selection objectAtIndex(const QModelIndex& /*_index*/) const;
 
     // Methods from QAbstractTableModel
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    int rowCount(const QModelIndex& index) const override;
-    int columnCount(const QModelIndex& index) const override;
+    [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override;
+    [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] int rowCount(const QModelIndex& index) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& index) const override;
     void sort(int column, Qt::SortOrder order) override;
 
     // Methods from ModelHelper
-    Selection itemForInfoPanel(const QModelIndex&) override;
+    Selection itemForInfoPanel(const QModelIndex& /*_index*/) override;
 
     enum Predicate
     {
@@ -114,7 +114,7 @@ public:
                   DSOPredicate::Criterion criterion,
                   unsigned int nDSOs);
 
-    DeepSkyObject* itemAtRow(unsigned int row) const;
+    [[nodiscard]] DeepSkyObject* itemAtRow(unsigned int row) const;
 
 private:
     const Universe* universe;
@@ -265,8 +265,8 @@ bool DSOPredicate::operator()(const DeepSkyObject* dso0, const DeepSkyObject* ds
 }
 
 
-DSOFilterPredicate::DSOFilterPredicate() :
-    objectTypeMask(Renderer::ShowGalaxies)
+DSOFilterPredicate::DSOFilterPredicate() 
+    
 
 {
 }
@@ -351,7 +351,7 @@ void DSOTableModel::populate(const UniversalCoord& _observerPos,
         nDSOs = filteredDSOs.size();
 
     // Clear out the results of the previous populate() call
-    if (dsos.size() != 0)
+    if (!dsos.empty())
     {
         beginResetModel();
         dsos.clear();
@@ -426,14 +426,14 @@ DeepSkyBrowser::DeepSkyBrowser(CelestiaCore* _appCore, QWidget* parent, InfoPane
     connect(treeView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this, SLOT(slotSelectionChanged(const QItemSelection&, const QItemSelection&)));
 
-    QVBoxLayout* layout = new QVBoxLayout();
+    auto* layout = new QVBoxLayout();
     layout->addWidget(treeView);
 
     searchResultLabel = new QLabel("");
     layout->addWidget(searchResultLabel);
 
-    QGroupBox* dsoGroup = new QGroupBox();
-    QGridLayout* dsoGroupLayout = new QGridLayout();
+    auto* dsoGroup = new QGroupBox();
+    auto* dsoGroupLayout = new QGridLayout();
 
     // Buttons to select filtering criterion for dsos
     globularsButton = new QCheckBox(_("Globulars"));
@@ -461,8 +461,8 @@ DeepSkyBrowser::DeepSkyBrowser(CelestiaCore* _appCore, QWidget* parent, InfoPane
     openClustersButton->setChecked(true);
 
     // Additional filtering controls
-    QGroupBox* filterGroup = new QGroupBox(_("Filter"));
-    QHBoxLayout* filterGroupLayout = new QHBoxLayout();
+    auto* filterGroup = new QGroupBox(_("Filter"));
+    auto* filterGroupLayout = new QHBoxLayout();
 
     filterGroupLayout->addWidget(new QLabel(_("Type")));
     objectTypeFilterBox = new QLineEdit();
@@ -473,25 +473,25 @@ DeepSkyBrowser::DeepSkyBrowser(CelestiaCore* _appCore, QWidget* parent, InfoPane
     layout->addWidget(filterGroup);
     // End filtering controls
 
-    QPushButton* refreshButton = new QPushButton(_("Refresh"));
+    auto* refreshButton = new QPushButton(_("Refresh"));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(slotRefreshTable()));
     layout->addWidget(refreshButton);
 
     // Controls for marking selected objects
-    QGroupBox* markGroup = new QGroupBox(_("Markers"));
-    QGridLayout* markGroupLayout = new QGridLayout();
+    auto* markGroup = new QGroupBox(_("Markers"));
+    auto* markGroupLayout = new QGridLayout();
 
-    QPushButton* markSelectedButton = new QPushButton(_("Mark Selected"));
+    auto* markSelectedButton = new QPushButton(_("Mark Selected"));
     markSelectedButton->setToolTip(_("Mark DSOs selected in list view"));
     connect(markSelectedButton, SIGNAL(clicked()), this, SLOT(slotMarkSelected()));
     markGroupLayout->addWidget(markSelectedButton, 0, 0, 1, 2);
 
-    QPushButton* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
+    auto* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
     unmarkSelectedButton->setToolTip(_("Unmark DSOs selected in list view"));
     connect(unmarkSelectedButton, &QPushButton::clicked, this, &DeepSkyBrowser::slotUnmarkSelected);
     markGroupLayout->addWidget(unmarkSelectedButton, 0, 2, 1, 2);
 
-    QPushButton* clearMarkersButton = new QPushButton(_("Clear Markers"));
+    auto* clearMarkersButton = new QPushButton(_("Clear Markers"));
     connect(clearMarkersButton, SIGNAL(clicked()), this, SLOT(slotClearMarkers()));
     clearMarkersButton->setToolTip(_("Remove all existing markers"));
     markGroupLayout->addWidget(clearMarkersButton, 0, 5, 1, 2);
@@ -609,9 +609,9 @@ void DeepSkyBrowser::slotMarkSelected()
     bool labelMarker = labelMarkerBox->checkState() == Qt::Checked;
     bool convertOK = false;
     QVariant markerData = markerSymbolBox->itemData(markerSymbolBox->currentIndex());
-    MarkerRepresentation::Symbol markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
+    auto markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
     QVariant markerSize = markerSizeBox->itemData(markerSizeBox->currentIndex());
-    float size = (float) markerSize.toInt(&convertOK);
+    auto size = (float) markerSize.toInt(&convertOK);
     QColor markerColor = colorSwatch->color();
     Color color((float) markerColor.redF(),
                 (float) markerColor.greenF(),
@@ -637,7 +637,7 @@ void DeepSkyBrowser::slotMarkSelected()
                     }
 
                     // FIXME: unmark is required to change the marker representation
-                    Selection sel = Selection(dso);
+                    auto sel = Selection(dso);
                     universe->unmarkObject(sel, 1);
                     universe->markObject(sel,
                                          MarkerRepresentation(markerSymbol, size, color, label),
@@ -673,6 +673,6 @@ void DeepSkyBrowser::slotClearMarkers()
 
 void DeepSkyBrowser::slotSelectionChanged(const QItemSelection& newSel, const QItemSelection& oldSel)
 {
-    if (infoPanel)
+    if (infoPanel != nullptr)
         infoPanel->updateHelper(dsoModel, newSel, oldSel);
 }

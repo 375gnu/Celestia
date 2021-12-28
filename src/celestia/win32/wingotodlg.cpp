@@ -24,11 +24,7 @@ static bool GetDialogFloat(HWND hDlg, int id, float& f)
 {
     char buf[128];
 
-    if (GetDlgItemText(hDlg, id, buf, sizeof buf) > 0 &&
-        sscanf(buf, " %f", &f) == 1)
-        return true;
-    else
-        return false;
+    return ;
 }
 
 static bool SetDialogFloat(HWND hDlg, int id, const char* format, float f)

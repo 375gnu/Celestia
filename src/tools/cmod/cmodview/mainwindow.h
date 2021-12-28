@@ -46,8 +46,8 @@ public:
     bool exportSupported(const QString& fileName) const;
     void showModelStatistics();
 
-    void readSettings();
-    void saveSettings();
+    static void readSettings();
+    static void saveSettings();
 
 protected:
     bool eventFilter(QObject* obj, QEvent* event);
@@ -56,8 +56,8 @@ protected:
 public slots:
     void openModel();
     void openModel(const QString& fileName);
-    void saveModel();
-    void saveModelAs();
+    static void saveModel();
+    static void saveModelAs();
     void saveModel(const QString& saveFileName);
     void revertModel();
     void setRenderStyle(QAction* action);
@@ -70,7 +70,7 @@ public slots:
 
     void changeCurrentMaterial(const cmod::Material&);
     void updateSelectionInfo();
-    void editBackgroundColor();
+    static void editBackgroundColor();
 
 private slots:
     void initializeGL();

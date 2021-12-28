@@ -81,12 +81,12 @@ GLShaderProgram::GLShaderProgram() :
 
 GLShaderProgram::~GLShaderProgram()
 {
-    if (m_vertexShader)
+    if (m_vertexShader != nullptr)
     {
         m_vertexShader->unref();
     }
 
-    if (m_fragmentShader)
+    if (m_fragmentShader != nullptr)
     {
         m_fragmentShader->unref();
     }
@@ -143,7 +143,7 @@ GLShaderProgram::addFragmentShader(GLFragmentShader* shader)
 bool
 GLShaderProgram::link()
 {
-    if (!m_vertexShader || !m_fragmentShader)
+    if ((m_vertexShader == nullptr) || (m_fragmentShader == nullptr))
     {
         return false;
     }
@@ -195,7 +195,7 @@ GLShaderProgram::bind() const
 
 
 void
-GLShaderProgram::setUniformValue(const char* name, float value)
+GLShaderProgram::setUniformValue(const char* name, float value) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
@@ -206,7 +206,7 @@ GLShaderProgram::setUniformValue(const char* name, float value)
 
 
 void
-GLShaderProgram::setSampler(const char* name, int value)
+GLShaderProgram::setSampler(const char* name, int value) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
@@ -217,7 +217,7 @@ GLShaderProgram::setSampler(const char* name, int value)
 
 
 void
-GLShaderProgram::setSamplerArray(const char* name, const GLint* values, int count)
+GLShaderProgram::setSamplerArray(const char* name, const GLint* values, int count) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
@@ -228,7 +228,7 @@ GLShaderProgram::setSamplerArray(const char* name, const GLint* values, int coun
 
 
 void
-GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector3f* values, int count)
+GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector3f* values, int count) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
@@ -239,7 +239,7 @@ GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector3f* v
 
 
 void
-GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector4f* values, int count)
+GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector4f* values, int count) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
@@ -250,18 +250,18 @@ GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Vector4f* v
 
 
 void
-GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Matrix4f* values, int count)
+GLShaderProgram::setUniformValueArray(const char* name, const Eigen::Matrix4f* values, int count) const
 {
     GLint location = glGetUniformLocationARB(m_id, name);
     if (location >= 0)
     {
-        glUniformMatrix4fvARB(location, count, false, values[0].data());
+        glUniformMatrix4fvARB(location, count, 0u, values[0].data());
     }
 }
 
 
 void
-GLShaderProgram::bindAttributeLocation(const char* name, int location)
+GLShaderProgram::bindAttributeLocation(const char* name, int location) const
 {
     glBindAttribLocationARB(m_id, location, name);
 }

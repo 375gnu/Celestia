@@ -61,7 +61,7 @@ class DSODatabase
     void setNameDatabase(DSONameDatabase*);
 
     bool load(std::istream&, const fs::path& resourcePath = fs::path());
-    bool loadBinary(std::istream&);
+    static bool loadBinary(std::istream&);
     void finish();
 
     static DSODatabase* read(std::istream&);

@@ -17,7 +17,7 @@ using namespace std;
 
 
 // global script context for scripted orbits and rotations
-static lua_State* scriptObjectLuaState = NULL;
+static lua_State* scriptObjectLuaState = nullptr;
 
 static const char* ScriptedObjectNamePrefix = "cel_script_object_";
 static unsigned int ScriptedObjectNameIndex = 1;
@@ -83,7 +83,7 @@ SafeGetLuaNumber(lua_State* state,
     double v = defaultValue;
 
     GetLuaTableEntry(state, tableIndex, key);
-    if (lua_isnumber(state, -1))
+    if (lua_isnumber(state, -1) != 0)
         v = lua_tonumber(state, -1);
     lua_pop(state, 1);
 
@@ -117,7 +117,7 @@ SetLuaVariables(lua_State* state, Hash* parameters)
                 break;
             case Value::BooleanType:
                 lua_pushstring(state, param.first.c_str());
-                lua_pushboolean(state, param.second->getBoolean());
+                lua_pushboolean(state, static_cast<int>(param.second->getBoolean()));
                 lua_settable(state, -3);
                 break;
             default:

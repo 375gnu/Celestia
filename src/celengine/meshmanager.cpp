@@ -382,7 +382,7 @@ Convert3DSModel(const M3DScene& scene, const fs::path& texPath)
             newMaterial.setMap(cmod::TextureSemantic::DiffuseMap, tex);
         }
 
-        model->addMaterial(std::move(newMaterial));
+        model->addMaterial(newMaterial);
     }
 
     // Convert all models in the scene. Some confusing terminology: a 3ds 'scene' is the same
@@ -390,12 +390,12 @@ Convert3DSModel(const M3DScene& scene, const fs::path& texPath)
     for (std::uint32_t i = 0; i < scene.getModelCount(); i++)
     {
         const M3DModel* model3ds = scene.getModel(i);
-        if (model3ds)
+        if (model3ds != nullptr)
         {
             for (unsigned int j = 0; j < model3ds->getTriMeshCount(); j++)
             {
                 const M3DTriangleMesh* mesh = model3ds->getTriMesh(j);
-                if (mesh)
+                if (mesh != nullptr)
                 {
                     model->addMesh(ConvertTriangleMesh(*mesh, scene));
                 }
@@ -548,9 +548,8 @@ GeometryInfo::load(const fs::path& resolvedFilename)
 
         return new ModelGeometry(std::move(model));
     }
-    else
-    {
-        std::clog << fmt::sprintf(_("Error loading model '%s'\n"), filename);
+    
+            std::clog << fmt::sprintf(_("Error loading model '%s'\n"), filename);
         return nullptr;
-    }
+   
 }

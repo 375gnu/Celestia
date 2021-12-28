@@ -121,7 +121,7 @@ public:
         flush();
     }
 
-    GLuint loadTexture(const QString& fileName)
+    static GLuint loadTexture(const QString& fileName)
     {
         QFileInfo info(fileName);
         if (!info.exists())
@@ -152,7 +152,7 @@ public:
     }
 
 
-    GLuint getTexture(const QString& resourceName)
+    static GLuint getTexture(const QString& resourceName)
     {
         if (m_textures.contains(resourceName))
         {
@@ -204,7 +204,7 @@ ShaderKey::Create(const cmod::Material* material, const LightingEnvironment* lig
 
     bool hasTangents = false;
     bool hasTexCoords = false;
-    if (vertexDesc)
+    if (vertexDesc != nullptr)
     {
         hasTangents = vertexDesc->getAttribute(cmod::VertexAttributeSemantic::Tangent).format == cmod::VertexAttributeFormat::Float3;
         hasTexCoords = vertexDesc->getAttribute(cmod::VertexAttributeSemantic::Texture0).format == cmod::VertexAttributeFormat::Float2;
@@ -379,7 +379,7 @@ ModelViewWidget::mousePressEvent(QMouseEvent *event)
 }
 
 
-void
+static void
 ModelViewWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     int moveDistance = (event->pos() - m_mouseDownPosition).manhattanLength();
@@ -445,7 +445,7 @@ ModelViewWidget::mouseMoveEvent(QMouseEvent *event)
 }
 
 
-void
+static void
 ModelViewWidget::wheelEvent(QWheelEvent* event)
 {
     QPoint numDegrees = event->angleDelta();
@@ -502,7 +502,7 @@ ModelViewWidget::select(const Eigen::Vector2f& viewportPoint)
 
 
 Eigen::Affine3d
-ModelViewWidget::cameraTransform() const
+ModelViewWidget::cameraTransform() 
 {
     Eigen::Affine3d t(m_cameraOrientation.conjugate());
     t.translate(-m_cameraPosition);
@@ -901,10 +901,10 @@ ModelViewWidget::bindMaterial(const cmod::Material* material,
 
         // Lookup the shader in the shader cache
         shader = m_shaderCache.value(shaderKey);
-        if (!shader)
+        if (shader == nullptr)
         {
             shader = createShader(shaderKey);
-            if (shader)
+            if (shader != nullptr)
             {
                 m_shaderCache.insert(shaderKey, shader);
             }
@@ -915,7 +915,7 @@ ModelViewWidget::bindMaterial(const cmod::Material* material,
         }
     }
 
-    if (shader)
+    if (shader != nullptr)
     {
         shader->bind();
 
@@ -1570,7 +1570,7 @@ ModelViewWidget::renderShadow(unsigned int lightIndex)
 
     renderDepthOnly(m_model.get());
 
-    shadowBuffer->unbind();
+    GLFrameBufferObject::unbind();
 
     // Re-enable the color buffer and culling
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);

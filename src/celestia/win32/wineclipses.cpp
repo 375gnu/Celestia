@@ -109,7 +109,7 @@ void EclipseFinderDisplayItem(LPNMLVDISPINFOA nm)
 {
 
     Eclipse* eclipse = reinterpret_cast<Eclipse*>(nm->item.lParam);
-    if (eclipse == NULL)
+    if (eclipse == nullptr)
     {
         nm->item.pszText = const_cast<char*>("");
         return;

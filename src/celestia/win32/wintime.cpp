@@ -13,7 +13,7 @@
 #include <windows.h>
 #include <winuser.h>
 #include <commctrl.h>
-#include <time.h>
+#include <ctime>
 #include "res/resource.h"
 #include <celengine/astro.h>
 #include <celutil/gettext.h>
@@ -24,14 +24,14 @@ using namespace std;
 class SetTimeDialog
 {
 public:
-    SetTimeDialog(CelestiaCore*);
+    SetTimeDialog(CelestiaCore* /*_appCore*/);
     ~SetTimeDialog();
 
     void init(HWND _hDlg);
-    double getTime() const;
-    void setTime(const double _tdb);
+    [[nodiscard]] double getTime() const;
+    void setTime(double _tdb);
 
-    void updateControls();
+    void updateControls() const;
 
     LRESULT command(WPARAM wParam, LPARAM lParam);
     LRESULT notify(int id, const NMHDR& nmhdr);
@@ -44,7 +44,7 @@ private:
     bool useUTCOffset;
     int localTimeZoneBiasInSeconds;
 
-    void getLocalTimeZoneInfo();
+    static void getLocalTimeZoneInfo();
 };
 
 
@@ -60,8 +60,7 @@ SetTimeDialog::SetTimeDialog(CelestiaCore* _appCore) :
 
 
 SetTimeDialog::~SetTimeDialog()
-{
-}
+= default;
 
 
 static void acronymify(char* words, int length)
@@ -151,7 +150,7 @@ SetTimeDialog::setTime(double _tdb)
 
 
 void
-SetTimeDialog::updateControls()
+SetTimeDialog::updateControls() const
 {
     HWND timeItem = NULL;
     HWND dateItem = NULL;
@@ -328,7 +327,7 @@ ShowSetTimeDialog(HINSTANCE appInstance,
                   HWND appWindow,
                   CelestiaCore* appCore)
 {
-    SetTimeDialog* timeDialog = new SetTimeDialog(appCore);
+    auto* timeDialog = new SetTimeDialog(appCore);
 
     DialogBoxParam(appInstance, MAKEINTRESOURCE(IDD_SETTIME), appWindow, (DLGPROC)SetTimeProc, reinterpret_cast<LPARAM>(timeDialog));
 

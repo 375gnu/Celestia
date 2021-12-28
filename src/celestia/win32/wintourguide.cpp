@@ -145,7 +145,7 @@ TourGuide::TourGuide(HINSTANCE appInstance,
                      HWND _parent,
                      CelestiaCore* _appCore) :
     appCore(_appCore),
-    selectedDest(NULL),
+    selectedDest(nullptr),
     parent(_parent)
 {
     hwnd = CreateDialogParam(appInstance,

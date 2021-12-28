@@ -33,11 +33,11 @@ uint32_t StarNameDatabase::findCatalogNumberByName(const string& name, bool i18n
     {
         auto pos1 = name.rfind(' ');
         char starLetter = '\0';
-        if (pos1 != string::npos && pos1 > pos && pos1 < nameLength - 1 && isalpha(name[pos1 + 1]))
+        if (pos1 != string::npos && pos1 > pos && pos1 < nameLength - 1 && (isalpha(name[pos1 + 1]) != 0))
         {
             starLetter = name[pos1 + 1];
             isOrbitingStar = true;
-            do { --pos1; } while (isspace(name[pos1]));
+            do { --pos1; } while (isspace(name[pos1]) != 0);
         }
         string prefix(name, 0, pos);
         string conName(name, pos + 1, isOrbitingStar ? pos1 - pos : string::npos);
@@ -52,7 +52,7 @@ uint32_t StarNameDatabase::findCatalogNumberByName(const string& name, bool i18n
             // and the last character is a digit, we may have
             // something like 'Alpha2 Cen' . . . Extract the digit
             // before trying to match a Greek letter.
-            if (len > 2 && isalpha(prefix[0]) && isdigit(prefix[len - 1]))
+            if (len > 2 && (isalpha(prefix[0]) != 0) && (isdigit(prefix[len - 1]) != 0))
             {
                 --len;
                 digit = prefix[len];
@@ -121,7 +121,7 @@ uint32_t StarNameDatabase::findCatalogNumberByName(const string& name, bool i18n
 
 StarNameDatabase* StarNameDatabase::readNames(istream& in)
 {
-    StarNameDatabase* db = new StarNameDatabase();
+    auto* db = new StarNameDatabase();
     bool failed = false;
     string s;
 
@@ -171,8 +171,7 @@ StarNameDatabase* StarNameDatabase::readNames(istream& in)
         delete db;
         return nullptr;
     }
-    else
-    {
-        return db;
-    }
+    
+            return db;
+   
 }

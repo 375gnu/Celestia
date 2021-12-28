@@ -16,7 +16,7 @@
 #include "logger.h"
 #else
 // we need the C version of this header to get the POSIX function localtime_r
-#include <time.h>
+#include <ctime>
 #endif
 
 #include "tzutil.h"
@@ -55,7 +55,7 @@ bool GetTZInfo(std::string& tzName, int& dstBias)
 #else
     tm result;
     time_t curtime = time(nullptr); // required only to get TZ info
-    if (!localtime_r(&curtime, &result))
+    if (localtime_r(&curtime, &result) == nullptr)
         return false;
 
     dstBias = result.tm_gmtoff;

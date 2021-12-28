@@ -129,7 +129,7 @@ static int category_addobject(lua_State *l)
     CelxLua celx(l);
 
     UserCategory *c = *celx.getThis<UserCategory*>();
-    Selection *s = celx.safeGetUserData<Selection>(2);
+    auto *s = celx.safeGetUserData<Selection>(2);
     return celx.push(c->addObject(s->object()));
 }
 
@@ -138,7 +138,7 @@ static int category_removeobject(lua_State *l)
     CelxLua celx(l);
 
     UserCategory *c = *celx.getThis<UserCategory*>();
-    Selection *s = celx.safeGetUserData<Selection>(2);
+    auto *s = celx.safeGetUserData<Selection>(2);
     return celx.push(c->removeObject(s->object()));
 }
 

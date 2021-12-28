@@ -24,7 +24,7 @@ FramebufferObject::FramebufferObject(GLuint width, GLuint height, unsigned int a
     }
 }
 
-FramebufferObject::FramebufferObject(FramebufferObject &&other) :
+FramebufferObject::FramebufferObject(FramebufferObject &&other)  noexcept :
     m_width(other.m_width),
     m_height(other.m_height),
     m_colorTexId(other.m_colorTexId),
@@ -37,7 +37,7 @@ FramebufferObject::FramebufferObject(FramebufferObject &&other) :
 }
 
 FramebufferObject& FramebufferObject::operator=(FramebufferObject &&other)
-{
+ noexcept {
     m_width        = other.m_width;
     m_height       = other.m_height;
     m_colorTexId   = other.m_colorTexId;
@@ -208,7 +208,7 @@ FramebufferObject::cleanup()
 }
 
 bool
-FramebufferObject::bind()
+FramebufferObject::bind() const
 {
     if (isValid())
     {

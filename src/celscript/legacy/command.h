@@ -521,7 +521,7 @@ class CommandPreloadTextures : public InstantaneousCommand
 class CommandMark : public InstantaneousCommand
 {
  public:
-    CommandMark(std::string, celestia::MarkerRepresentation, bool);
+    CommandMark(std::string, const celestia::MarkerRepresentation&, bool);
 
     void process(ExecutionEnvironment&) override;
 

@@ -58,7 +58,7 @@ class Globular : public DeepSkyObject
     void  setConcentration(const float);
     float getConcentration() const;
     float getHalfMassRadius() const override;
-    unsigned int cSlot(float) const;
+    static unsigned int cSlot(float) ;
 
     float getBoundingSphereRadius() const override { return tidalRadius; }
 

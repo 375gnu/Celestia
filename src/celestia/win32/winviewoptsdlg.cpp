@@ -324,7 +324,7 @@ static void dlgCheck64(HWND hDlg, WORD item, uint64_t flags, uint64_t f)
                        ((flags & f) != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
 }
 
-void ViewOptionsDialog::SetControls(HWND hDlg)
+void ViewOptionsDialog::SetControls(HWND hDlg) const
 {
     uint64_t renderFlags = appCore->getRenderer()->getRenderFlags();
     int labelMode = appCore->getRenderer()->getLabelMode();
@@ -425,7 +425,7 @@ void ViewOptionsDialog::SetControls(HWND hDlg)
                        (WPARAM)TRUE,
                        (LPARAM) MAKELONG(0, DistanceSliderRange));
     float distanceLimit = appCore->getRenderer()->getDistanceLimit();
-    float logDistanceLimit = (float) (log(distanceLimit) /
+    auto logDistanceLimit = (float) (log(distanceLimit) /
                                       log(MaxDistanceLimit));
     SendDlgItemMessage(hDlg,
                        IDC_SLIDER_FILTER_DISTANCE,
@@ -440,14 +440,14 @@ void ViewOptionsDialog::SetControls(HWND hDlg)
 }
 
 
-void ViewOptionsDialog::RestoreSettings(HWND hDlg)
+void ViewOptionsDialog::RestoreSettings(HWND hDlg) const
 {
     appCore->getRenderer()->setRenderFlags(initialRenderFlags);
     appCore->getRenderer()->setLabelMode(initialLabelMode);
     appCore->setHudDetail(initialHudDetail);
 }
 
-void ViewOptionsDialog::notifyChange(CelestiaCore*, int)
+void ViewOptionsDialog::notifyChange(CelestiaCore* /*unused*/, int /*unused*/)
 {
     if (parent != NULL)
         SetControls(hwnd);

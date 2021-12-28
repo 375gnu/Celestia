@@ -13,6 +13,7 @@
 #include <config.h>
 #include <cassert>
 #include <limits>
+#include <memory>
 #include <fmt/format.h>
 #include <fmt/printf.h>
 #include <celmath/mathlib.h>
@@ -124,7 +125,7 @@ int GetClassificationId(const string& className)
 {
     if (Classifications.empty())
         InitializeClassifications();
-    ClassificationTable::iterator iter = Classifications.find(className);
+    auto iter = Classifications.find(className);
     if (iter == Classifications.end())
         return Body::Unknown;
 
@@ -145,7 +146,7 @@ static bool isFrameCircular(const ReferenceFrame& frame, ReferenceFrame::FrameTy
 static Location* CreateLocation(Hash* locationData,
                                 Body* body)
 {
-    Location* location = new Location();
+    auto* location = new Location();
 
     Vector3d longlat(Vector3d::Zero());
     locationData->getSphericalTuple("LongLat", longlat);
@@ -343,7 +344,7 @@ TimelinePhase::SharedConstPtr CreateTimelinePhase(Body* body,
 
     // Get the orbit
     Orbit* orbit = CreateOrbit(orbitFrame->getCenter(), phaseData, path, usePlanetUnits);
-    if (!orbit)
+    if (orbit == nullptr)
     {
         GetLogger()->error("Error: missing orbit in timeline phase.\n");
         return nullptr;
@@ -353,7 +354,7 @@ TimelinePhase::SharedConstPtr CreateTimelinePhase(Body* body,
     // TIMELINE-TODO: default rotation model is UniformRotation with a period
     // equal to the orbital period. Should we do something else?
     RotationModel* rotationModel = CreateRotationModel(phaseData, path, orbit->getPeriod());
-    if (!rotationModel)
+    if (rotationModel == nullptr)
     {
         // TODO: Should distinguish between a missing rotation model (where it's
         // appropriate to use a default one) and a bad rotation model (where
@@ -385,7 +386,7 @@ Timeline* CreateTimelineFromArray(Body* body,
     auto* timeline = new Timeline();
     double previousEnding = -numeric_limits<double>::infinity();
 
-    for (ValueArray::const_iterator iter = timelineArray->begin(); iter != timelineArray->end(); iter++)
+    for (auto iter = timelineArray->begin(); iter != timelineArray->end(); iter++)
     {
         Hash* phaseData = (*iter)->getHash();
         if (phaseData == nullptr)
@@ -432,12 +433,12 @@ static bool CreateTimeline(Body* body,
     FrameTree* parentFrameTree = nullptr;
     Selection parentObject = GetParentObject(system);
     bool orbitsPlanet = false;
-    if (parentObject.body())
+    if (parentObject.body() != nullptr)
     {
         parentFrameTree = parentObject.body()->getOrCreateFrameTree();
         //orbitsPlanet = true;
     }
-    else if (parentObject.star())
+    else if (parentObject.star() != nullptr)
     {
         SolarSystem* solarSystem = universe.getSolarSystem(parentObject.star());
         if (solarSystem == nullptr)
@@ -454,7 +455,7 @@ static bool CreateTimeline(Body* body,
     ReferenceFrame::SharedConstPtr defaultBodyFrame;
     if (bodyType == SurfaceObject)
     {
-        defaultOrbitFrame = shared_ptr<BodyFixedFrame>(new BodyFixedFrame(parentObject, parentObject));
+        defaultOrbitFrame = std::make_shared<BodyFixedFrame>(parentObject, parentObject);
         defaultBodyFrame = CreateTopocentricFrame(parentObject, parentObject, Selection(body));
     }
     else
@@ -477,7 +478,7 @@ static bool CreateTimeline(Body* body,
         Timeline* timeline = CreateTimelineFromArray(body, universe, value->getArray(), path,
                                                      defaultOrbitFrame, defaultBodyFrame);
 
-        if (!timeline)
+        if (timeline == nullptr)
             return false;
 
         body->setTimeline(timeline);
@@ -507,7 +508,7 @@ static bool CreateTimeline(Body* body,
         const Timeline* timeline = body->getTimeline();
         if (timeline->phaseCount() == 1)
         {
-            auto phase = timeline->getPhase(0).get();
+            const auto *phase = timeline->getPhase(0).get();
             orbitFrame    = phase->orbitFrame();
             bodyFrame     = phase->bodyFrame();
             orbit         = phase->orbit();
@@ -558,7 +559,7 @@ static bool CreateTimeline(Body* body,
     Orbit* newOrbit = CreateOrbit(orbitFrame->getCenter(), planetData, path, !orbitsPlanet);
     if (newOrbit == nullptr && orbit == nullptr)
     {
-        if (body->getTimeline() && disposition == DataDisposition::Modify)
+        if ((body->getTimeline() != nullptr) && disposition == DataDisposition::Modify)
         {
             // The object definition is modifying an existing object with a multiple phase
             // timeline, but no orbit definition was given. This can happen for completely
@@ -568,11 +569,10 @@ static bool CreateTimeline(Body* body,
             // leave the original timeline alone.
             return true;
         }
-        else
-        {
-            GetLogger()->error("No valid orbit specified for object '{}'. Skipping.\n", body->getName());
+        
+                    GetLogger()->error("No valid orbit specified for object '{}'. Skipping.\n", body->getName());
             return false;
-        }
+       
     }
 
     // If a new orbit was given, override any old orbit
@@ -782,11 +782,11 @@ static Body* CreateBody(const string& name,
         body->setVisible(false);
 
     // Set default properties for the object based on its classification
-    if (classification & CLASSES_INVISIBLE_AS_POINT)
+    if ((classification & CLASSES_INVISIBLE_AS_POINT) != 0)
         body->setVisibleAsPoint(false);
     if ((classification & CLASSES_SECONDARY_ILLUMINATOR) == 0)
         body->setSecondaryIlluminator(false);
-    if (classification & CLASSES_UNCLICKABLE)
+    if ((classification & CLASSES_UNCLICKABLE) != 0)
         body->setClickable(false);
 
     string infoURL; // FIXME: should be own class
@@ -1158,14 +1158,14 @@ bool LoadSolarSystemObjects(istream& in,
 
         // The name list is a string with zero more names. Multiple names are
         // delimited by colons.
-        string nameList = tokenizer.getStringValue().c_str();
+        string nameList = tokenizer.getStringValue();
 
         if (tokenizer.nextToken() != Tokenizer::TokenString)
         {
             sscError(tokenizer, "bad parent object name");
             return false;
         }
-        string parentName = tokenizer.getStringValue().c_str();
+        string parentName = tokenizer.getStringValue();
 
         Value* objectDataValue = parser.readValue();
         if (objectDataValue == nullptr)
@@ -1190,7 +1190,7 @@ bool LoadSolarSystemObjects(istream& in,
         // by ':', and insert them into the name list.
         if (nameList.empty())
         {
-            names.push_back("");
+            names.emplace_back("");
         }
         else
         {
@@ -1253,7 +1253,7 @@ bool LoadSolarSystemObjects(istream& in,
             if (parentSystem != nullptr)
             {
                 Body* existingBody = parentSystem->find(primaryName);
-                if (existingBody)
+                if (existingBody != nullptr)
                 {
                     if (disposition == DataDisposition::Add)
                     {
@@ -1282,7 +1282,7 @@ bool LoadSolarSystemObjects(istream& in,
         }
         else if (itemType == "AltSurface")
         {
-            Surface* surface = new Surface();
+            auto* surface = new Surface();
             surface->color = Color(1.0f, 1.0f, 1.0f);
             FillinSurface(objectData, surface, directory);
             if (parent.body() != nullptr)

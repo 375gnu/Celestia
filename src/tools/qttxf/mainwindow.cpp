@@ -103,7 +103,7 @@ MainWindow::MainWindow() :
 }
 
 
-void MainWindow::findStyles(const QFont &font)
+static void MainWindow::findStyles(const QFont &font)
 {
     QFontDatabase fontDatabase;
     QString currentItem = m_styleCombo->currentText();

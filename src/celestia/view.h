@@ -44,7 +44,7 @@ class View
     void split(Type type, Observer *o, float splitPos, View **split, View **view);
     void reset();
     static View* remove(View*);
-    void drawBorder(int gWidth, int gHeight, const Color &color, float linewidth = 1.0f);
+    void drawBorder(int gWidth, int gHeight, const Color &color, float linewidth = 1.0f) const;
     void updateFBO(int gWidth, int gHeight);
     FramebufferObject *getFBO() const;
 

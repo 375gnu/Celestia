@@ -200,8 +200,8 @@ CelestiaCore::CelestiaCore() :
         keysPressed[i] = false;
         shiftKeysPressed[i] = false;
     }
-    for (int i = 0; i < JoyButtonCount; i++)
-        joyButtonsPressed[i] = false;
+    for (bool & i : joyButtonsPressed)
+        i = false;
 
     clog.rdbuf(console->rdbuf());
     cerr.rdbuf(console->rdbuf());
@@ -293,7 +293,7 @@ void CelestiaCore::activateFavorite(FavoritesEntry& fav)
 void CelestiaCore::addFavorite(const string &name, const string &parentFolder, FavoritesList::iterator* iter)
 {
     FavoritesList::iterator pos;
-    if(!iter)
+    if(iter == nullptr)
         pos = favorites->end();
     else
         pos = *iter;
@@ -319,7 +319,7 @@ void CelestiaCore::addFavorite(const string &name, const string &parentFolder, F
 void CelestiaCore::addFavoriteFolder(const string &name, FavoritesList::iterator* iter)
 {
     FavoritesList::iterator pos;
-    if(!iter)
+    if(iter == nullptr)
         pos = favorites->end();
     else
         pos = *iter;
@@ -361,7 +361,7 @@ void CelestiaCore::cancelScript()
 {
     if (m_script != nullptr)
     {
-        if (textEnterMode & KbPassToScript)
+        if ((textEnterMode & KbPassToScript) != 0)
             setTextEnterMode(textEnterMode & ~KbPassToScript);
         scriptState = ScriptCompleted;
         m_script = nullptr;
@@ -425,7 +425,7 @@ void CelestiaCore::mouseButtonDown(float x, float y, int button)
     if (views.size() > 1 && button == LeftButton) // look if click is near a view border
     {
         View *v1 = nullptr, *v2 = nullptr;
-        for (const auto v : views)
+        for (auto *const v : views)
         {
             if (v->type == View::ViewWindow)
             {
@@ -437,7 +437,7 @@ void CelestiaCore::mouseButtonDown(float x, float y, int button)
                 if ( (vx >=0 && vx <= 1 && ( abs(vyp) <= 2 || abs(vyp - v->height * height) <= 2))
                   || (vy >=0 && vy <= 1 && ( abs(vxp) <= 2 || abs(vxp - v->width * width) <= 2)) )
                 {
-                    if (v1 == 0)
+                    if (v1 == nullptr)
                     {
                         v1 = v;
                     }
@@ -588,7 +588,7 @@ void CelestiaCore::mouseMove(float x, float y)
 
     if (views.size() > 1 && cursorHandler != nullptr)
     {
-        for (const auto v : views)
+        for (auto *const v : views)
         {
             if (v->type == View::ViewWindow)
             {
@@ -725,7 +725,7 @@ void CelestiaCore::mouseMove(float dx, float dy, int modifiers)
                 setZoomFromFOV();
             }
 
-            if ((renderer->getRenderFlags() & Renderer::ShowAutoMag))
+            if ((renderer->getRenderFlags() & Renderer::ShowAutoMag) != 0u)
             {
                 setFaintestAutoMag();
                 flash(fmt::sprintf(_("Magnitude limit: %.2f"), sim->getFaintestVisible()));
@@ -898,22 +898,22 @@ void CelestiaCore::keyDown(int key, int modifiers)
         KeyAccel *= 1.1;
 
     // Only process alphanumeric keys if we're not in text enter mode
-    if (islower(key))
+    if (islower(key) != 0)
         key = toupper(key);
     if (!(key >= 'A' && key <= 'Z' && (textEnterMode != KbNormal) ))
     {
-        if (modifiers & ShiftKey)
+        if ((modifiers & ShiftKey) != 0)
             shiftKeysPressed[key] = true;
         else
             keysPressed[key] = true;
     }
 }
 
-void CelestiaCore::keyUp(int key, int)
+void CelestiaCore::keyUp(int key, int /*unused*/)
 {
     setViewChanged();
     KeyAccel = 1.0;
-    if (islower(key))
+    if (islower(key) != 0)
         key = toupper(key);
     keysPressed[key] = false;
     shiftKeysPressed[key] = false;
@@ -929,7 +929,7 @@ static string getKeyName(const char* c, int modifiers)
         return fmt::format("C-{:c}", static_cast<char>('\140' + c[0]));
     }
 
-    if (modifiers & CelestiaCore::ControlKey)
+    if ((modifiers & CelestiaCore::ControlKey) != 0)
     {
         return fmt::format("C-{}", c);
     }
@@ -956,7 +956,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
 
 #ifdef CELX
-    if (m_script != nullptr && (textEnterMode & KbPassToScript))
+    if (m_script != nullptr && ((textEnterMode & KbPassToScript) != 0))
     {
         if (c != '\033' && m_script->charEntered(c_p))
         {
@@ -966,14 +966,14 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
 #endif
 
-    if (textEnterMode & KbAutoComplete)
+    if ((textEnterMode & KbAutoComplete) != 0)
     {
         wchar_t wc = 0; // Null wide character
         UTF8Decode(c_p, 0, strlen(c_p), wc);
 #ifdef __APPLE__
         if ( wc && (!iscntrl(wc)) )
 #else
-        if ( wc && (!iswcntrl(wc)) )
+        if ( (wc != 0) && (iswcntrl(wc) == 0) )
 #endif
         {
             setTypedText(c_p);
@@ -981,7 +981,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         else if (c == '\b')
         {
             typedTextCompletionIdx = -1;
-            if (typedText.size() > 0)
+            if (!typedText.empty())
             {
 #ifdef AUTO_COMPLETION
                 do
@@ -989,12 +989,12 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 #endif
                     // We remove bytes like b10xxx xxxx at the end of typeText
                     // these are guarantied to not be the first byte of a UTF-8 char
-                    while (typedText.size() && ((typedText[typedText.size() - 1] & 0xC0) == 0x80)) {
+                    while ((!typedText.empty() != 0u) && ((typedText[typedText.size() - 1] & 0xC0) == 0x80)) {
                         typedText = string(typedText, 0, typedText.size() - 1);
                     }
                     // We then remove the first byte of the last UTF-8 char of typedText.
                     typedText = string(typedText, 0, typedText.size() - 1);
-                    if (typedText.size() > 0)
+                    if (!typedText.empty())
                     {
                         typedTextCompletion = sim->getObjectCompletion(typedText, true, (renderer->getLabelMode() & Renderer::LocationLabels) != 0);
                     } else {
@@ -1025,7 +1025,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
                 typedTextCompletionIdx--;
             else if (typedTextCompletionIdx == 0)
                 typedTextCompletionIdx = typedTextCompletion.size() - 1;
-            else if (typedTextCompletion.size() > 0)
+            else if (!typedTextCompletion.empty())
                 typedTextCompletionIdx = typedTextCompletion.size() - 1;
             if (typedTextCompletionIdx >= 0) {
                 string::size_type pos = typedText.rfind('/', typedText.length());
@@ -1041,10 +1041,10 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         }
         else if (c == '\n' || c == '\r')
         {
-            if (typedText != "")
+            if (!typedText.empty())
             {
                 Selection sel = sim->findObjectFromPath(typedText, true);
-                if (sel.empty() && typedTextCompletion.size() > 0)
+                if (sel.empty() && !typedTextCompletion.empty())
                 {
                     sel = sim->findObjectFromPath(typedTextCompletion[0], true);
                 }
@@ -1103,7 +1103,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case '\013': // Ctrl+K
         renderer->setRenderFlags(renderer->getRenderFlags() ^ Renderer::ShowMarkers);
-        if (renderer->getRenderFlags() & Renderer::ShowMarkers)
+        if ((renderer->getRenderFlags() & Renderer::ShowMarkers) != 0u)
         {
             flash(_("Markers enabled"));
         }
@@ -1205,7 +1205,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case '\024':  // Ctrl+T
         renderer->setRenderFlags(renderer->getRenderFlags() ^ Renderer::ShowCometTails);
-        if (renderer->getRenderFlags() & Renderer::ShowCometTails)
+        if ((renderer->getRenderFlags() & Renderer::ShowCometTails) != 0u)
         {
             flash(_("Comet tails enabled"));
         }
@@ -1243,7 +1243,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case '\030':  // Ctrl+X
         renderer->setRenderFlags(renderer->getRenderFlags() ^ Renderer::ShowSmoothLines);
-        if (renderer->getRenderFlags() & Renderer::ShowSmoothLines)
+        if ((renderer->getRenderFlags() & Renderer::ShowSmoothLines) != 0u)
         {
             flash(_("Anti-aliasing enabled"));
             setFaintestAutoMag();
@@ -1257,7 +1257,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case '\031':  // Ctrl+Y
         renderer->setRenderFlags(renderer->getRenderFlags() ^ Renderer::ShowAutoMag);
-        if (renderer->getRenderFlags() & Renderer::ShowAutoMag)
+        if ((renderer->getRenderFlags() & Renderer::ShowAutoMag) != 0u)
         {
             flash(_("Auto-magnitude enabled"));
             setFaintestAutoMag();
@@ -1290,7 +1290,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         break;
 
     case ' ':
-        if (sim->getPauseState() == true)
+        if (sim->getPauseState())
         {
             if (scriptState == ScriptPaused)
                 scriptState = ScriptRunning;
@@ -1315,7 +1315,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             }
         }
 
-        if (sim->getPauseState() == true)
+        if (sim->getPauseState())
         {
             if (scriptState == ScriptPaused)
                 flash(_("Time and script are paused"));
@@ -1426,7 +1426,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
     case '-':
         addToHistory();
 
-        if (sim->getSelection().body() &&
+        if ((sim->getSelection().body() != nullptr) &&
             (sim->getTargetSpeed() < 0.99_c))
         {
             Vector3d v = sim->getSelection().getPosition(sim->getTime()).offsetFromKm(sim->getObserver().getPosition());
@@ -1454,7 +1454,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         {
             observer->setFOV(observer->getFOV() / 1.05f);
             setZoomFromFOV();
-            if((renderer->getRenderFlags() & Renderer::ShowAutoMag))
+            if((renderer->getRenderFlags() & Renderer::ShowAutoMag) != 0u)
             {
                 setFaintestAutoMag();
                 setlocale(LC_NUMERIC, "");
@@ -1484,7 +1484,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
 
     case '+':
         addToHistory();
-        if (observer->getDisplayedSurface() != "")
+        if (!observer->getDisplayedSurface().empty())
         {
             observer->setDisplayedSurface("");
             flash(_("Using normal surface textures."));
@@ -1516,7 +1516,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
     case '8':
     case '9':
         addToHistory();
-        if (!(modifiers & ControlKey))
+        if ((modifiers & ControlKey) == 0)
             sim->selectPlanet(c - '1');
         break;
 
@@ -1934,7 +1934,7 @@ void CelestiaCore::start(double t)
 
 void CelestiaCore::setStartURL(const string &url)
 {
-    if (!url.substr(0, 4).compare("cel:"))
+    if (url.substr(0, 4).compare("cel:") == 0)
     {
         startURL = url;
         // Don't use {} as it will throw error C2593 on MSVC
@@ -2147,7 +2147,7 @@ void CelestiaCore::draw()
     viewChanged = false;
 
     // Render each view
-    for (const auto view : views)
+    for (auto *const view : views)
         draw(view);
 
     // Reset to render to the main window
@@ -2155,7 +2155,7 @@ void CelestiaCore::draw()
         renderer->setRenderRegion(0, 0, width, height, false);
 
     bool toggleAA = renderer->isMSAAEnabled();
-    if (toggleAA && (renderer->getRenderFlags() & Renderer::ShowCloudMaps))
+    if (toggleAA && ((renderer->getRenderFlags() & Renderer::ShowCloudMaps) != 0u))
         renderer->disableMSAA();
 
     renderOverlay();
@@ -2283,7 +2283,7 @@ void CelestiaCore::setPickTolerance(float newPickTolerance)
 
 // Return true if anything changed that requires re-rendering. Otherwise, we
 // can skip rendering, keep the GPU idle, and save power.
-bool CelestiaCore::viewUpdateRequired() const
+bool CelestiaCore::viewUpdateRequired() 
 {
 #if 1
     // Enable after 1.5.0
@@ -2364,13 +2364,12 @@ float CelestiaCore::getMaximumFOV() const
 {
     if (renderer->getProjectionMode() == Renderer::ProjectionMode::FisheyeMode)
         return MaximumFOVFisheye;
-    else
-        return MaximumFOVPerspective;
+            return MaximumFOVPerspective;
 }
 
 void CelestiaCore::setFOVFromZoom()
 {
-    for (const auto v : views)
+    for (auto *const v : views)
         if (v->type == View::ViewWindow)
         {
             if (renderer->getProjectionMode() == Renderer::ProjectionMode::FisheyeMode)
@@ -2385,7 +2384,7 @@ void CelestiaCore::setFOVFromZoom()
 
 void CelestiaCore::setZoomFromFOV()
 {
-    for (auto v : views)
+    for (auto *v : views)
         if (v->type == View::ViewWindow)
         {
             v->zoom = (float) (2 * atan(height * v->height / (screenDpi / 25.4) / 2. / distanceToScreen) /  v->observer->getFOV());
@@ -2399,7 +2398,7 @@ void CelestiaCore::singleView(View* av)
     if (av == nullptr)
         av = *activeView;
 
-    list<View*>::iterator i = views.begin();
+    auto i = views.begin();
     while(i != views.end())
     {
         if ((*i) != av)
@@ -2445,7 +2444,7 @@ void CelestiaCore::deleteView(View* v)
 
     sim->removeObserver(v->getObserver());
     delete(v->getObserver());
-    auto sibling = View::remove(v);
+    auto *sibling = View::remove(v);
 
     View* nextActiveView = sibling;
     while (nextActiveView->type != View::ViewWindow)
@@ -2499,7 +2498,7 @@ void CelestiaCore::showText(const std::string &s,
                             double duration)
 {
     bool shouldShowText = true;
-    if (textDisplayHandler)
+    if (textDisplayHandler != nullptr)
         shouldShowText = textDisplayHandler->shouldShowText(s, horig, vorig, hoff, voff, duration);
 
     if (!shouldShowText)
@@ -2909,7 +2908,7 @@ static void displayStarInfo(Overlay& overlay,
 
             if (star.getRotationModel()->isPeriodic())
             {
-                float period = (float) star.getRotationModel()->getPeriod();
+                auto period = (float) star.getRotationModel()->getPeriod();
                 displayRotationPeriod(overlay, period);
             }
         }
@@ -2989,7 +2988,7 @@ static void displayPlanetInfo(Overlay& overlay,
         {
             showPhaseAngle = true;
         }
-        else if (sun->getOrbitingStars())
+        else if (sun->getOrbitingStars() != nullptr)
         {
             // The planet's orbit is defined with respect to a barycenter. If there's
             // a single star orbiting the barycenter, we'll compute the phase angle
@@ -3127,9 +3126,9 @@ void CelestiaCore::renderOverlay()
     if (views.size() > 1)
     {
         // Render a thin border arround all views
-        if (showViewFrames || resizeSplit)
+        if (showViewFrames || (resizeSplit != nullptr))
         {
-            for(const auto v : views)
+            for(auto *const v : views)
             {
                 if (v->type == View::ViewWindow)
                     v->drawBorder(width, height, frameColor);
@@ -3146,14 +3145,14 @@ void CelestiaCore::renderOverlay()
 
         if (currentTime < flashFrameStart + 0.5)
         {
-            float alpha = (float) (1.0 - (currentTime - flashFrameStart) / 0.5);
+            auto alpha = (float) (1.0 - (currentTime - flashFrameStart) / 0.5);
             av->drawBorder(width, height, {activeFrameColor, alpha}, 8);
         }
     }
 
     setlocale(LC_NUMERIC, "");
 
-    if (hudDetail > 0 && (overlayElements & ShowTime))
+    if (hudDetail > 0 && ((overlayElements & ShowTime) != 0))
     {
         double lt = 0.0;
 
@@ -3219,7 +3218,7 @@ void CelestiaCore::renderOverlay()
                 overlay->printf(_("%.6g x slower"), 1.0 / sim->getTimeScale()); // XXX: %'.12g
             }
 
-            if (sim->getPauseState() == true)
+            if (sim->getPauseState())
             {
                 overlay->setColor(1.0f, 0.0f, 0.0f, 1.0f);
                 *overlay << _(" (Paused)");
@@ -3230,7 +3229,7 @@ void CelestiaCore::renderOverlay()
         overlay->restorePos();
     }
 
-    if (hudDetail > 0 && (overlayElements & ShowVelocity))
+    if (hudDetail > 0 && ((overlayElements & ShowVelocity) != 0))
     {
         // Speed
         overlay->savePos();
@@ -3263,7 +3262,7 @@ void CelestiaCore::renderOverlay()
 
     Universe *u = sim->getUniverse();
 
-    if (hudDetail > 0 && (overlayElements & ShowFrame))
+    if (hudDetail > 0 && ((overlayElements & ShowFrame) != 0))
     {
         // Field of view and camera mode in lower right corner
         overlay->savePos();
@@ -3339,7 +3338,7 @@ void CelestiaCore::renderOverlay()
 
     // Selection info
     Selection sel = sim->getSelection();
-    if (!sel.empty() && hudDetail > 0 && (overlayElements & ShowSelection))
+    if (!sel.empty() && hudDetail > 0 && ((overlayElements & ShowSelection) != 0))
     {
         overlay->savePos();
         overlay->setColor(0.7f, 0.7f, 1.0f, 1.0f);
@@ -3397,7 +3396,7 @@ void CelestiaCore::renderOverlay()
                 if (sel != lastSelection)
                 {
                     lastSelection = sel;
-                    auto body = sel.body();
+                    auto *body = sel.body();
                     selectionNames = body->getLocalizedName(); // Primary name, might be localized
                     const vector<string>& names = body->getNames();
 
@@ -3455,7 +3454,7 @@ void CelestiaCore::renderOverlay()
         // Display RA/Dec for the selection, but only when the observer is near
         // the Earth.
         Selection refObject = sim->getFrame()->getRefObject();
-        if (refObject.body() && refObject.body()->getName() == "Earth")
+        if ((refObject.body() != nullptr) && refObject.body()->getName() == "Earth")
         {
             Body* earth = refObject.body();
 
@@ -3505,7 +3504,7 @@ void CelestiaCore::renderOverlay()
     }
 
     // Text input
-    if (textEnterMode & KbAutoComplete)
+    if ((textEnterMode & KbAutoComplete) != 0)
     {
         overlay->setFont(titleFont);
         overlay->savePos();
@@ -3519,13 +3518,13 @@ void CelestiaCore::renderOverlay()
         overlay->printf(_("Target name: %s"), typedText);
         overlay->endText();
         overlay->setFont(font);
-        if (typedTextCompletion.size() >= 1)
+        if (!typedTextCompletion.empty())
         {
             int nb_cols = 4;
             int nb_lines = 3;
             int start = 0;
             overlay->moveBy(3.0f, -font->getHeight() - 3.0f);
-            vector<std::string>::const_iterator iter = typedTextCompletion.begin();
+            auto iter = typedTextCompletion.begin();
             if (typedTextCompletionIdx >= nb_cols * nb_lines)
             {
                start = (typedTextCompletionIdx / nb_lines + 1 - nb_cols) * nb_lines;
@@ -3553,7 +3552,7 @@ void CelestiaCore::renderOverlay()
     }
 
     // Text messages
-    if (messageText != "" && currentTime < messageStart + messageDuration)
+    if (!messageText.empty() && currentTime < messageStart + messageDuration)
     {
         int emWidth = titleFont->getWidth("M");
         int fontHeight = titleFont->getHeight();
@@ -3826,15 +3825,15 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
 
     /***** Load the deep sky catalogs *****/
 
-    DSONameDatabase* dsoNameDB  = new DSONameDatabase;
-    DSODatabase*     dsoDB      = new DSODatabase;
+    auto* dsoNameDB  = new DSONameDatabase;
+    auto*     dsoDB      = new DSODatabase;
     dsoDB->setNameDatabase(dsoNameDB);
 
     // Load first the vector of dsoCatalogFiles in the data directory (deepsky.dsc, globulars.dsc,...):
 
     for (const auto& file : config->dsoCatalogFiles)
     {
-        if (progressNotifier)
+        if (progressNotifier != nullptr)
             progressNotifier->update(file.string());
 
         ifstream dsoFile(file.string(), ios::in);
@@ -3883,11 +3882,11 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
     // First read the solar system files listed individually in the
     // config file.
     {
-        SolarSystemCatalog* solarSystemCatalog = new SolarSystemCatalog();
+        auto* solarSystemCatalog = new SolarSystemCatalog();
         universe->setSolarSystemCatalog(solarSystemCatalog);
         for (const auto& file : config->solarSystemFiles)
         {
-            if (progressNotifier)
+            if (progressNotifier != nullptr)
                 progressNotifier->update(file.string());
 
             ifstream solarSysFile(file.string(), ios::in);
@@ -4038,12 +4037,12 @@ bool CelestiaCore::initSimulation(const fs::path& configFileName,
     views.push_back(view);
     activeView = views.begin();
 
-    if (!compareIgnoringCase(getConfig()->cursor, "inverting crosshair"))
+    if (compareIgnoringCase(getConfig()->cursor, "inverting crosshair") == 0)
     {
         defaultCursorShape = CelestiaCore::InvertedCrossCursor;
     }
 
-    if (!compareIgnoringCase(getConfig()->cursor, "arrow"))
+    if (compareIgnoringCase(getConfig()->cursor, "arrow") == 0)
     {
         defaultCursorShape = CelestiaCore::ArrowCursor;
     }
@@ -4176,10 +4175,10 @@ bool CelestiaCore::readStars(const CelestiaConfig& cfg,
 
     // First load the binary star database file.  The majority of stars
     // will be defined here.
-    StarDatabase* starDB = new StarDatabase();
+    auto* starDB = new StarDatabase();
     if (!cfg.starDatabaseFile.empty())
     {
-        if (progressNotifier)
+        if (progressNotifier != nullptr)
             progressNotifier->update(cfg.starDatabaseFile.string());
 
         ifstream starFile(cfg.starDatabaseFile.string(), ios::in | ios::binary);
@@ -4368,7 +4367,7 @@ void CelestiaCore::clearFonts()
 {
     dateStrWidth = 0;
 
-    if (overlay)
+    if (overlay != nullptr)
         overlay->setFont(nullptr);
     if (console)
         console->setFont(nullptr);
@@ -4376,7 +4375,7 @@ void CelestiaCore::clearFonts()
     titleFont = nullptr;
     font = nullptr;
 
-    if (renderer)
+    if (renderer != nullptr)
     {
         for (int i = Renderer::FontNormal; i < Renderer::FontCount; i += 1)
         {
@@ -4462,7 +4461,7 @@ void CelestiaCore::setTimeZoneName(const string& zone)
 }
 
 
-int CelestiaCore::getHudDetail()
+int CelestiaCore::getHudDetail() const
 {
     return hudDetail;
 }
@@ -4543,7 +4542,7 @@ bool CelestiaCore::isCaptureActive()
     return movieCapture != nullptr;
 }
 
-bool CelestiaCore::isRecording()
+bool CelestiaCore::isRecording() const
 {
     return recording;
 }
@@ -4569,7 +4568,7 @@ void CelestiaCore::addWatcher(CelestiaWatcher* watcher)
 
 void CelestiaCore::removeWatcher(CelestiaWatcher* watcher)
 {
-    vector<CelestiaWatcher*>::iterator iter =
+    auto iter =
         find(watchers.begin(), watchers.end(), watcher);
     if (iter != watchers.end())
         watchers.erase(iter);
@@ -4577,7 +4576,7 @@ void CelestiaCore::removeWatcher(CelestiaWatcher* watcher)
 
 void CelestiaCore::notifyWatchers(int property)
 {
-    for (const auto watcher : watchers)
+    for (auto *const watcher : watchers)
     {
         watcher->notifyChange(this, property);
     }
@@ -4630,7 +4629,7 @@ void CelestiaCore::back()
 
 void CelestiaCore::forward()
 {
-    if (history.size() == 0) return;
+    if (history.empty()) return;
     if (historyCurrent == history.size()-1) return;
     historyCurrent++;
     history[historyCurrent].goTo();
@@ -4665,7 +4664,7 @@ void CelestiaCore::setHistoryCurrent(vector<Url>::size_type curr)
  *  the current simulation selection. This method does nothing
  *  if the selection isn't a solar system body.
  */
-void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
+void CelestiaCore::toggleReferenceMark(const string& refMark, const Selection& sel) const
 {
     Body* body = nullptr;
 
@@ -4678,7 +4677,7 @@ void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
     if (body == nullptr)
         return;
 
-    if (body->findReferenceMark(refMark))
+    if (body->findReferenceMark(refMark) != nullptr)
     {
         body->removeReferenceMark(refMark);
     }
@@ -4707,7 +4706,7 @@ void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
         else if (refMark == "frame center direction")
         {
             double now = getSimulation()->getTime();
-            BodyToBodyDirectionArrow* arrow = new BodyToBodyDirectionArrow(*body, body->getOrbitFrame(now)->getCenter());
+            auto* arrow = new BodyToBodyDirectionArrow(*body, body->getOrbitFrame(now)->getCenter());
             arrow->setTag(refMark);
             body->addReferenceMark(arrow);
         }
@@ -4730,7 +4729,7 @@ void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
 
             if (sun != nullptr)
             {
-                VisibleRegion* visibleRegion = new VisibleRegion(*body, Selection(sun));
+                auto* visibleRegion = new VisibleRegion(*body, Selection(sun));
                 visibleRegion->setTag("terminator");
                 body->addReferenceMark(visibleRegion);
             }
@@ -4743,7 +4742,7 @@ void CelestiaCore::toggleReferenceMark(const string& refMark, Selection sel)
  *  a selection. The default value for the selection argument is
  *  the current simulation selection.
  */
-bool CelestiaCore::referenceMarkEnabled(const string& refMark, Selection sel) const
+bool CelestiaCore::referenceMarkEnabled(const string& refMark, const Selection& sel) const
 {
     Body* body = nullptr;
 
@@ -4787,7 +4786,7 @@ void CelestiaCore::setTypedText(const char *c_p)
 vector<Observer*> CelestiaCore::getObservers() const
 {
     vector<Observer*> observerList;
-    for (const auto view : views)
+    for (auto *const view : views)
         if (view->type == View::ViewWindow)
             observerList.push_back(view->observer);
     return observerList;
@@ -4795,7 +4794,7 @@ vector<Observer*> CelestiaCore::getObservers() const
 
 View* CelestiaCore::getViewByObserver(const Observer *obs) const
 {
-    for (const auto view : views)
+    for (auto *const view : views)
          if (view->observer == obs)
              return view;
     return nullptr;

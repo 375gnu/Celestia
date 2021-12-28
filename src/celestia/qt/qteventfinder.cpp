@@ -64,19 +64,19 @@ class EventTableModel : public QAbstractTableModel
 {
 public:
     EventTableModel() = default;
-    virtual ~EventTableModel() = default;
+    ~EventTableModel() override = default;
 
     // Methods from QAbstractTableModel
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    int rowCount(const QModelIndex& index) const override;
-    int columnCount(const QModelIndex& index) const override;
+    [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override;
+    [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] int rowCount(const QModelIndex& index) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& index) const override;
     void sort(int column, Qt::SortOrder order) override;
 
     void setEclipses(const vector<Eclipse>& _eclipses);
 
-    const Eclipse* eclipseAtIndex(const QModelIndex& index) const;
+    [[nodiscard]] const Eclipse* eclipseAtIndex(const QModelIndex& index) const;
 
     enum
     {
@@ -206,8 +206,7 @@ const Eclipse* EventTableModel::eclipseAtIndex(const QModelIndex& index) const
     int row = index.row();
     if (row >= 0 && row < (int) eclipses.size())
         return &eclipses[row];
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -217,9 +216,9 @@ EventFinder::EventFinder(CelestiaCore* _appCore,
     QDockWidget(title, parent),
     appCore(_appCore)
 {
-    QWidget* finderWidget = new QWidget(this);
+    auto* finderWidget = new QWidget(this);
 
-    QVBoxLayout* layout = new QVBoxLayout();
+    auto* layout = new QVBoxLayout();
 
     eventTable = new QTreeView();
     eventTable->setRootIsDecorated(false);
@@ -234,8 +233,8 @@ EventFinder::EventFinder(CelestiaCore* _appCore,
     layout->addWidget(eventTable);
 
     // Create the eclipse type box
-    QWidget* eclipseTypeBox = new QWidget();
-    QVBoxLayout* eclipseTypeLayout = new QVBoxLayout();
+    auto* eclipseTypeBox = new QWidget();
+    auto* eclipseTypeLayout = new QVBoxLayout();
     solarOnlyButton = new QRadioButton(_("Solar eclipses"));
     lunarOnlyButton = new QRadioButton(_("Lunar eclipses"));
     allEclipsesButton = new QRadioButton(_("All eclipses"));
@@ -246,8 +245,8 @@ EventFinder::EventFinder(CelestiaCore* _appCore,
     eclipseTypeBox->setLayout(eclipseTypeLayout);
 
     // Search the search range box
-    QGroupBox* searchRangeBox = new QGroupBox(_("Search range"));
-    QVBoxLayout* searchRangeLayout = new QVBoxLayout();
+    auto* searchRangeBox = new QGroupBox(_("Search range"));
+    auto* searchRangeLayout = new QVBoxLayout();
 
     startDateEdit = new QDateEdit(searchRangeBox);
     endDateEdit = new QDateEdit(searchRangeBox);
@@ -259,8 +258,8 @@ EventFinder::EventFinder(CelestiaCore* _appCore,
     searchRangeBox->setLayout(searchRangeLayout);
 
     // subgroup for layout
-    QWidget* subgroup = new QWidget(this);
-    QHBoxLayout* subLayout = new QHBoxLayout();
+    auto* subgroup = new QWidget(this);
+    auto* subLayout = new QHBoxLayout();
     subLayout->addWidget(eclipseTypeBox);
     subLayout->addWidget(searchRangeBox);
     subgroup->setLayout(subLayout);
@@ -276,7 +275,7 @@ EventFinder::EventFinder(CelestiaCore* _appCore,
     planetSelect->addItem(_("Pluto"));
     layout->addWidget(planetSelect);
 
-    QPushButton* findButton = new QPushButton(_("Find eclipses"));
+    auto* findButton = new QPushButton(_("Find eclipses"));
     connect(findButton, SIGNAL(clicked()), this, SLOT(slotFindEclipses()));
     layout->addWidget(findButton);
 
@@ -389,23 +388,23 @@ void EventFinder::slotContextMenu(const QPoint& pos)
             contextMenu = new QMenu(this);
         contextMenu->clear();
 
-        QAction* setTimeAction = new QAction(_("Set time to mid-eclipse"), contextMenu);
+        auto* setTimeAction = new QAction(_("Set time to mid-eclipse"), contextMenu);
         connect(setTimeAction, SIGNAL(triggered()), this, SLOT(slotSetEclipseTime()));
         contextMenu->addAction(setTimeAction);
 
-        QAction* viewNearEclipsedAction = new QAction(QString(_("Near %1")).arg(activeEclipse->receiver->getName(true).c_str()), contextMenu);
+        auto* viewNearEclipsedAction = new QAction(QString(_("Near %1")).arg(activeEclipse->receiver->getName(true).c_str()), contextMenu);
         connect(viewNearEclipsedAction, SIGNAL(triggered()), this, SLOT(slotViewNearEclipsed()));
         contextMenu->addAction(viewNearEclipsedAction);
 
-        QAction* viewEclipsedSurfaceAction = new QAction(QString(_("From surface of %1")).arg(activeEclipse->receiver->getName(true).c_str()), contextMenu);
+        auto* viewEclipsedSurfaceAction = new QAction(QString(_("From surface of %1")).arg(activeEclipse->receiver->getName(true).c_str()), contextMenu);
         connect(viewEclipsedSurfaceAction, SIGNAL(triggered()), this, SLOT(slotViewEclipsedSurface()));
         contextMenu->addAction(viewEclipsedSurfaceAction);
 
-        QAction* viewOccluderSurfaceAction = new QAction(QString(_("From surface of %1")).arg(activeEclipse->occulter->getName(true).c_str()), contextMenu);
+        auto* viewOccluderSurfaceAction = new QAction(QString(_("From surface of %1")).arg(activeEclipse->occulter->getName(true).c_str()), contextMenu);
         connect(viewOccluderSurfaceAction, SIGNAL(triggered()), this, SLOT(slotViewOccluderSurface()));
         contextMenu->addAction(viewOccluderSurfaceAction);
 
-        QAction* viewBehindOccluderAction = new QAction(QString(_("Behind %1")).arg(activeEclipse->occulter->getName(true).c_str()), contextMenu);
+        auto* viewBehindOccluderAction = new QAction(QString(_("Behind %1")).arg(activeEclipse->occulter->getName(true).c_str()), contextMenu);
         connect(viewBehindOccluderAction, SIGNAL(triggered()), this, SLOT(slotViewBehindOccluder()));
         contextMenu->addAction(viewBehindOccluderAction);
 

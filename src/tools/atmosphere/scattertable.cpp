@@ -82,13 +82,13 @@ static Vector3f RayleighScatteringCoeff(float n, float N)
 class Atmosphere
 {
 public:
-    float shellRadius() const
+    [[nodiscard]] float shellRadius() const
     {
         return planetRadius + max(mieScaleHeight, rayleighScaleHeight) * 8.0f;
     }
 
-    Vector3f* computeTransmittanceTable() const;
-    Vector4f* computeInscatterTable() const;
+    [[nodiscard]] Vector3f* computeTransmittanceTable() const;
+    [[nodiscard]] Vector4f* computeInscatterTable() const;
 
     float planetRadius;
     float rayleighScaleHeight;
@@ -168,7 +168,7 @@ Atmosphere::computeTransmittanceTable() const
     float Rt2 = Rt * Rt;
 
     unsigned int sampleCount = HeightSamples * ViewAngleSamples;
-    Vector3f* transmittanceTable = new Vector3f[sampleCount];
+    auto* transmittanceTable = new Vector3f[sampleCount];
 
     // Avoid numerical precision problems by choosing a first viewer
     // position just *above* the planet surface.
@@ -239,7 +239,7 @@ Atmosphere::computeInscatterTable() const
     float baseHeight = Rg * 1.0e-6f;
 
     unsigned int sampleCount = HeightSamples * ViewAngleSamples * SunAngleSamples;
-    Vector4f* inscatter = new Vector4f[sampleCount];
+    auto* inscatter = new Vector4f[sampleCount];
 
     for (unsigned int i = 0; i < HeightSamples; ++i)
     {
@@ -455,10 +455,9 @@ bool LoadParameterSet(ParameterSet& params, const string& filename)
         cerr << "Error in scene config file " << filename << endl;
         return false;
     }
-    else
-    {
-        return true;
-    }
+    
+            return true;
+   
 }
 
 
@@ -474,7 +473,7 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--scattersteps"))
+            if ((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--scattersteps") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -483,7 +482,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "--output"))
+            else if ((strcmp(argv[i], "-o") == 0) || (strcmp(argv[i], "--output") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -575,7 +574,7 @@ uint16_t floatToHalf(float f)
         // Convert to a subnormal
         return signBit + (significand >> (13 - exponent));
     }
-    else if (exponent + 127 - 15 == 0xff)
+    if (exponent + 127 - 15 == 0xff)
     {
         // Special values: infinities and NaNs
         if (significand == 0)
@@ -723,7 +722,7 @@ static bool IsLittleEndian()
 // Write out a 16-bit unsigned integer in little-endian order
 static void WriteUint16(ostream& out, uint16_t u)
 {
-    static_assert(sizeof(u) == 2, "");
+    static_assert(sizeof(u) == 2 );
 
     Uint16 ub;
     ub.u = u;
@@ -739,7 +738,7 @@ static void WriteUint16(ostream& out, uint16_t u)
 // Write out a 32-bit unsigned integer in little-endian order
 static void WriteUint32(ostream& out, uint32_t u)
 {
-    static_assert(sizeof(u) == 4, "");
+    static_assert(sizeof(u) == 4 );
 
     Uint32 ub;
     ub.u = u;

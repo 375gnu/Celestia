@@ -40,9 +40,8 @@ bool parseCommandLine(int argc, char* argv[])
             cerr << "Unknown command line switch: " << argv[i] << '\n';
             return false;
         }
-        else
-        {
-            if (fileCount == 0)
+        
+                    if (fileCount == 0)
             {
                 // input filename first
                 inputFilename = string(argv[i]);
@@ -60,7 +59,7 @@ bool parseCommandLine(int argc, char* argv[])
                 return false;
             }
             i++;
-        }
+       
     }
 
     return true;

@@ -104,7 +104,7 @@ inline float sampleBilinear(const float samples[],
 
 // subdiv is the number of rows in the triangle
 void triangleSection(unsigned int subdiv,
-                     Eigen::Vector3f v0, Eigen::Vector3f v1, Eigen::Vector3f v2,
+                     const Eigen::Vector3f& v0, const Eigen::Vector3f& v1, const Eigen::Vector3f& v2,
                      Eigen::Vector2f tex0, Eigen::Vector2f tex1, Eigen::Vector2f tex2)
 {
     float ssamp = (float) (longSamples - 1) + 0.99f;
@@ -128,8 +128,8 @@ void triangleSection(unsigned int subdiv,
 
             if (samples != nullptr)
             {
-                float theta = (float) acos(w.y());
-                float phi = (float) atan2(-w.z(), w.x());
+                auto theta = (float) acos(w.y());
+                auto phi = (float) atan2(-w.z(), w.x());
                 float s = phi / (2.0f * pi) + 0.5f;
                 float t = theta / pi;
 

@@ -57,7 +57,7 @@ Image* LoadPNGImage(const fs::path& filename)
 
     size_t elements_read;
     elements_read = fread(header, 1, sizeof(header), fp);
-    if (elements_read == 0 || png_sig_cmp((unsigned char*) header, 0, sizeof(header)))
+    if (elements_read == 0 || (png_sig_cmp((unsigned char*) header, 0, sizeof(header)) != 0))
     {
         GetLogger()->error(_("Error: {} is not a PNG file.\n"), filename);
         fclose(fp);
@@ -134,7 +134,7 @@ Image* LoadPNGImage(const fs::path& filename)
         png_set_expand_gray_1_2_4_to_8(png_ptr);
     }
 
-    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0u)
     {
         png_set_tRNS_to_alpha(png_ptr);
     }

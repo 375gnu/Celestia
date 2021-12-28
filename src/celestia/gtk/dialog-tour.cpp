@@ -66,7 +66,7 @@ void dialogTourGuide(AppData* app)
 
     const DestinationList* destinations = app->core->getDestinations();
     int index = -1;
-    if (destinations != NULL)
+    if (destinations != nullptr)
     {
         for (DestinationList::const_iterator iter = destinations->begin();
              iter != destinations->end(); iter++)
@@ -123,7 +123,7 @@ static gint TourGuideSelect(GtkComboBox* comboBox, TourData* td)
 
 
 /* CALLBACK: Goto button clicked */
-static gint TourGuideGoto(GtkWidget*, TourData* td)
+static gint TourGuideGoto(GtkWidget* /*unused*/, TourData* td)
 {
     Simulation* simulation = td->app->simulation;
 
@@ -156,7 +156,7 @@ static gint TourGuideGoto(GtkWidget*, TourData* td)
 
 
 /* CALLBACK: Destroy Window */
-static void TourGuideDestroy(GtkWidget* w, gint, TourData* td)
+static void TourGuideDestroy(GtkWidget* w, gint /*unused*/, TourData* td)
 {
     gtk_widget_destroy(GTK_WIDGET(w));
     g_free(td);

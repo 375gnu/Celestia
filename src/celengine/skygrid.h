@@ -102,9 +102,9 @@ public:
     }
 
 private:
-    std::string latitudeLabel(int latitude, int latitudeStep) const;
+    static std::string latitudeLabel(int latitude, int latitudeStep) ;
     std::string longitudeLabel(int longitude, int longitudeStep) const;
-    int parallelSpacing(double idealSpacing) const;
+    static int parallelSpacing(double idealSpacing) ;
     int meridianSpacing(double idealSpacing) const;
 
 private:

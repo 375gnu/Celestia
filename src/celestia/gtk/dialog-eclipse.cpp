@@ -172,13 +172,13 @@ void dialogEclipseFinder(AppData* app)
     gtk_box_pack_start(GTK_BOX(mainbox), hbox, FALSE, FALSE, 0);
 
     /* Set up the drop-down boxes */
-    for (int i = 0; eclipseTypeTitles[i] != NULL; i++)
+    for (int i = 0; eclipseTypeTitles[i] != nullptr; i++)
     {
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(menuTypeBox), eclipseTypeTitles[i]);
     }
     gtk_combo_box_set_active(GTK_COMBO_BOX(menuTypeBox), 0);
 
-    for (int i = 0; eclipsePlanetTitles[i] != NULL; i++)
+    for (int i = 0; eclipsePlanetTitles[i] != nullptr; i++)
     {
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(menuBodyBox), eclipsePlanetTitles[i]);
     }
@@ -279,7 +279,7 @@ static void showCalPopup(GtkToggleButton *button, EclipseData *ed)
 
 
 /* CALLBACK: "SetTime/Goto" in Eclipse Finder */
-static gint eclipseGoto(GtkButton*, EclipseData* ed)
+static gint eclipseGoto(GtkButton* /*unused*/, EclipseData* ed)
 {
     GValue value = { 0, {{0}} }; /* Initialize GValue to 0 */
     GtkTreeIter iter;
@@ -335,7 +335,7 @@ static gint eclipseGoto(GtkButton*, EclipseData* ed)
 
 
 /* CALLBACK: Double-click on the Eclipse Finder Listbox */
-static gint eclipse2Click(GtkWidget*, GdkEventButton* event, EclipseData* ed)
+static gint eclipse2Click(GtkWidget* /*unused*/, GdkEventButton* event, EclipseData* ed)
 {
     if (event->type == GDK_2BUTTON_PRESS) {
         /* Double-click, same as hitting the select and go button */
@@ -455,7 +455,7 @@ static void listEclipseSelect(GtkTreeSelection* sel, EclipseData* ed)
 
 
 /* CALLBACK: Destroy Window */
-static void eclipseDestroy(GtkWidget* w, gint, EclipseData* ed)
+static void eclipseDestroy(GtkWidget* w, gint /*unused*/, EclipseData* ed)
 {
     gtk_widget_destroy(GTK_WIDGET(w));
     g_free(ed->d1);

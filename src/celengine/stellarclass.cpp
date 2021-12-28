@@ -22,7 +22,7 @@ Color StellarClass::getApparentColor() const
 }
 
 
-Color StellarClass::getApparentColor(StellarClass::SpectralClass sc) const
+Color StellarClass::getApparentColor(StellarClass::SpectralClass sc) 
 {
     switch (sc)
     {
@@ -441,7 +441,7 @@ StellarClass::parse(const string& st)
             break;
 
         case NormalStarSubclassState:
-            if (isdigit(c))
+            if (isdigit(c) != 0)
             {
                 subclass = (unsigned int) c - (unsigned int) '0';
                 state = NormalStarSubclassDecimalState;
@@ -466,7 +466,7 @@ StellarClass::parse(const string& st)
             break;
 
         case NormalStarSubclassFinalState:
-            if (isdigit(c))
+            if (isdigit(c) != 0)
                 state = LumClassBeginState;
             else
                 state = EndState;
@@ -637,7 +637,7 @@ StellarClass::parse(const string& st)
             break;
 
         case WDSubclassState:
-            if (isdigit(c))
+            if (isdigit(c) != 0)
             {
                 subclass = (unsigned int) c - (unsigned int) '0';
                 i++;

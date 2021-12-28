@@ -1,5 +1,5 @@
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 /*
 DXT1/DXT3/DXT5 texture decompression
@@ -354,7 +354,7 @@ void DecompressBlockDXT3(uint32_t x,
 
     for (i = 0; i < 4; ++i)
     {
-        const uint16_t* alphaData = (const uint16_t*)(blockStorage);
+        const auto* alphaData = (const uint16_t*)(blockStorage);
 
         alphaValues[i * 4 + 0] = (((*alphaData) >> 0) & 0xF) * 17;
         alphaValues[i * 4 + 1] = (((*alphaData) >> 4) & 0xF) * 17;

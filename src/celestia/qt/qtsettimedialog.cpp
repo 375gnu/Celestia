@@ -48,11 +48,11 @@ SetTimeDialog::SetTimeDialog(double currentTimeTDB,
 {
     setWindowTitle(_("Set Time"));
 
-    QVBoxLayout* layout = new QVBoxLayout();
+    auto* layout = new QVBoxLayout();
 
-    QGridLayout* timeLayout = new QGridLayout();
+    auto* timeLayout = new QGridLayout();
 
-    QLabel* timeZoneLabel = new QLabel(_("Time Zone: "));
+    auto* timeZoneLabel = new QLabel(_("Time Zone: "));
     timeLayout->addWidget(timeZoneLabel, 0, 0);
 
     timeZoneBox = new QComboBox(this);
@@ -67,7 +67,7 @@ SetTimeDialog::SetTimeDialog(double currentTimeTDB,
     timeLayout->addWidget(timeZoneBox, 0, 1, 1, 5);
     connect(timeZoneBox, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotTimeZoneChanged()));
 
-    QLabel* dateLabel = new QLabel(_("Date: "));
+    auto* dateLabel = new QLabel(_("Date: "));
     timeLayout->addWidget(dateLabel, 1, 0);
 
     yearSpin = new QSpinBox(this);
@@ -95,7 +95,7 @@ SetTimeDialog::SetTimeDialog(double currentTimeTDB,
     timeLayout->addWidget(daySpin, 1, 5);
     connect(daySpin, SIGNAL(valueChanged(int)), this, SLOT(slotDateTimeChanged()));
 
-    QLabel* timeLabel = new QLabel(_("Time: "));
+    auto* timeLabel = new QLabel(_("Time: "));
     timeLayout->addWidget(timeLabel, 2, 0);
 
     hourSpin = new QSpinBox(this);
@@ -126,7 +126,7 @@ SetTimeDialog::SetTimeDialog(double currentTimeTDB,
     timeLayout->addWidget(secSpin, 2, 5);
     connect(secSpin, SIGNAL(valueChanged(int)), this, SLOT(slotDateTimeChanged()));
 
-    QLabel* julianDateLabel = new QLabel(_("Julian Date: "));
+    auto* julianDateLabel = new QLabel(_("Julian Date: "));
     timeLayout->addWidget(julianDateLabel, 3, 0);
 
     julianDateSpin = new QDoubleSpinBox(this);
@@ -144,10 +144,10 @@ SetTimeDialog::SetTimeDialog(double currentTimeTDB,
 
     layout->addLayout(timeLayout);
 
-    QDialogButtonBox* buttonBox = new QDialogButtonBox(this);
+    auto* buttonBox = new QDialogButtonBox(this);
     buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
-    QPushButton* setTimeButton = new QPushButton(_("Set time"), buttonBox);
+    auto* setTimeButton = new QPushButton(_("Set time"), buttonBox);
     buttonBox->addButton(setTimeButton, QDialogButtonBox::ApplyRole);
     connect(setTimeButton, SIGNAL(clicked()), this, SLOT(slotSetSimulationTime()));
 

@@ -293,7 +293,7 @@ double EllipticalOrbit::eccentricAnomaly(double M) const
         Solution sol = solve_iteration_fixed(SolveKeplerFunc1(eccentricity, M), M, 5);
         return sol.first;
     }
-    else if (eccentricity < 0.9)
+    if (eccentricity < 0.9)
     {
         // Higher eccentricity elliptical orbit; use a more complex but
         // much faster converging iteration.
@@ -497,7 +497,7 @@ static EllipticalOrbit* StateVectorToOrbit(const Vector3d& position,
                                            double mass,
                                            double t)
 {
-    Vector3d R = position;
+    const Vector3d& R = position;
     Vector3d L = R.cross(v);
     double magR = R.norm();
     double magL = L.norm();
@@ -588,7 +588,7 @@ Vector3d MixedOrbit::positionAtTime(double jd) const
 {
     if (jd < begin)
         return beforeApprox->positionAtTime(jd);
-    else if (jd < end)
+    if (jd < end)
         return primary->positionAtTime(jd);
     else
         return afterApprox->positionAtTime(jd);
@@ -599,7 +599,7 @@ Vector3d MixedOrbit::velocityAtTime(double jd) const
 {
     if (jd < begin)
         return beforeApprox->velocityAtTime(jd);
-    else if (jd < end)
+    if (jd < end)
         return primary->velocityAtTime(jd);
     else
         return afterApprox->velocityAtTime(jd);

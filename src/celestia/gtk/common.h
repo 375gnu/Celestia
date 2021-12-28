@@ -92,7 +92,7 @@ void setSaneDistanceLimit(AppData* app, int value);
 void setSaneVerbosity(AppData* app, int value);
 void setSaneStarStyle(AppData* app, Renderer::StarStyle value);
 void setSaneTextureResolution(AppData* app, int value);
-void setSaneAltSurface(AppData* app, char* value);
+void setSaneAltSurface(AppData* app, const char* value);
 void setSaneWinSize(AppData* app, int x, int y);
 void setSaneWinPosition(AppData* app, int x, int y);
 void setDefaultRenderFlags(AppData* app);

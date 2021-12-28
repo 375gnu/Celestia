@@ -92,12 +92,12 @@ Texture* TextureInfo::load(const fs::path& name)
     Texture::AddressMode addressMode = Texture::EdgeClamp;
     Texture::MipMapMode mipMode = Texture::DefaultMipMaps;
 
-    if (flags & WrapTexture)
+    if ((flags & WrapTexture) != 0u)
         addressMode = Texture::Wrap;
-    else if (flags & BorderClamp)
+    else if ((flags & BorderClamp) != 0u)
         addressMode = Texture::BorderClamp;
 
-    if (flags & NoMipMaps)
+    if ((flags & NoMipMaps) != 0u)
         mipMode = Texture::NoMipMaps;
 
     if (bumpHeight == 0.0f)

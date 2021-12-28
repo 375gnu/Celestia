@@ -19,9 +19,7 @@
 #include <config.h>
 #include "cc.h"
 
-namespace celestia
-{
-namespace compat
+namespace celestia::compat
 {
 namespace
 {
@@ -81,8 +79,7 @@ write_buffer(const char* first, const char* last, chars_format fmt, char* buffer
                     *(buffer++) = *(ptr++);
                     break;
                 }
-                else if (std::isalnum(static_cast<unsigned char>(*ptr))
-                    || *ptr == '_')
+                if ((std::isalnum(static_cast<unsigned char>(*ptr)) != 0) || *ptr == '_')
                 {
                     *(buffer++) = *(ptr++);
                 }
@@ -122,7 +119,7 @@ write_buffer(const char* first, const char* last, chars_format fmt, char* buffer
                     if (state != State::Start && state != State::Fraction) { break; }
                     state = State::ExponentStart;
                 }
-                else if (std::isxdigit(static_cast<unsigned char>(*ptr)))
+                else if (std::isxdigit(static_cast<unsigned char>(*ptr)) != 0)
                 {
                     if (state == State::ExponentStart) { state = State::Exponent; }
                 }
@@ -136,7 +133,7 @@ write_buffer(const char* first, const char* last, chars_format fmt, char* buffer
                 if ((fmt & chars_format::scientific) != chars_format::scientific) { break; }
                 state = State::ExponentStart;
             }
-            else if (std::isdigit(static_cast<unsigned char>(*ptr)))
+            else if (std::isdigit(static_cast<unsigned char>(*ptr)) != 0)
             {
                 if (state == State::ExponentStart) { state = State::Exponent; }
             }
@@ -236,5 +233,4 @@ from_chars(const char* first, const char* last, long double &value, chars_format
     return from_chars_impl(first, last, value, fmt);
 }
 
-} // end namespace compat
 } // end namespace celestia

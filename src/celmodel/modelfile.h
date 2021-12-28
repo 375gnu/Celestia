@@ -24,8 +24,8 @@ namespace cmod
 using HandleGetter = std::function<ResourceHandle(const fs::path&)>;
 using SourceGetter = std::function<fs::path(ResourceHandle)>;
 
-std::unique_ptr<Model> LoadModel(std::istream& in, HandleGetter getHandle);
+std::unique_ptr<Model> LoadModel(std::istream& in, HandleGetter handleGetter);
 
-bool SaveModelAscii(const Model* model, std::ostream& out, SourceGetter getSource);
-bool SaveModelBinary(const Model* model, std::ostream& out, SourceGetter getSource);
+bool SaveModelAscii(const Model* model, std::ostream& out, SourceGetter sourceGetter);
+bool SaveModelBinary(const Model* model, std::ostream& out, SourceGetter sourceGetter);
 }

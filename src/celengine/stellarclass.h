@@ -96,7 +96,7 @@ public:
     inline LuminosityClass getLuminosityClass() const;
 
     Color getApparentColor() const;
-    Color getApparentColor(StellarClass::SpectralClass sc) const;
+    static Color getApparentColor(StellarClass::SpectralClass sc) ;
 
     std::string str() const;
 

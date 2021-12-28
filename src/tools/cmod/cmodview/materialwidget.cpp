@@ -35,7 +35,7 @@ cmod::Color fromQtColor(const QColor& color)
 }
 
 
-static void setWidgetColor(QLabel* widget, const cmod::Color& color)
+void setWidgetColor(QLabel* widget, const cmod::Color& color)
 {
     widget->setPalette(QPalette(toQtColor(color)));
     widget->setAutoFillBackground(true);
@@ -209,7 +209,7 @@ MaterialWidget::setMaterial(const cmod::Material& material)
 }
 
 
-void
+static void
 MaterialWidget::editDiffuse()
 {
     QColorDialog dialog(toQtColor(m_material.diffuse), this);
@@ -260,7 +260,7 @@ MaterialWidget::editNormalMap()
 }
 
 
-void
+static void
 MaterialWidget::setDiffuse(const QColor& color)
 {
     m_material.diffuse = fromQtColor(color);
@@ -269,7 +269,7 @@ MaterialWidget::setDiffuse(const QColor& color)
 }
 
 
-void
+static void
 MaterialWidget::setSpecular(const QColor& color)
 {
     m_material.specular = fromQtColor(color);
@@ -278,7 +278,7 @@ MaterialWidget::setSpecular(const QColor& color)
 }
 
 
-void
+static void
 MaterialWidget::setEmissive(const QColor& color)
 {
     m_material.emissive = fromQtColor(color);
@@ -321,7 +321,7 @@ MaterialWidget::changeMaterialParameters()
 }
 
 
-void
+static void
 MaterialWidget::setTextureSearchPath(const QString& path)
 {
     m_baseTexture->clear();

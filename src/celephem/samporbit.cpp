@@ -166,7 +166,7 @@ static Vector3d cubicInterpolateVelocity(const Vector3d& p0, const Vector3d& v0,
 template <typename T> Vector3d SampledOrbit<T>::computePosition(double jd) const
 {
     Vector3d pos;
-    if (samples.size() == 0)
+    if (samples.empty())
     {
         pos = Vector3d::Zero();
     }
@@ -182,7 +182,7 @@ template <typename T> Vector3d SampledOrbit<T>::computePosition(double jd) const
 
         if (n < 1 || n >= (int) samples.size() || jd < samples[n - 1].t || jd > samples[n].t)
         {
-            typename vector<Sample<T> >::const_iterator iter = lower_bound(samples.begin(),
+            auto iter = lower_bound(samples.begin(),
                                                                            samples.end(),
                                                                            samp);
             if (iter == samples.end())
@@ -297,7 +297,7 @@ template <typename T> Vector3d SampledOrbit<T>::computeVelocity(double jd) const
 
         if (n < 1 || n >= (int) samples.size() || jd < samples[n - 1].t || jd > samples[n].t)
         {
-            typename vector<Sample<T> >::const_iterator iter = lower_bound(samples.begin(),
+            auto iter = lower_bound(samples.begin(),
                                                                            samples.end(),
                                                                            samp);
             if (iter == samples.end())
@@ -518,7 +518,7 @@ template <typename T> double SampledOrbitXYZV<T>::getBoundingRadius() const
 template <typename T> Vector3d SampledOrbitXYZV<T>::computePosition(double jd) const
 {
     Vector3d pos;
-    if (samples.size() == 0)
+    if (samples.empty())
     {
         pos = Vector3d::Zero();
     }
@@ -534,7 +534,7 @@ template <typename T> Vector3d SampledOrbitXYZV<T>::computePosition(double jd) c
 
         if (n < 1 || n >= (int) samples.size() || jd < samples[n - 1].t || jd > samples[n].t)
         {
-            typename vector<SampleXYZV<T> >::const_iterator iter = lower_bound(samples.begin(),
+            auto iter = lower_bound(samples.begin(),
                                                                                samples.end(),
                                                                                samp);
             if (iter == samples.end())
@@ -605,7 +605,7 @@ template <typename T> Vector3d SampledOrbitXYZV<T>::computeVelocity(double jd) c
 
         if (n < 1 || n >= (int) samples.size() || jd < samples[n - 1].t || jd > samples[n].t)
         {
-            typename vector<SampleXYZV<T> >::const_iterator iter = lower_bound(samples.begin(),
+            auto iter = lower_bound(samples.begin(),
                                                                                samples.end(),
                                                                                samp);
             if (iter == samples.end())
@@ -866,7 +866,7 @@ LoadSampledOrbitXYZVBinary(const fs::path& filename, TrajectoryInterpolation int
     if (header.count == 0)
         return nullptr;
 
-    SampledOrbitXYZV<T>* orbit = new SampledOrbitXYZV<T>(interpolation);
+    auto* orbit = new SampledOrbitXYZV<T>(interpolation);
 
     double lastSampleTime = -numeric_limits<T>::infinity();
 

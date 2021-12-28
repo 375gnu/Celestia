@@ -20,7 +20,7 @@
 #include <cassert>
 #include <tuple>
 #include <process.h>
-#include <time.h>
+#include <ctime>
 #include <windows.h>
 #include <commctrl.h>
 #include <mmsystem.h>
@@ -62,19 +62,19 @@
 #include "res/resource.h"
 #include "wglext.h"
 
-#include <locale.h>
+#include <clocale>
 #include <fmt/printf.h>
 
 using namespace celestia;
 using namespace celestia::util;
 using namespace std;
 
-typedef pair<int,string> IntStrPair;
-typedef vector<IntStrPair> IntStrPairVec;
+using IntStrPair = pair<int, string>;
+using IntStrPairVec = int;
 
 char AppName[] = "Celestia";
 
-static CelestiaCore* appCore = NULL;
+static CelestiaCore* appCore = nullptr;
 
 // Display modes for full screen operation
 static vector<DEVMODE>* displayModes = NULL;
@@ -100,14 +100,14 @@ HINSTANCE appInstance;
 HMODULE hRes;
 HWND mainWindow = 0;
 
-static SolarSystemBrowser* solarSystemBrowser = NULL;
-static StarBrowser* starBrowser = NULL;
-static TourGuide* tourGuide = NULL;
-static GotoObjectDialog* gotoObjectDlg = NULL;
-static ViewOptionsDialog* viewOptionsDlg = NULL;
-static EclipseFinderDialog* eclipseFinder = NULL;
-static LocationsDialog* locationsDlg = NULL;
-static SplashWindow* s_splash = NULL;
+static SolarSystemBrowser* solarSystemBrowser = nullptr;
+static StarBrowser* starBrowser = nullptr;
+static TourGuide* tourGuide = nullptr;
+static GotoObjectDialog* gotoObjectDlg = nullptr;
+static ViewOptionsDialog* viewOptionsDlg = nullptr;
+static EclipseFinderDialog* eclipseFinder = nullptr;
+static LocationsDialog* locationsDlg = nullptr;
+static SplashWindow* s_splash = nullptr;
 
 static HMENU menuBar = 0;
 ODMenu odAppMenu;
@@ -124,7 +124,7 @@ bool cursorVisible = true;
 static POINT saveCursorPos;
 static POINT lastMouseMove;
 class WinCursorHandler;
-WinCursorHandler* cursorHandler = NULL;
+WinCursorHandler* cursorHandler = nullptr;
 
 static int MovieSizes[8][2] = {
                                 { 160, 120 },
@@ -239,23 +239,21 @@ public:
     // IDropTarget methods
     STDMETHOD (DragEnter)(LPDATAOBJECT pDataObj, DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect);
     STDMETHOD (DragOver) (DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect);
-    STDMETHOD (DragLeave)(void);
+    STDMETHOD (DragLeave)();
     STDMETHOD (Drop)     (LPDATAOBJECT pDataObj, DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect);
 
 private:
     ULONG refCount;
 };
 
-static CelestiaDropTarget* dropTarget = NULL;
+static CelestiaDropTarget* dropTarget = nullptr;
 
 CelestiaDropTarget::CelestiaDropTarget() :
     refCount(0)
-{
-}
+= default;
 
 CelestiaDropTarget::~CelestiaDropTarget()
-{
-}
+= default;
 
 HRESULT CelestiaDropTarget::QueryInterface(REFIID iid, void** ppvObject)
 {
@@ -267,17 +265,17 @@ HRESULT CelestiaDropTarget::QueryInterface(REFIID iid, void** ppvObject)
     }
     else
     {
-        *ppvObject = NULL;
+        *ppvObject = nullptr;
         return ResultFromScode(E_NOINTERFACE);
     }
 }
 
-ULONG CelestiaDropTarget::AddRef(void)
+ULONG CelestiaDropTarget::AddRef()
 {
     return ++refCount;
 }
 
-ULONG CelestiaDropTarget::Release(void)
+ULONG CelestiaDropTarget::Release()
 {
     if (--refCount == 0)
     {
@@ -306,7 +304,7 @@ CelestiaDropTarget::DragOver(DWORD grfKeyState,
 }
 
 STDMETHODIMP
-CelestiaDropTarget::DragLeave(void)
+CelestiaDropTarget::DragLeave()
 {
     return S_OK;
 }
@@ -359,9 +357,9 @@ class WinCursorHandler : public CelestiaCore::CursorHandler
 {
 public:
     WinCursorHandler(HCURSOR _defaultCursor);
-    virtual ~WinCursorHandler();
-    virtual void setCursorShape(CelestiaCore::CursorShape);
-    virtual CelestiaCore::CursorShape getCursorShape() const;
+    ~WinCursorHandler() override;
+    void setCursorShape(CelestiaCore::CursorShape /*_shape*/) override;
+    [[nodiscard]] CelestiaCore::CursorShape getCursorShape() const override;
 
 private:
     CelestiaCore::CursorShape shape;
@@ -381,8 +379,7 @@ WinCursorHandler::WinCursorHandler(HCURSOR _defaultCursor) :
 
 
 WinCursorHandler::~WinCursorHandler()
-{
-}
+= default;
 
 
 void WinCursorHandler::setCursorShape(CelestiaCore::CursorShape _shape)
@@ -450,7 +447,7 @@ static bool CopyStateURLToClipboard()
 {
     BOOL b;
     b = OpenClipboard(mainWindow);
-    if (!b)
+    if (b == nullptr)
         return false;
 
     CelestiaState appState(appCore);
@@ -463,20 +460,19 @@ static bool CopyStateURLToClipboard()
     HGLOBAL clipboardDataHandle = GlobalAlloc(GMEM_DDESHARE | GMEM_MOVEABLE,
                                               strlen(s) + 1);
     char* clipboardData = (char*) GlobalLock(clipboardDataHandle);
-    if (clipboardData != NULL)
+    if (clipboardData != nullptr)
     {
         strcpy(clipboardData, s);
         GlobalUnlock(clipboardDataHandle);
         EmptyClipboard();
         HANDLE h = SetClipboardData(CF_TEXT, clipboardDataHandle);
         CloseClipboard();
-        return h != NULL;
+        return h != nullptr;
     }
-    else
-    {
-        CloseClipboard();
+    
+            CloseClipboard();
         return false;
-    }
+   
 }
 
 
@@ -1382,7 +1378,7 @@ static void setMenuItemCheck(int menuItem, bool checked)
 
 struct IntStrPairComparePredicate
 {
-    IntStrPairComparePredicate() : dummy(0)
+    IntStrPairComparePredicate()  
     {
     }
 
@@ -1391,7 +1387,7 @@ struct IntStrPairComparePredicate
         return (pair1.second.compare(pair2.second) < 0);
     }
 
-    int dummy;
+    int dummy{0};
 };
 
 static HMENU CreatePlanetarySystemMenu(string parentName, const PlanetarySystem* psys)
@@ -1584,7 +1580,7 @@ VOID APIENTRY handlePopupMenu(HWND hwnd,
             AppendMenu(hMenu, MF_STRING, ID_SELECT_PRIMARY_BODY, UTF8ToCurrentCP(_("Select &Primary Body")).c_str());
 
             const PlanetarySystem* satellites = sel.body()->getSatellites();
-            if (satellites != NULL && satellites->getSystemSize() != 0)
+            if (satellites != nullptr && satellites->getSystemSize() != 0)
             {
                 HMENU satMenu = CreatePlanetarySystemMenu(name, satellites);
                 AppendMenu(hMenu, MF_POPUP | MF_STRING, (UINT_PTR) satMenu,
@@ -1686,8 +1682,8 @@ void ShowWWWInfo(const Selection& sel)
             if (url.empty())
             {
                 string name = sel.body()->getName();
-                for (unsigned int i = 0; i < name.size(); i++)
-                    name[i] = tolower(name[i]);
+                for (char & i : name)
+                    i = tolower(i);
 
                 url = string("http://www.nineplanets.org/") + name + ".html";
             }
@@ -1736,17 +1732,7 @@ bool EnableFullScreen(const DEVMODE& dm)
     devMode.dmPelsHeight = dm.dmPelsHeight;
     devMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
 
-    if (ChangeDisplaySettings(&devMode, CDS_FULLSCREEN) !=
-        DISP_CHANGE_SUCCESSFUL)
-    {
-        MessageBox(NULL,
-                   _("Unable to switch to full screen mode; running in window mode"),
-                   _("Error"),
-                   MB_OK | MB_ICONERROR);
-        return false;
-    }
-
-    return true;
+    return !;
 }
 
 
@@ -1757,7 +1743,7 @@ void DisableFullScreen()
 
 
 unsigned int
-ChooseBestMSAAPixelFormat(HDC hdc, int *formats, unsigned int numFormats,
+ChooseBestMSAAPixelFormat(HDC hdc, const int *formats, unsigned int numFormats,
                           int samplesRequested)
 {
     int idealFormat = 0;
@@ -1829,12 +1815,11 @@ bool SetDCPixelFormat(HDC hDC)
             // Uh oh . . . looks like we can't handle OpenGL on this device.
             return false;
         }
-        else
-        {
-            // Set the pixel format for the device context
+        
+                    // Set the pixel format for the device context
             SetPixelFormat(hDC, nPixelFormat, &pfd);
             return true;
-        }
+       
     }
     else
     {
@@ -1869,10 +1854,7 @@ bool SetDCPixelFormat(HDC hDC)
 
         DescribePixelFormat(hDC, pixelFormatIndex,
                             sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-        if (!SetPixelFormat(hDC, pixelFormatIndex, &pfd))
-            return false;
-
-        return true;
+        return !;
     }
 }
 
@@ -2007,7 +1989,7 @@ void DestroyOpenGLWindow()
     }
 #endif
 
-    if (deviceContext != NULL)
+    if (deviceContext != nullptr)
     {
         if (!ReleaseDC(mainWindow, deviceContext))
         {
@@ -2183,7 +2165,7 @@ static void BuildScriptsMenu(HMENU menuBar, const fs::path& scriptsDir)
 
     BOOL result = GetMenuItemInfo(fileMenu, 1, TRUE, &info);
 
-    if (result)
+    if (result != nullptr)
     {
         HMENU scriptMenu = info.hSubMenu;
 
@@ -2281,12 +2263,12 @@ private:
     HWND hwnd;
 
 public:
-    WinAlerter() : hwnd(NULL) {};
-    ~WinAlerter() {};
+    WinAlerter() : hwnd(NULL) = default;;
+    ~WinAlerter() override = default;;
 
-    void fatalError(const std::string& msg)
+    void fatalError(const std::string& msg) override
     {
-        if (s_splash != NULL)
+        if (s_splash != nullptr)
             s_splash->close();
 
         MessageBox(NULL,
@@ -2299,7 +2281,7 @@ public:
 class WinContextMenuHandler : public CelestiaCore::ContextMenuHandler
 {
 public:
-    void requestContextMenu(float x, float y, Selection sel)
+    void requestContextMenu(float x, float y, Selection sel) override
     {
         handlePopupMenu(mainWindow, x, y, sel);
     }
@@ -2584,7 +2566,7 @@ static bool GetCurrentPreferences(AppPreferences& prefs)
     prefs.visualMagnitude = appCore->getSimulation()->getFaintestVisible();
     prefs.ambientLight = appCore->getRenderer()->getAmbientLightLevel();
     prefs.galaxyLightGain = Galaxy::getLightGain();
-    prefs.showLocalTime = (appCore->getTimeZoneBias() != 0);
+    prefs.showLocalTime = static_cast<int>(appCore->getTimeZoneBias() != 0);
     prefs.dateFormat = appCore->getDateFormat();
     prefs.hudDetail = appCore->getHudDetail();
     prefs.fullScreenMode = lastFullScreenMode;
@@ -2851,7 +2833,7 @@ vector<DEVMODE>* EnumerateDisplayModes(unsigned int minBPP)
 {
     vector<DEVMODE>* modes = new vector<DEVMODE>();
     if (modes == NULL)
-        return NULL;
+        return nullptr;
 
     DEVMODE dm;
     int i = 0;
@@ -3094,9 +3076,9 @@ class WinSplashProgressNotifier : public ProgressNotifier
 {
 public:
     WinSplashProgressNotifier(SplashWindow* _splash) : splash(_splash) {};
-    virtual ~WinSplashProgressNotifier() {};
+    ~WinSplashProgressNotifier() override = default;;
 
-    virtual void update(const string& filename)
+    void update(const string& filename) override
     {
         splash->setMessage(UTF8ToCurrentCP(_("Loading: ")) + filename);
     }
@@ -3163,13 +3145,13 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
     OleInitialize(NULL);
     dropTarget = new CelestiaDropTarget();
-    if (dropTarget)
+    if (dropTarget != nullptr)
     {
         if (CoLockObjectExternal(dropTarget, TRUE, TRUE) != S_OK)
         {
             cout << "Error locking drop target\n";
             delete dropTarget;
-            dropTarget = NULL;
+            dropTarget = nullptr;
         }
     }
 
@@ -3268,7 +3250,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 
     appCore->setAlerter(new WinAlerter());
 
-    WinSplashProgressNotifier* progressNotifier = NULL;
+    WinSplashProgressNotifier* progressNotifier = nullptr;
     if (!skipSplashScreen)
         progressNotifier = new WinSplashProgressNotifier(s_splash);
 
@@ -3277,11 +3259,11 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     delete progressNotifier;
 
     // Close the splash screen after all data has been loaded
-    if (s_splash != NULL)
+    if (s_splash != nullptr)
     {
         s_splash->close();
         delete s_splash;
-        s_splash = NULL;
+        s_splash = nullptr;
     }
 
     // Give up now if we failed initialization
@@ -3295,7 +3277,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     acceleratorTable = LoadAccelerators(hRes,
                                         MAKEINTRESOURCE(IDR_ACCELERATORS));
 
-    if (appCore->getConfig() == NULL)
+    if (appCore->getConfig() == nullptr)
     {
         MessageBox(NULL,
                    _("Configuration file missing!"),
@@ -3377,7 +3359,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
         return FALSE;
     }
 
-    if (dropTarget != NULL)
+    if (dropTarget != nullptr)
     {
         HRESULT hr = RegisterDragDrop(hWnd, dropTarget);
         if (hr != S_OK)
@@ -3564,7 +3546,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
         RestoreDisplayMode();
     DestroyOpenGLWindow();
 
-    if (appCore != NULL)
+    
         delete appCore;
 
     OleUninitialize();

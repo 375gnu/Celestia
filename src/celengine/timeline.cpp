@@ -24,7 +24,7 @@ using namespace std;
 
 Timeline::~Timeline()
 {
-    for (auto phase : phases)
+    for (const auto& phase : phases)
     {
         // Remove the phase from whatever phase tree contains it.
         phase->getFrameTree()->removeChild(phase);
@@ -60,9 +60,8 @@ Timeline::findPhase(double t) const
     {
         return phases[0];
     }
-    else
-    {
-        for (const auto& phase : phases)
+    
+            for (const auto& phase : phases)
         {
             if (t < phase->endTime())
                 return phase;
@@ -70,7 +69,7 @@ Timeline::findPhase(double t) const
 
         // Time is greater than the end time of the final phase. Just return the final phase.
         return phases.back();
-    }
+   
 }
 
 

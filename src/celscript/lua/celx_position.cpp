@@ -24,7 +24,7 @@ int position_new(lua_State* l, const UniversalCoord& uc)
 {
     CelxLua celx(l);
 
-    UniversalCoord* ud = reinterpret_cast<UniversalCoord*>(lua_newuserdata(l, sizeof(UniversalCoord)));
+    auto* ud = reinterpret_cast<UniversalCoord*>(lua_newuserdata(l, sizeof(UniversalCoord)));
     *ud = uc;
 
     celx.setClass(Celx_Position);
@@ -70,7 +70,7 @@ static int position_get(lua_State* l)
         value = uc->z;
     else
     {
-        if (!lua_getmetatable(l, 1))
+        if (lua_getmetatable(l, 1) == 0)
         {
             celx.doError("Internal error: couldn't get metatable");
             return 0;
@@ -188,7 +188,7 @@ static int position_orientationto(lua_State* l)
         return 1;
     }
 
-    auto upd = celx.toVector(3);
+    auto *upd = celx.toVector(3);
     if (upd == nullptr)
     {
         celx.doError("Second argument to position:orientationto must be a vector");
@@ -306,7 +306,7 @@ static int position_addvector(lua_State* l)
     if (uc == nullptr)
         return 0;
 
-    auto v3d = celx.toVector(2);
+    auto *v3d = celx.toVector(2);
     if (v3d == nullptr)
     {
         celx.doError("Vector expected as argument to position:addvector");

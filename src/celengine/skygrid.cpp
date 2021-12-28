@@ -150,8 +150,7 @@ angleDiff(T a, T b)
     T diff = std::fabs(a - b);
     if (diff > PI)
         return (T) (2.0 * PI - diff);
-    else
-        return diff;
+            return diff;
 }
 
 template<class T> static T
@@ -262,7 +261,7 @@ template<typename T> static bool planeCircleIntersection(const Matrix<T, 3, 1>& 
 // Get the a string with a label for the specified latitude. Both
 // the latitude and latitudeStep are given in milliarcseconds.
 string
-SkyGrid::latitudeLabel(int latitude, int latitudeStep) const
+SkyGrid::latitudeLabel(int latitude, int latitudeStep) 
 {
     // Produce a sexigesimal string
     ostringstream out;
@@ -335,7 +334,7 @@ SkyGrid::longitudeLabel(int longitude, int longitudeStep) const
 
 // Compute the angular step between parallels
 int
-SkyGrid::parallelSpacing(double idealSpacing) const
+SkyGrid::parallelSpacing(double idealSpacing) 
 {
     // We want to use parallels and meridian spacings that are nice multiples of hours, degrees,
     // minutes, or seconds. Choose spacings from a table. We take the table entry that gives
@@ -483,9 +482,9 @@ SkyGrid::render(Renderer& renderer,
     frustumNormal[2] = Vector3d( 1,  0, -w);
     frustumNormal[3] = Vector3d(-1,  0, -w);
 
-    for (int i = 0; i < 4; i++)
+    for (auto & i : frustumNormal)
     {
-        frustumNormal[i] = toStandardCoords(r * frustumNormal[i].normalized());
+        i = toStandardCoords(r * i.normalized());
     }
 
     Vector3d viewCenter(-Vector3d::UnitZ());

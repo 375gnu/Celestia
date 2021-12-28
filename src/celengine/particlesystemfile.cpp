@@ -175,7 +175,7 @@ ParticleSystemLoader::parseGenerator(Hash* params)
         coneParams->getNumber("MinSpeed", minSpeed);
         coneParams->getNumber("MaxSpeed", maxSpeed);
 
-        return new ConeGenerator((float) degToRad(minAngle), (float) degToRad(maxAngle), (float) minSpeed, (float) maxSpeed);
+        return new ConeGenerator((float) celmath::degToRad(minAngle), (float) celmath::degToRad(maxAngle), (float) minSpeed, (float) maxSpeed);
     }
 
     generatorValue = params->getValue("GaussianDisc");
@@ -306,7 +306,7 @@ ParticleSystemLoader::parseEmitter(Hash* params)
     emitter->setAcceleration(acceleration);
 
     emitter->setLifespan(startTime, endTime);
-    emitter->setRotationRateRange((float) degToRad(minRotationRate), (float) degToRad(maxRotationRate));
+    emitter->setRotationRateRange((float) celmath::degToRad(minRotationRate), (float) celmath::degToRad(maxRotationRate));
 
     return emitter;
 }

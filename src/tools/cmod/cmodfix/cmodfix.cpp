@@ -65,50 +65,49 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!std::strcmp(argv[i], "-b") || !std::strcmp(argv[i], "--binary"))
+            if ((std::strcmp(argv[i], "-b") == 0) || (std::strcmp(argv[i], "--binary") == 0))
             {
                 outputBinary = true;
             }
-            else if (!std::strcmp(argv[i], "-a") || !std::strcmp(argv[i], "--ascii"))
+            else if ((std::strcmp(argv[i], "-a") == 0) || (std::strcmp(argv[i], "--ascii") == 0))
             {
                 outputBinary = false;
             }
-            else if (!std::strcmp(argv[i], "-u") || !std::strcmp(argv[i], "--uniquify"))
+            else if ((std::strcmp(argv[i], "-u") == 0) || (std::strcmp(argv[i], "--uniquify") == 0))
             {
                 uniquify = true;
             }
-            else if (!std::strcmp(argv[i], "-n") || !std::strcmp(argv[i], "--normals"))
+            else if ((std::strcmp(argv[i], "-n") == 0) || (std::strcmp(argv[i], "--normals") == 0))
             {
                 genNormals = true;
             }
-            else if (!std::strcmp(argv[i], "-t") || !std::strcmp(argv[i], "--tangents"))
+            else if ((std::strcmp(argv[i], "-t") == 0) || (std::strcmp(argv[i], "--tangents") == 0))
             {
                 genTangents = true;
             }
-            else if (!std::strcmp(argv[i], "-w") || !std::strcmp(argv[i], "--weld"))
+            else if ((std::strcmp(argv[i], "-w") == 0) || (std::strcmp(argv[i], "--weld") == 0))
             {
                 weldVertices = true;
             }
-            else if (!std::strcmp(argv[i], "-m") || !std::strcmp(argv[i], "--merge"))
+            else if ((std::strcmp(argv[i], "-m") == 0) || (std::strcmp(argv[i], "--merge") == 0))
             {
                 mergeMeshes = true;
             }
-            else if (!std::strcmp(argv[i], "-o") || !std::strcmp(argv[i], "--optimize"))
+            else if ((std::strcmp(argv[i], "-o") == 0) || (std::strcmp(argv[i], "--optimize") == 0))
             {
                 stripify = true;
             }
-            else if (!std::strcmp(argv[i], "-s") || !std::strcmp(argv[i], "--smooth"))
+            else if ((std::strcmp(argv[i], "-s") == 0) || (std::strcmp(argv[i], "--smooth") == 0))
             {
                 if (i == argc - 1)
                 {
                     return false;
                 }
-                else
-                {
-                    if (std::sscanf(argv[i + 1], " %f", &smoothAngle) != 1)
+                
+                                    if (std::sscanf(argv[i + 1], " %f", &smoothAngle) != 1)
                         return false;
                     i++;
-                }
+               
             }
             else
             {

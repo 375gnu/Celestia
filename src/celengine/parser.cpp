@@ -35,7 +35,7 @@ ValueArray* Parser::readArray()
         return nullptr;
     }
 
-    ValueArray* array = new ValueArray();
+    auto* array = new ValueArray();
 
     Value* v = readValue();
     while (v != nullptr)
@@ -127,7 +127,7 @@ bool Parser::readUnits(const string& propertyName, Hash* hash)
         }
 
         string unit = tokenizer->getNameValue();
-        Value* value = new Value(unit);
+        auto* value = new Value(unit);
 
         if (astro::isLengthUnit(unit))
         {
@@ -190,8 +190,7 @@ Value* Parser::readValue()
             auto* array = readArray();
             if (array == nullptr)
                 return nullptr;
-            else
-                return new Value(array);
+                            return new Value(array);
         }
 
     case Tokenizer::TokenBeginGroup:
@@ -200,8 +199,7 @@ Value* Parser::readValue()
             Hash* hash = readHash();
             if (hash == nullptr)
                 return nullptr;
-            else
-                return new Value(hash);
+                            return new Value(hash);
         }
 
     default:

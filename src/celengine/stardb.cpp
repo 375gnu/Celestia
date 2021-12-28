@@ -197,7 +197,7 @@ StarDatabase::~StarDatabase()
     delete [] stars;
     delete [] catalogNumberIndex;
 
-    for (const auto index : crossIndexes)
+    for (auto *const index : crossIndexes)
         delete index;
 }
 
@@ -214,8 +214,7 @@ Star* StarDatabase::find(AstroCatalog::IndexNumber catalogNumber) const
 
     if (star != catalogNumberIndex + nStars && (*star)->getIndex() == catalogNumber)
         return *star;
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -237,7 +236,7 @@ AstroCatalog::IndexNumber StarDatabase::findCatalogNumberByName(const string& na
     {
         return catalogNumber;
     }
-    else if (parseHIPPARCOSCatalogNumber(name, &catalogNumber))
+    if (parseHIPPARCOSCatalogNumber(name, &catalogNumber))
     {
         return catalogNumber;
     }
@@ -266,8 +265,7 @@ Star* StarDatabase::find(const string& name, bool i18n) const
     AstroCatalog::IndexNumber catalogNumber = findCatalogNumberByName(name, i18n);
     if (catalogNumber != AstroCatalog::InvalidIndex)
         return find(catalogNumber);
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -305,12 +303,11 @@ AstroCatalog::IndexNumber StarDatabase::searchCrossIndexForCatalogNumber(const C
     CrossIndexEntry xindexEnt;
     xindexEnt.catalogNumber = number;
 
-    CrossIndex::iterator iter = lower_bound(xindex->begin(), xindex->end(),
+    auto iter = lower_bound(xindex->begin(), xindex->end(),
                                             xindexEnt);
     if (iter == xindex->end() || iter->catalogNumber != number)
         return AstroCatalog::InvalidIndex;
-    else
-        return iter->celCatalogNumber;
+            return iter->celCatalogNumber;
 }
 
 
@@ -319,8 +316,7 @@ Star* StarDatabase::searchCrossIndex(const Catalog catalog, const AstroCatalog::
     AstroCatalog::IndexNumber celCatalogNumber = searchCrossIndexForCatalogNumber(catalog, number);
     if (celCatalogNumber != AstroCatalog::InvalidIndex)
         return find(celCatalogNumber);
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -331,8 +327,7 @@ vector<string> StarDatabase::getCompletion(const string& name, bool i18n) const
     // only named stars are supported by completion.
     if (!name.empty() && namesDB != nullptr)
         return namesDB->getCompletion(name, i18n);
-    else
-        return completion;
+            return completion;
 }
 
 
@@ -350,15 +345,14 @@ static string catalogNumberToString(AstroCatalog::IndexNumber catalogNumber)
     {
         return fmt::sprintf("HIP %d", catalogNumber);
     }
-    else
-    {
-        AstroCatalog::IndexNumber tyc3 = catalogNumber / 1000000000;
+    
+            AstroCatalog::IndexNumber tyc3 = catalogNumber / 1000000000;
         catalogNumber -= tyc3 * 1000000000;
         AstroCatalog::IndexNumber tyc2 = catalogNumber / 10000;
         catalogNumber -= tyc2 * 10000;
         AstroCatalog::IndexNumber tyc1 = catalogNumber;
         return fmt::sprintf("TYC %d-%d-%d", tyc1, tyc2, tyc3);
-    }
+   
 }
 
 
@@ -381,7 +375,7 @@ string StarDatabase::getStarName(const Star& star, bool i18n) const
 
     if (namesDB != nullptr)
     {
-        StarNameDatabase::NumberIndex::const_iterator iter = namesDB->getFirstNameIter(catalogNumber);
+        auto iter = namesDB->getFirstNameIter(catalogNumber);
         if (iter != namesDB->getFinalNameIter() && iter->first == catalogNumber)
         {
             if (i18n)
@@ -414,7 +408,7 @@ void StarDatabase::getStarName(const Star& star, char* nameBuffer, unsigned int 
 
     if (namesDB != nullptr)
     {
-        StarNameDatabase::NumberIndex::const_iterator iter = namesDB->getFirstNameIter(catalogNumber);
+        auto iter = namesDB->getFirstNameIter(catalogNumber);
         if (iter != namesDB->getFinalNameIter() && iter->first == catalogNumber)
         {
             if (i18n)
@@ -461,7 +455,7 @@ string StarDatabase::getStarNameList(const Star& star, const unsigned int maxNam
 
     if (namesDB != nullptr)
     {
-        StarNameDatabase::NumberIndex::const_iterator iter = namesDB->getFirstNameIter(catalogNumber);
+        auto iter = namesDB->getFirstNameIter(catalogNumber);
 
         while (iter != namesDB->getFinalNameIter() && iter->first == catalogNumber && nameSet.size() < maxNames)
         {
@@ -521,7 +515,7 @@ void StarDatabase::findVisibleStars(StarHandler& starHandler,
     Hyperplane<float, 3> frustumPlanes[5];
     Vector3f planeNormals[5];
     Eigen::Matrix3f rot = orientation.toRotationMatrix();
-    float h = (float) tan(fovY / 2);
+    auto h = (float) tan(fovY / 2);
     float w = h * aspectRatio;
     planeNormals[0] = Vector3f(0.0f, 1.0f, -h);
     planeNormals[1] = Vector3f(0.0f, -1.0f, -h);
@@ -579,7 +573,7 @@ bool StarDatabase::loadCrossIndex(const Catalog catalog, istream& in)
         int headerLength = strlen(CROSSINDEX_FILE_HEADER);
         char* header = new char[headerLength];
         if (!in.read(header, headerLength).good()
-            || strncmp(header, CROSSINDEX_FILE_HEADER, headerLength))
+            || (strncmp(header, CROSSINDEX_FILE_HEADER, headerLength) != 0 != 0))
         {
             GetLogger()->error(_("Bad header for cross index\n"));
             delete[] header;
@@ -598,7 +592,7 @@ bool StarDatabase::loadCrossIndex(const Catalog catalog, istream& in)
         }
     }
 
-    CrossIndex* xindex = new CrossIndex();
+    auto* xindex = new CrossIndex();
 
     unsigned int record = 0;
     for (;;)
@@ -640,7 +634,7 @@ bool StarDatabase::loadBinary(istream& in)
     {
         int headerLength = strlen(FILE_HEADER);
         char* header = new char[headerLength];
-        if (!in.read(header, headerLength).good() || strncmp(header, FILE_HEADER, headerLength)) {
+        if (!in.read(header, headerLength).good() || (strncmp(header, FILE_HEADER, headerLength) != 0 != 0)) {
             delete[] header;
             return false;
         }
@@ -1110,10 +1104,9 @@ bool StarDatabase::createStar(Star* star,
                     GetLogger()->error(_("Invalid star: missing magnitude.\n"));
                     return false;
                 }
-                else
-                {
-                    magnitudeModified = false;
-                }
+                
+                                    magnitudeModified = false;
+               
             }
             else
             {
@@ -1405,7 +1398,7 @@ void StarDatabase::buildOctree()
     GetLogger()->debug("Sorting stars into octree . . .\n");
     float absMag = astro::appToAbsMag(STAR_OCTREE_MAGNITUDE,
                                       STAR_OCTREE_ROOT_SIZE * (float) sqrt(3.0));
-    DynamicStarOctree* root = new DynamicStarOctree(Vector3f(1000.0f, 1000.0f, 1000.0f),
+    auto* root = new DynamicStarOctree(Vector3f(1000.0f, 1000.0f, 1000.0f),
                                                     absMag);
     for (unsigned int i = 0; i < unsortedStars.size(); ++i)
     {
@@ -1490,7 +1483,7 @@ Star* StarDatabase::findWhileLoading(AstroCatalog::IndexNumber catalogNumber) co
     }
 
     // Next check for stars loaded from an stc file
-    map<AstroCatalog::IndexNumber, Star*>::const_iterator iter = stcFileCatalogNumberIndex.find(catalogNumber);
+    auto iter = stcFileCatalogNumberIndex.find(catalogNumber);
     if (iter != stcFileCatalogNumberIndex.end())
     {
         return iter->second;

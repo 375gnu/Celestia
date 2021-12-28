@@ -105,7 +105,7 @@ static void insert_text_event(GtkEditable *editable, const gchar *text, gint len
 #endif
 
 /* File -> Copy URL */
-void actionCopyURL(GtkAction*, AppData* app)
+void actionCopyURL(GtkAction* /*unused*/, AppData* app)
 {
     GtkClipboard* cb = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
     CelestiaState appState(app->core);
@@ -116,7 +116,7 @@ void actionCopyURL(GtkAction*, AppData* app)
 
 
 /* File -> Open URL */
-void actionOpenURL(GtkAction*, AppData* app)
+void actionOpenURL(GtkAction* /*unused*/, AppData* app)
 {
     GtkWidget* dialog = gtk_dialog_new_with_buttons("Enter cel:// URL",
                                                     GTK_WINDOW(app->mainWindow),
@@ -144,7 +144,7 @@ void actionOpenURL(GtkAction*, AppData* app)
 
 
 /* File -> Open Script... */
-void actionOpenScript(GtkAction*, AppData* app)
+void actionOpenScript(GtkAction* /*unused*/, AppData* app)
 {
     GtkWidget* fs = gtk_file_chooser_dialog_new("Open Script.",
                                                 GTK_WINDOW(app->mainWindow),
@@ -184,7 +184,7 @@ void actionOpenScript(GtkAction*, AppData* app)
 
 
 /* File -> Capture Image... */
-void actionCaptureImage(GtkAction*, AppData* app)
+void actionCaptureImage(GtkAction* /*unused*/, AppData* app)
 {
     GtkWidget* fs = gtk_file_chooser_dialog_new("Save Image to File",
                                                 GTK_WINDOW(app->mainWindow),
@@ -223,7 +223,7 @@ void actionCaptureImage(GtkAction*, AppData* app)
 }
 
 /* File -> Capture Movie... */
-void actionCaptureMovie(GtkAction*, AppData* app)
+void actionCaptureMovie(GtkAction* /*unused*/, AppData* app)
 {
 #ifdef USE_FFMPEG
     // TODO: The menu item should be disable so that the user doesn't even
@@ -346,7 +346,7 @@ void actionCaptureMovie(GtkAction*, AppData* app)
 }
 
 
-void actionQuit(GtkAction*, AppData* app)
+void actionQuit(GtkAction* /*unused*/, AppData* app)
 {
     #ifdef GNOME
     saveSettingsGConf(app);
@@ -358,19 +358,19 @@ void actionQuit(GtkAction*, AppData* app)
 }
 
 
-void actionSelectSol(GtkAction*, AppData* app)
+void actionSelectSol(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('H');
 }
 
 
-void actionTourGuide(GtkAction*, AppData* app)
+void actionTourGuide(GtkAction* /*unused*/, AppData* app)
 {
     dialogTourGuide(app);
 }
 
 
-void actionSearchObject(GtkAction*, AppData* app)
+void actionSearchObject(GtkAction* /*unused*/, AppData* app)
 {
     GtkWidget* dialog = gtk_dialog_new_with_buttons("Select Object",
                                                     GTK_WINDOW(app->mainWindow),
@@ -408,91 +408,91 @@ void actionSearchObject(GtkAction*, AppData* app)
 }
 
 
-void actionGotoObject(GtkAction*, AppData* app)
+void actionGotoObject(GtkAction* /*unused*/, AppData* app)
 {
     dialogGotoObject(app);
 }
 
 
-void actionCenterSelection(GtkAction*, AppData* app)
+void actionCenterSelection(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('c');
 }
 
 
-void actionGotoSelection(GtkAction*, AppData* app)
+void actionGotoSelection(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('G');
 }
 
 
-void actionFollowSelection(GtkAction*, AppData* app)
+void actionFollowSelection(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('F');
 }
 
 
-void actionSyncSelection(GtkAction*, AppData* app)
+void actionSyncSelection(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('Y');
 }
 
 
-void actionTrackSelection(GtkAction*, AppData* app)
+void actionTrackSelection(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('T');
 }
 
 
-void actionSystemBrowser(GtkAction*, AppData* app)
+void actionSystemBrowser(GtkAction* /*unused*/, AppData* app)
 {
     dialogSolarBrowser(app);
 }
 
 
-void actionStarBrowser(GtkAction*, AppData* app)
+void actionStarBrowser(GtkAction* /*unused*/, AppData* app)
 {
     dialogStarBrowser(app);
 }
 
 
-void actionEclipseFinder(GtkAction*, AppData* app)
+void actionEclipseFinder(GtkAction* /*unused*/, AppData* app)
 {
     dialogEclipseFinder(app);
 }
 
 
-void actionTimeFaster(GtkAction*, AppData* app)
+void actionTimeFaster(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('L');
 }
 
 
-void actionTimeSlower(GtkAction*, AppData* app)
+void actionTimeSlower(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('K');
 }
 
 
-void actionTimeFreeze(GtkAction*, AppData* app)
+void actionTimeFreeze(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered(' ');
 }
 
 
-void actionTimeReal(GtkAction*, AppData* app)
+void actionTimeReal(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('\\');
 }
 
 
-void actionTimeReverse(GtkAction*, AppData* app)
+void actionTimeReverse(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('J');
 }
 
 
-void actionTimeSet(GtkAction*, AppData* app)
+void actionTimeSet(GtkAction* /*unused*/, AppData* app)
 {
     dialogSetTime(app);
 }
@@ -509,7 +509,7 @@ void actionTimeLocal(GtkAction* action, AppData* app)
 }
 
 
-void actionViewerSize(GtkAction*, AppData* app)
+void actionViewerSize(GtkAction* /*unused*/, AppData* app)
 {
     GtkWidget* dialog;
     int newX, currentX, currentY, winX, winY, screenX, i = 1, position = -1;
@@ -610,13 +610,13 @@ void actionFullScreen(GtkAction* action, AppData* app)
 }
 
 
-void actionViewOptions(GtkAction*, AppData* app)
+void actionViewOptions(GtkAction* /*unused*/, AppData* app)
 {
     dialogViewOptions(app);
 }
 
 
-void actionStarsMore(GtkAction*, AppData* app)
+void actionStarsMore(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered(']');
 
@@ -626,7 +626,7 @@ void actionStarsMore(GtkAction*, AppData* app)
 }
 
 
-void actionStarsFewer(GtkAction*, AppData* app)
+void actionStarsFewer(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('[');
 
@@ -642,32 +642,32 @@ void actionMenuBarVisible(GtkToggleAction* action, AppData* app)
 }
 
 
-void actionMultiSplitH(GtkAction*, AppData* app)
+void actionMultiSplitH(GtkAction* /*unused*/, AppData* app)
 {
     app->core->splitView(View::HorizontalSplit);
 }
 
 
-void actionMultiSplitV(GtkAction*, AppData* app)
+void actionMultiSplitV(GtkAction* /*unused*/, AppData* app)
 {
     app->core->splitView(View::VerticalSplit);
 }
 
 
-void actionMultiCycle(GtkAction*, AppData* app)
+void actionMultiCycle(GtkAction* /*unused*/, AppData* app)
 {
     /* Pass a Tab character */
     app->core->charEntered('\011');
 }
 
 
-void actionMultiDelete(GtkAction*, AppData* app)
+void actionMultiDelete(GtkAction* /*unused*/, AppData* app)
 {
     app->core->deleteView();
 }
 
 
-void actionMultiSingle(GtkAction*, AppData* app)
+void actionMultiSingle(GtkAction* /*unused*/, AppData* app)
 {
     app->core->singleView();
 }
@@ -691,13 +691,13 @@ void actionMultiSyncTime(GtkToggleAction* action, AppData* app)
 }
 
 
-void actionRunDemo(GtkAction*, AppData* app)
+void actionRunDemo(GtkAction* /*unused*/, AppData* app)
 {
     app->core->charEntered('D');
 }
 
 
-void actionHelpControls(GtkAction*, AppData* app)
+void actionHelpControls(GtkAction* /*unused*/, AppData* app)
 {
     char *txt = readFromFile("controls.txt");
     textInfoDialog(txt, "Mouse and Keyboard Controls", app);
@@ -705,14 +705,14 @@ void actionHelpControls(GtkAction*, AppData* app)
 }
 
 
-void actionHelpOpenGL(GtkAction*, AppData* app)
+void actionHelpOpenGL(GtkAction* /*unused*/, AppData* app)
 {
     string s = Helper::getRenderInfo(app->renderer);
     textInfoDialog(s.c_str(), "Renderer Info", app);
 }
 
 
-void actionHelpAbout(GtkAction*, AppData* app)
+void actionHelpAbout(GtkAction* /*unused*/, AppData* app)
 {
     const gchar* authors[] = {
         "Chris Laurel <claurel@shatters.net>",
@@ -749,7 +749,7 @@ void actionHelpAbout(GtkAction*, AppData* app)
 }
 
 
-void actionVerbosity(GtkRadioAction* action, GtkRadioAction*, AppData* app)
+void actionVerbosity(GtkRadioAction* action, GtkRadioAction* /*unused*/, AppData* app)
 {
     int value = gtk_radio_action_get_current_value(action);
     app->core->setHudDetail(value);
@@ -760,7 +760,7 @@ void actionVerbosity(GtkRadioAction* action, GtkRadioAction*, AppData* app)
 }
 
 
-void actionStarStyle(GtkRadioAction* action, GtkRadioAction*, AppData* app)
+void actionStarStyle(GtkRadioAction* action, GtkRadioAction* /*unused*/, AppData* app)
 {
     int value = gtk_radio_action_get_current_value(action);
     app->renderer->setStarStyle((Renderer::StarStyle)value);
@@ -771,7 +771,7 @@ void actionStarStyle(GtkRadioAction* action, GtkRadioAction*, AppData* app)
 }
 
 
-void actionAmbientLight(GtkRadioAction* action, GtkRadioAction*, AppData* app)
+void actionAmbientLight(GtkRadioAction* action, GtkRadioAction* /*unused*/, AppData* app)
 {
     float value = amLevels[gtk_radio_action_get_current_value(action)];
     app->renderer->setAmbientLightLevel(value);
@@ -1073,7 +1073,7 @@ void actionLabelStars(GtkToggleAction* action, AppData* app)
 static void openScript(const char* filename, AppData* app)
 {
     /* Modified From Win32 HandleOpenScript */
-    if (filename)
+    if (filename != nullptr)
     {
         /* If you got here, a path and file has been specified.
          * filename contains full path to specified file. */
@@ -1244,10 +1244,10 @@ void resyncLabelActions(AppData* app)
             case Renderer::OpenClusterLabels: actionName = "LabelOpenClusters"; break;
             case Renderer::GlobularLabels: actionName = "LabelGlobulars"; break;
             case Renderer::I18nConstellationLabels: /* Not used yet */
-            default: actionName = NULL;
+            default: actionName = nullptr;
         }
 
-        if (actionName != NULL)
+        if (actionName != nullptr)
         {
             /* Get the action */
             action = gtk_action_group_get_action(app->agLabel, actionName);
@@ -1299,19 +1299,19 @@ void resyncRenderActions(AppData* app)
             case Renderer::ShowAutoMag: actionName = "RenderAutoMagnitude"; break;
             case Renderer::ShowCometTails: actionName = "RenderCometTails"; break;
             case Renderer::ShowMarkers: actionName = "RenderMarkers"; break;
-            case Renderer::ShowPartialTrajectories: actionName = NULL; break; /* Not useful yet */
+            case Renderer::ShowPartialTrajectories: actionName = nullptr; break; /* Not useful yet */
             case Renderer::ShowNebulae: actionName = "RenderNebulae"; break;
             case Renderer::ShowOpenClusters: actionName = "RenderOpenClusters"; break;
             case Renderer::ShowGlobulars: actionName = "RenderGlobulars"; break;
-            case Renderer::ShowCloudShadows: actionName = NULL; break; /* Not implemented yet */
+            case Renderer::ShowCloudShadows: actionName = nullptr; break; /* Not implemented yet */
             case Renderer::ShowGalacticGrid: actionName = "RenderGalacticGrid"; break;
             case Renderer::ShowEclipticGrid: actionName = "RenderEclipticGrid"; break;
             case Renderer::ShowHorizonGrid: actionName = "RenderHorizontalGrid"; break;
-            case Renderer::ShowEcliptic: actionName = NULL; break; /* Not implemented yet */
-            default: actionName = NULL;
+            case Renderer::ShowEcliptic: actionName = nullptr; break; /* Not implemented yet */
+            default: actionName = nullptr;
         }
 
-        if (actionName != NULL)
+        if (actionName != nullptr)
         {
             /* Get the action */
             action = gtk_action_group_get_action(app->agRender, actionName);
@@ -1341,10 +1341,10 @@ void resyncOrbitActions(AppData* app)
             case Body::Asteroid: actionName = "OrbitAsteroids"; break;
             case Body::Comet: actionName = "OrbitComets"; break;
             case Body::Spacecraft: actionName = "OrbitSpacecraft"; break;
-            default: actionName = NULL;
+            default: actionName = nullptr;
         }
 
-        if (actionName != NULL)
+        if (actionName != nullptr)
         {
             /* Get the action */
             action = gtk_action_group_get_action(app->agOrbit, actionName);

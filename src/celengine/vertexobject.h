@@ -42,7 +42,7 @@ class VertexObject
     void bindWritable(AttributesType attributes = AttributesType::Default) noexcept;
     void unbind() noexcept;
     void draw(GLenum primitive, GLsizei count, GLint first = 0) noexcept;
-    bool allocate(const void* data = nullptr) noexcept;
+    bool allocate(const void* data = nullptr) const noexcept;
     bool allocate(GLsizeiptr bufferSize, const void* data = nullptr) noexcept;
     bool allocate(GLenum bufferType, GLsizeiptr bufferSize, const void* data, GLenum streamType) noexcept;
     bool setBufferData(const void* data, GLintptr offset = 0, GLsizeiptr size = 0) noexcept;

@@ -79,7 +79,7 @@ static uint8_t readUbyte(istream& in)
 
 void printStellarClass(uint16_t sc, ostream& out)
 {
-    StellarClass::StarType st = (StellarClass::StarType) (sc >> 12);
+    auto st = (StellarClass::StarType) (sc >> 12);
 
     if (st == StellarClass::WhiteDwarf)
     {
@@ -186,7 +186,7 @@ bool DumpOldStarDatabase(istream& in, ostream& out, ofstream& hdOut,
         else
         {
             Eigen::Vector3d pos = astro::equatorialToCelestialCart((double) RA, (double) dec, distance);
-            float absMag = (float) (appMag / 256.0 + 5 -
+            auto absMag = (float) (appMag / 256.0 + 5 -
                                     5 * log10(distance / LY_PER_PARSEC));
             out << (float) pos.x() << ' ' <<
                    (float) pos.y() << ' ' <<
@@ -210,7 +210,7 @@ bool DumpStarDatabase(istream& in, ostream& out, bool spherical)
 {
     char header[8];
     in.read(header, sizeof header);
-    if (strncmp(header, "CELSTARS", sizeof header))
+    if (strncmp(header, "CELSTARS", sizeof header) != 0 != 0)
     {
         cerr << "Missing header in star database.\n";
         return false;
@@ -262,7 +262,7 @@ bool DumpStarDatabase(istream& in, ostream& out, bool spherical)
             // atan2 outputs angles in interval [-pi, pi], so we add 360 to fix this
             double ra = theta - 180 + 360;
             double dec = phi + 90;
-            float appMag = float (absMag / 256.0 - 5 + 5 * log10(distance / LY_PER_PARSEC));
+            auto appMag = float (absMag / 256.0 - 5 + 5 * log10(distance / LY_PER_PARSEC));
 
             out << fixed << setprecision(9) << (float) ra << ' ' << (float) dec << ' ';
             out << setprecision(6) << (float) distance << ' ';
@@ -293,23 +293,22 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!strcmp(argv[i], "--hd"))
+            if (strcmp(argv[i], "--hd") == 0)
             {
                 if (i == argc - 1)
                 {
                     return false;
                 }
-                else
-                {
-                    i++;
+                
+                                    i++;
                     hdFilename = string(argv[i]);
-                }
+               
             }
-            else if (!strcmp(argv[i], "-o") || !strcmp(argv[i], "--old"))
+            else if ((strcmp(argv[i], "-o") == 0) || (strcmp(argv[i], "--old") == 0))
             {
                 useOldFormat = true;
             }
-            else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--spherical"))
+            else if ((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--spherical") == 0))
             {
                 useSphericalCoords = true;
             }

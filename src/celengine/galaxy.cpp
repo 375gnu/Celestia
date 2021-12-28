@@ -147,8 +147,7 @@ string Galaxy::getCustomTmpName() const
 {
     if (customTmpName == nullptr)
         return "";
-    else
-        return *customTmpName;
+            return *customTmpName;
 }
 
 
@@ -161,7 +160,7 @@ const char* Galaxy::getType() const
 void Galaxy::setType(const string& typeStr)
 {
     type = Galaxy::Irr;
-    auto iter = std::find_if(begin(GalaxyTypeNames), end(GalaxyTypeNames),
+    auto *iter = std::find_if(begin(GalaxyTypeNames), end(GalaxyTypeNames),
                              [typeStr](GalaxyTypeName& g) { return g.name == typeStr; });
     if (iter != end(GalaxyTypeNames))
         type = iter->type;
@@ -381,7 +380,7 @@ void Galaxy::renderGalaxyPointSprites(const Vector3f& offset,
     int pow2 = 1;
 
     BlobVector* points = form->blobs;
-    unsigned int nPoints = (unsigned int) (points->size() * celmath::clamp(getDetail()));
+    auto nPoints = (unsigned int) (points->size() * celmath::clamp(getDetail()));
     // corrections to avoid excessive brightening if viewed e.g. edge-on
 
     float brightness_corr = 1.0f;
@@ -447,7 +446,7 @@ void Galaxy::renderGalaxyPointSprites(const Vector3f& offset,
         {
             float a = (4.0f * lightGain + 1.0f) * btot * (0.1f - screenFrac) * brightness_corr * brightness * br;
             GLushort alpha = (GLushort) (min(1.0f, a) * 65535.99f);
-            GLushort color = (GLushort) b.colorIndex;
+            auto color = (GLushort) b.colorIndex;
             g_vertices[vertex++] = { p + v0, { 0, 0, color, alpha } };
             g_vertices[vertex++] = { p + v1, { 1, 0, color, alpha } };
             g_vertices[vertex++] = { p + v2, { 1, 1, color, alpha } };
@@ -584,7 +583,7 @@ void Galaxy::setLightGain(float lg)
 GalacticForm* buildGalacticForms(const fs::path& filename)
 {
     Blob b;
-    BlobVector* galacticPoints = new BlobVector;
+    auto* galacticPoints = new BlobVector;
 
     // Load templates in standard .png format
     int width, height, rgb, j = 0, kmin = 9;
@@ -704,13 +703,13 @@ void InitializeForms()
         // build all elliptical templates from rescaling E0
 
         ellipticalForms[eform] = buildGalacticForms("models/E0.png");
-        if (*ellipticalForms)
+        if (*ellipticalForms != nullptr)
             ellipticalForms[eform]->scale = Vector3f(ell, ell, 1.0f);
 
         // account for reddening of ellipticals rel.to spirals
-        if (*ellipticalForms)
+        if (*ellipticalForms != nullptr)
         {
-            unsigned int nPoints = (unsigned int) (ellipticalForms[eform]->blobs->size());
+            auto nPoints = (unsigned int) (ellipticalForms[eform]->blobs->size());
             for (unsigned int i = 0; i < nPoints; ++i)
             {
                 (*ellipticalForms[eform]->blobs)[i].colorIndex = (unsigned int) ceil(0.76f * (*ellipticalForms[eform]->blobs)[i].colorIndex);
@@ -722,7 +721,7 @@ void InitializeForms()
     Blob b;
     Vector3f p;
 
-    BlobVector* irregularPoints = new BlobVector;
+    auto* irregularPoints = new BlobVector;
     irregularPoints->reserve(galaxySize);
 
     auto& rng = getRNG();

@@ -119,7 +119,7 @@ void CelestiaGlWidget::initializeGL()
     using namespace celestia;
     if (!gl::init(appCore->getConfig()->ignoreGLExtensions) || !gl::checkVersion(gl::GL_2_1))
     {
-        QMessageBox::critical(0, "Celestia", _("Celestia was unable to initialize OpenGL 2.1."));
+        QMessageBox::critical(nullptr, "Celestia", _("Celestia was unable to initialize OpenGL 2.1."));
         exit(1);
     }
 
@@ -183,15 +183,15 @@ void CelestiaGlWidget::mouseMoveEvent(QMouseEvent* m)
     int y = (int)(m->y() * scale);
 
     int buttons = 0;
-    if (m->buttons() & LeftButton)
+    if (m->buttons() & LeftButton != 0u)
         buttons |= CelestiaCore::LeftButton;
-    if (m->buttons() & MiddleButton)
+    if (m->buttons() & MiddleButton != 0u)
         buttons |= CelestiaCore::MiddleButton;
-    if (m->buttons() & RightButton)
+    if (m->buttons() & RightButton != 0u)
         buttons |= CelestiaCore::RightButton;
-    if (m->modifiers() & ShiftModifier)
+    if (m->modifiers() & ShiftModifier != 0u)
         buttons |= CelestiaCore::ShiftKey;
-    if (m->modifiers() & ControlModifier)
+    if (m->modifiers() & ControlModifier != 0u)
         buttons |= CelestiaCore::ControlKey;
 
 #ifdef __APPLE__
@@ -363,43 +363,43 @@ bool CelestiaGlWidget::handleSpecialKey(QKeyEvent* e, bool down)
             k = CelestiaCore::Key_F10;
         break;*/
     case Key_0:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad0;
         break;
     case Key_1:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad1;
         break;
     case Key_2:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad2;
         break;
     case Key_3:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad3;
         break;
     case Key_4:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad4;
         break;
     case Key_5:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad5;
         break;
     case Key_6:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad6;
         break;
     case Key_7:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad7;
         break;
     case Key_8:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad8;
         break;
     case Key_9:
-        if (e->modifiers() & Qt::KeypadModifier)
+        if (e->modifiers() & Qt::KeypadModifier != 0u)
             k = CelestiaCore::Key_NumPad9;
         break;
     case Qt::Key_A:
@@ -415,7 +415,7 @@ bool CelestiaGlWidget::handleSpecialKey(QKeyEvent* e, bool down)
     if (k >= 0)
     {
         int buttons = 0;
-        if (e->modifiers() & ShiftModifier)
+        if (e->modifiers() & ShiftModifier != 0u)
             buttons |= CelestiaCore::ShiftKey;
 
         if (down)
@@ -432,9 +432,9 @@ bool CelestiaGlWidget::handleSpecialKey(QKeyEvent* e, bool down)
 void CelestiaGlWidget::keyPressEvent( QKeyEvent* e )
 {
     int modifiers = 0;
-    if (e->modifiers() & ShiftModifier)
+    if (e->modifiers() & ShiftModifier != 0u)
         modifiers |= CelestiaCore::ShiftKey;
-    if (e->modifiers() & ControlModifier)
+    if (e->modifiers() & ControlModifier != 0u)
         modifiers |= CelestiaCore::ControlKey;
 
     switch (e->key())

@@ -20,7 +20,7 @@ bool Helper::hasPrimaryStar(const Body* body)
 bool Helper::hasPrimaryBody(const Body* body, int classification)
 {
     return body->getSystem() != nullptr && body->getSystem()->getPrimaryBody() != nullptr &&
-           (body->getSystem()->getPrimaryBody()->getClassification() & classification);
+           ((body->getSystem()->getPrimaryBody()->getClassification() & classification) != 0);
 }
 
 
@@ -28,13 +28,13 @@ bool Helper::hasBarycenter(const Body* body)
 {
     PlanetarySystem *system = body->getSystem();
     if (system == nullptr || system->getPrimaryBody() == nullptr ||
-        !(system->getPrimaryBody()->getClassification() & Body::Invisible))
+        ((system->getPrimaryBody()->getClassification() & Body::Invisible) == 0))
     {
         return false;
     }
     for (int bodyIdx = 0; bodyIdx < system->getSystemSize(); bodyIdx++)
     {
-        if (system->getBody(bodyIdx)->getClassification() & (Body::Planet | Body::DwarfPlanet))
+        if ((system->getBody(bodyIdx)->getClassification() & (Body::Planet | Body::DwarfPlanet)) != 0)
             return true;
     }
     return false;
@@ -73,16 +73,16 @@ Selection Helper::getPrimary(const Body* body)
     if (primaryBody != nullptr)
     {
         int primaryClass = primaryBody->getClassification();
-        if (primaryClass & SpacecraftPrimaryBody)
+        if ((primaryClass & SpacecraftPrimaryBody) != 0)
             return Selection(primaryBody);
 
-        if ((primaryClass & Body::Invisible) &&
-            (body->getClassification() & (Body::Moon | Body::MinorMoon)))
+        if (((primaryClass & Body::Invisible) != 0) &&
+            ((body->getClassification() & (Body::Moon | Body::MinorMoon)) != 0))
         {
             for (int bodyIdx = 0; bodyIdx < system->getSystemSize(); bodyIdx++)
             {
                 Body *barycenterBody = system->getBody(bodyIdx);
-                if (barycenterBody->getClassification() & (Body::Planet | Body::DwarfPlanet))
+                if ((barycenterBody->getClassification() & (Body::Planet | Body::DwarfPlanet)) != 0)
                     return Selection(barycenterBody);
             }
         }

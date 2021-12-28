@@ -100,7 +100,7 @@ class Universe
     celestia::MarkerList* getMarkers() const;
 
  private:
-    Selection pickPlanet(SolarSystem& solarSystem,
+    static Selection pickPlanet(SolarSystem& solarSystem,
                          const UniversalCoord& origin,
                          const Eigen::Vector3f& direction,
                          double when,

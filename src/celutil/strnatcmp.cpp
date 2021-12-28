@@ -38,9 +38,9 @@ static int right(const wchar_t *a, const wchar_t *b)
         ca = *a;
         cb = *b;
 
-        if (!iswdigit(ca))
-            return iswdigit(cb) ? -1 : bias;
-        if (!iswdigit(cb))
+        if (iswdigit(ca) == 0)
+            return iswdigit(cb) != 0 ? -1 : bias;
+        if (iswdigit(cb) == 0)
             return +1;
 
         if (ca < cb)
@@ -73,9 +73,9 @@ static int left(const wchar_t *a, const wchar_t *b)
         ca = *a;
         cb = *b;
 
-        if (!iswdigit(ca))
-           return iswdigit(cb) ? -1 : 0;
-        if (!iswdigit(cb))
+        if (iswdigit(ca) == 0)
+           return iswdigit(cb) != 0 ? -1 : 0;
+        if (iswdigit(cb) == 0)
             return +1;
         if (ca < cb)
             return -1;
@@ -94,15 +94,15 @@ static int strnatcmp0(const std::wstring &a, const std::wstring &b, bool fold_ca
     {
         // skip over leading spaces
         ca = a[ai];
-        while(iswspace(ca))
+        while(iswspace(ca) != 0)
             ca = a[++ai];
 
         cb = b[bi];
-        while(iswspace(cb))
+        while(iswspace(cb) != 0)
             cb = b[++bi];
 
         // process run of digits
-        if (iswdigit(ca) && iswdigit(cb))
+        if ((iswdigit(ca) != 0) && (iswdigit(cb) != 0))
         {
             bool frac = (ca == L'0' || cb == L'0');
             int r = frac ? left(&a[ai], &b[bi]) : right(&a[ai], &b[bi]);

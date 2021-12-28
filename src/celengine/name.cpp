@@ -65,7 +65,7 @@ std::string NameDatabase::getNameByCatalogNumber(const AstroCatalog::IndexNumber
     if (catalogNumber == AstroCatalog::InvalidIndex)
         return "";
 
-    NumberIndex::const_iterator iter = numberIndex.lower_bound(catalogNumber);
+    auto iter = numberIndex.lower_bound(catalogNumber);
 
     if (iter != numberIndex.end() && iter->first == catalogNumber)
         return iter->second;
@@ -84,12 +84,11 @@ std::string NameDatabase::getNameByCatalogNumber(const AstroCatalog::IndexNumber
 // but it works on the implementations I've tried so far.)
 NameDatabase::NumberIndex::const_iterator NameDatabase::getFirstNameIter(const AstroCatalog::IndexNumber catalogNumber) const
 {
-    NumberIndex::const_iterator iter = numberIndex.lower_bound(catalogNumber);
+    auto iter = numberIndex.lower_bound(catalogNumber);
 
     if (iter == numberIndex.end() || iter->first != catalogNumber)
         return getFinalNameIter();
-    else
-        return iter;
+            return iter;
 }
 
 NameDatabase::NumberIndex::const_iterator NameDatabase::getFinalNameIter() const
@@ -109,17 +108,17 @@ std::vector<std::string> NameDatabase::getCompletion(const std::string& name, bo
     std::vector<std::string> completion;
     int name_length = UTF8Length(name);
 
-    for (NameIndex::const_iterator iter = nameIndex.begin(); iter != nameIndex.end(); ++iter)
+    for (const auto & iter : nameIndex)
     {
-        if (!UTF8StringCompare(iter->first, name, name_length, true))
-            completion.push_back(iter->first);
+        if (UTF8StringCompare(iter.first, name, name_length, true) == 0)
+            completion.push_back(iter.first);
     }
     if (i18n)
     {
-        for (NameIndex::const_iterator iter = localizedNameIndex.begin(); iter != localizedNameIndex.end(); ++iter)
+        for (const auto & iter : localizedNameIndex)
         {
-            if (!UTF8StringCompare(iter->first, name, name_length, true))
-                completion.push_back(iter->first);
+            if (UTF8StringCompare(iter.first, name, name_length, true) == 0)
+                completion.push_back(iter.first);
         }
     }
     return completion;

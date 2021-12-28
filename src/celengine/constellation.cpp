@@ -135,17 +135,17 @@ Constellation* Constellation::getConstellation(const string& name)
     return nullptr;
 }
 
-const string Constellation::getName() const
+string Constellation::getName() const
 {
     return name;
 }
 
-const string Constellation::getGenitive() const
+string Constellation::getGenitive() const
 {
     return genitive;
 }
 
-const string Constellation::getAbbreviation() const
+string Constellation::getAbbreviation() const
 {
     return abbrev;
 }

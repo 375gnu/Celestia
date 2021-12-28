@@ -54,7 +54,7 @@ bool operator<(const VertexAttribute& a, const VertexAttribute& b)
 
 
 VertexDescription::VertexDescription(std::vector<VertexAttribute>&& _attributes) :
-    strideBytes(0),
+    
     attributes(std::move(_attributes))
 {
     for (const auto& attr : attributes)
@@ -479,7 +479,7 @@ Mesh::pick(const Eigen::Vector3d& rayOrigin, const Eigen::Vector3d& rayDirection
                             if (s0 >= 0.0 && s1 >= 0.0 && s0 + s1 <= 1.0)
                             {
                                 closest = t;
-                                if (result)
+                                if (result != nullptr)
                                 {
                                     result->group = &group;
                                     result->primitiveIndex = primitiveIndex;

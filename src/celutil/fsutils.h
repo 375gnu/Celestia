@@ -19,7 +19,7 @@ namespace celestia
 {
 namespace util
 {
-fs::path LocaleFilename(const fs::path& filename);
+fs::path LocaleFilename(const fs::path& p);
 fs::path PathExp(const fs::path& filename);
 fs::path ResolveWildcard(const fs::path& wildcard,
                          array_view<const char*> extensions);

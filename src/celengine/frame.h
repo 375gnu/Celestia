@@ -28,7 +28,7 @@ class ReferenceFrame
  public:
     SHARED_TYPES(ReferenceFrame)
 
-    ReferenceFrame(Selection center);
+    ReferenceFrame(const Selection& center);
     virtual ~ReferenceFrame() {};
 
     UniversalCoord convertFromUniversal(const UniversalCoord& uc, double tjd) const;
@@ -42,7 +42,7 @@ class ReferenceFrame
     Selection getCenter() const;
 
     virtual Eigen::Quaterniond getOrientation(double tjd) const = 0;
-    virtual Eigen::Vector3d getAngularVelocity(double tdb) const;
+    virtual Eigen::Vector3d getAngularVelocity(double tjd) const;
 
     virtual bool isInertial() const = 0;
 
@@ -73,7 +73,7 @@ class CachingFrame : public ReferenceFrame
 
     SHARED_TYPES(CachingFrame)
 
-    CachingFrame(Selection _center);
+    CachingFrame(const Selection& _center);
     virtual ~CachingFrame() {};
 
     Eigen::Quaterniond getOrientation(double tjd) const;
@@ -96,7 +96,7 @@ class J2000EclipticFrame : public ReferenceFrame
  public:
     SHARED_TYPES(J2000EclipticFrame)
 
-    J2000EclipticFrame(Selection center);
+    J2000EclipticFrame(const Selection& center);
     virtual ~J2000EclipticFrame() {};
 
     Eigen::Quaterniond getOrientation(double /* tjd */) const
@@ -118,7 +118,7 @@ class J2000EquatorFrame : public ReferenceFrame
  public:
     SHARED_TYPES(J2000EquatorFrame)
 
-    J2000EquatorFrame(Selection center);
+    J2000EquatorFrame(const Selection& center);
     virtual ~J2000EquatorFrame() {};
     Eigen::Quaterniond getOrientation(double tjd) const;
     virtual bool isInertial() const;
@@ -139,7 +139,7 @@ class BodyFixedFrame : public ReferenceFrame
  public:
     SHARED_TYPES(BodyFixedFrame)
 
-    BodyFixedFrame(Selection center, Selection obj);
+    BodyFixedFrame(const Selection& center, const Selection& obj);
     virtual ~BodyFixedFrame() {};
     Eigen::Quaterniond getOrientation(double tjd) const;
     virtual Eigen::Vector3d getAngularVelocity(double tjd) const;
@@ -158,8 +158,8 @@ class BodyMeanEquatorFrame : public ReferenceFrame
  public:
     SHARED_TYPES(BodyMeanEquatorFrame)
 
-    BodyMeanEquatorFrame(Selection center, Selection obj, double freeze);
-    BodyMeanEquatorFrame(Selection center, Selection obj);
+    BodyMeanEquatorFrame(const Selection& center, const Selection& obj, double freeze);
+    BodyMeanEquatorFrame(const Selection& center, const Selection& obj);
     virtual ~BodyMeanEquatorFrame() {};
     Eigen::Quaterniond getOrientation(double tjd) const;
     virtual Eigen::Vector3d getAngularVelocity(double tjd) const;
@@ -237,7 +237,7 @@ class TwoVectorFrame : public CachingFrame
      *  the primary and secondary vectors:
      *  1 = x, 2 = y, 3 = z, -1 = -x, -2 = -y, -3 = -z
      */
-    TwoVectorFrame(Selection center,
+    TwoVectorFrame(const Selection& center,
                    const FrameVector& prim,
                    int primAxis,
                    const FrameVector& sec,

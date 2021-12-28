@@ -124,7 +124,7 @@ void SphereMesh::createSphere(float radius, int _nRings, int _nSlices)
 void SphereMesh::generateNormals()
 {
     int nQuads = nSlices * (nRings - 1);
-    Eigen::Vector3f* faceNormals = new Eigen::Vector3f[nQuads];
+    auto* faceNormals = new Eigen::Vector3f[nQuads];
     int i;
 
     // Compute face normals for the mesh

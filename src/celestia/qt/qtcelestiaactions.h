@@ -41,9 +41,9 @@ Q_OBJECT
     void slotSetLightTimeDelay();
 
  private:
-    void syncWithRenderer(const Renderer* renderer);
+    void syncWithRenderer(const Renderer* renderer) const;
     void syncWithAppCore();
-    QAction* createCheckableAction(const QString& text, QMenu* menu, int data);
+    static QAction* createCheckableAction(const QString& text, QMenu* menu, int data);
     QAction* createCheckableAction(const QString& text, int data);
 
  public:

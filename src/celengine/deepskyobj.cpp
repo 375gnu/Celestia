@@ -82,8 +82,7 @@ bool DeepSkyObject::pick(const Eigen::ParametrizedLine<double, 3>& ray,
 {
     if (isVisible())
         return testIntersection(ray, Sphered(position, (double) radius), distanceToPicker, cosAngleToBoundCenter);
-    else
-        return false;
+            return false;
 }
 
 

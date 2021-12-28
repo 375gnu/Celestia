@@ -81,6 +81,7 @@ std::ofstream hdrlog;
 #include <algorithm>
 #include <cstring>
 #include <cassert>
+#include <memory>
 #include <sstream>
 #include <iomanip>
 #include <numeric>
@@ -341,7 +342,7 @@ Renderer::~Renderer()
     delete m_asterismRenderer;
     delete m_boundariesRenderer;
 
-    for (auto p : m_VertexObjects)
+    for (auto *p : m_VertexObjects)
         delete p;
 }
 
@@ -470,7 +471,7 @@ static void BuildGlareMipLevel2(unsigned char* mipPixels,
 static Texture* BuildGaussianDiscTexture(unsigned int log2size)
 {
     unsigned int size = 1 << log2size;
-    Image* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
+    auto* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
 
     for (unsigned int mipLevel = 0; mipLevel <= log2size; mipLevel++)
     {
@@ -481,7 +482,7 @@ static Texture* BuildGaussianDiscTexture(unsigned int log2size)
                                   (float) pow(2.0f, (float) (log2size - mipLevel)));
     }
 
-    ImageTexture* texture = new ImageTexture(*img,
+    auto* texture = new ImageTexture(*img,
                                              Texture::EdgeClamp,
                                              Texture::DefaultMipMaps);
 
@@ -494,7 +495,7 @@ static Texture* BuildGaussianDiscTexture(unsigned int log2size)
 static Texture* BuildGaussianGlareTexture(unsigned int log2size)
 {
     unsigned int size = 1 << log2size;
-    Image* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
+    auto* img = new Image(PixelFormat::LUMINANCE, size, size, log2size + 1);
 
     for (unsigned int mipLevel = 0; mipLevel <= log2size; mipLevel++)
     {
@@ -518,7 +519,7 @@ static Texture* BuildGaussianGlareTexture(unsigned int log2size)
         */
     }
 
-    ImageTexture* texture = new ImageTexture(*img,
+    auto* texture = new ImageTexture(*img,
                                              Texture::EdgeClamp,
                                              Texture::DefaultMipMaps);
 
@@ -532,19 +533,19 @@ static int translateLabelModeToClassMask(int labelMode)
 {
     int classMask = 0;
 
-    if (labelMode & Renderer::PlanetLabels)
+    if ((labelMode & Renderer::PlanetLabels) != 0)
         classMask |= Body::Planet;
-    if (labelMode & Renderer::DwarfPlanetLabels)
+    if ((labelMode & Renderer::DwarfPlanetLabels) != 0)
         classMask |= Body::DwarfPlanet;
-    if (labelMode & Renderer::MoonLabels)
+    if ((labelMode & Renderer::MoonLabels) != 0)
         classMask |= Body::Moon;
-    if (labelMode & Renderer::MinorMoonLabels)
+    if ((labelMode & Renderer::MinorMoonLabels) != 0)
         classMask |= Body::MinorMoon;
-    if (labelMode & Renderer::AsteroidLabels)
+    if ((labelMode & Renderer::AsteroidLabels) != 0)
         classMask |= Body::Asteroid;
-    if (labelMode & Renderer::CometLabels)
+    if ((labelMode & Renderer::CometLabels) != 0)
         classMask |= Body::Comet;
-    if (labelMode & Renderer::SpacecraftLabels)
+    if ((labelMode & Renderer::SpacecraftLabels) != 0)
         classMask |= Body::Spacecraft;
 
     return classMask;
@@ -676,7 +677,7 @@ void Renderer::resize(int width, int height)
 #endif
 }
 
-float Renderer::calcPixelSize(float fovY, float windowHeight)
+float Renderer::calcPixelSize(float fovY, float windowHeight) const
 {
     if (getProjectionMode() == ProjectionMode::FisheyeMode)
         return 2.0f / windowHeight;
@@ -727,17 +728,17 @@ float Renderer::getPointHeight() const
 
 float Renderer::getLineWidthX() const
 {
-    return ((renderFlags | ShowSmoothLines) ? 1.5f : 1.0f) * getPointWidth();
+    return ((renderFlags | ShowSmoothLines) != 0u ? 1.5f : 1.0f) * getPointWidth();
 }
 
 float Renderer::getLineWidthY() const
 {
-    return ((renderFlags | ShowSmoothLines) ? 1.5f : 1.0f) * getPointHeight();
+    return ((renderFlags | ShowSmoothLines) != 0u ? 1.5f : 1.0f) * getPointHeight();
 }
 
 float Renderer::getRasterizedLineWidth(float multiplier) const
 {
-    return multiplier * ((renderFlags | ShowSmoothLines) ? 1.5f : 1.0f) * getScaleFactor();
+    return multiplier * ((renderFlags | ShowSmoothLines) != 0u ? 1.5f : 1.0f) * getScaleFactor();
 }
 
 bool Renderer::shouldDrawLineAsTriangles(float multiplier) const
@@ -861,7 +862,7 @@ Renderer::setStarColorTable(const ColorTemperatureTable* ct)
 }
 
 
-bool Renderer::getVideoSync() const
+bool Renderer::getVideoSync() 
 {
     return true;
 }
@@ -1181,7 +1182,7 @@ void Renderer::renderOrbit(const OrbitPathListEntry& orbitPath,
         orbit = orbitPath.star->getOrbit();
 
     CurvePlot* cachedOrbit = nullptr;
-    OrbitCache::iterator cached = orbitCache.find(orbit);
+    auto cached = orbitCache.find(orbit);
     if (cached != orbitCache.end())
     {
         cachedOrbit = cached->second;
@@ -1336,7 +1337,7 @@ void Renderer::renderOrbit(const OrbitPathListEntry& orbitPath,
     Affine3d modelview;
     {
         Quaterniond orientation = Quaterniond::Identity();
-        if (body)
+        if (body != nullptr)
         {
             orientation = body->getOrbitFrame(t)->getOrientation(t);
         }
@@ -1461,7 +1462,7 @@ setupLightSources(const vector<const Star*>& nearStars,
 {
     lightSources.clear();
 
-    for (const auto star : nearStars)
+    for (const auto *const star : nearStars)
     {
         if (star->getVisibility())
         {
@@ -1867,7 +1868,7 @@ void Renderer::draw(const Observer& observer,
 
     renderForegroundAnnotations(FontNormal);
 
-    if (!selectionVisible && (renderFlags & ShowMarkers))
+    if (!selectionVisible && ((renderFlags & ShowMarkers) != 0u))
     {
         renderSelectionPointer(observer, now, xfrustum, sel);
     }
@@ -2179,7 +2180,7 @@ void Renderer::renderEllipsoidAtmosphere(const Atmosphere& atmosphere,
     float cosSunAltitude = 0.0f;
     {
         // Check for a sun either directly behind or in front of the viewer
-        float cosSunAngle = (float) (sunDirection.dot(e) / centerDist);
+        auto cosSunAngle = (float) (sunDirection.dot(e) / centerDist);
         if (cosSunAngle < -1.0f + 1.0e-6f)
         {
             cosSunAltitude = 0.0f;
@@ -2235,7 +2236,7 @@ void Renderer::renderEllipsoidAtmosphere(const Atmosphere& atmosphere,
         skyContour[i].eyeDist = skyContour[i].eyeDir.norm();
         skyContour[i].eyeDir.normalize();
 
-        float skyCapDist = (float) sqrt(square(skyContour[i].eyeDist) +
+        auto skyCapDist = (float) sqrt(square(skyContour[i].eyeDist) +
                                         square(horizonHeight * radius));
         skyContour[i].cosSkyCapAltitude = skyContour[i].eyeDist / skyCapDist;
     }
@@ -2453,7 +2454,7 @@ Renderer::locationsToAnnotations(const Body& body,
     float nearDist = getNearPlaneDistance();
     double boundingRadius = semiAxes.maxCoeff();
 
-    Vector3d bodyCenter = bodyPosition;
+    const Vector3d& bodyCenter = bodyPosition;
     Vector3d viewRayOrigin = bodyOrientation * -bodyCenter;
     double labelOffset = 0.0001;
 
@@ -2464,7 +2465,7 @@ Renderer::locationsToAnnotations(const Body& body,
 
     Matrix3d bodyMatrix = bodyOrientation.conjugate().toRotationMatrix();
 
-    for (const auto location : *locations)
+    for (auto *const location : *locations)
     {
         auto featureType = location->getFeatureType();
         if ((featureType & locationFilter) != 0)
@@ -2523,15 +2524,15 @@ Renderer::locationsToAnnotations(const Body& body,
                     labelPos *= planetZ / z;
 
                     celestia::MarkerRepresentation* locationMarker = nullptr;
-                    if (featureType & Location::City)
+                    if ((featureType & Location::City) != 0u)
                         locationMarker = &cityRep;
-                    else if (featureType & (Location::LandingSite | Location::Observatory))
+                    else if ((featureType & (Location::LandingSite | Location::Observatory)) != 0u)
                         locationMarker = &observatoryRep;
-                    else if (featureType & (Location::Crater | Location::Patera))
+                    else if ((featureType & (Location::Crater | Location::Patera)) != 0u)
                         locationMarker = &craterRep;
-                    else if (featureType & (Location::Mons | Location::Tholus))
+                    else if ((featureType & (Location::Mons | Location::Tholus)) != 0u)
                         locationMarker = &mountainRep;
-                    else if (featureType & (Location::EruptiveCenter))
+                    else if ((featureType & (Location::EruptiveCenter)) != 0u)
                         locationMarker = &genericLocationRep;
 
                     Color labelColor = location->isLabelColorOverridden() ? location->getLabelColor() : LocationLabelColor;
@@ -2578,7 +2579,7 @@ estimateReflectedLightFraction(const Vector3d& toSun,
     // Phi is the angle between the light vector and receiver-to-reflector vector.
     // cos(phi) is thus the illumination at the sub-point. The horizon points are
     // at phi+theta and phi-theta.
-    float cosPhi = (float) (toSun.dot(toObject) / (d * toSun.norm()));
+    auto cosPhi = (float) (toSun.dot(toObject) / (d * toSun.norm()));
 
     // Use a trigonometric identity to compute cos(phi +/- theta):
     //   cos(phi + theta) = cos(phi) * cos(theta) - sin(phi) * sin(theta)
@@ -2643,7 +2644,7 @@ setupObjectLighting(const vector<LightSource>& suns,
         Vector3d objpos = objPosition_eye.cast<double>();
 
         // Only account for light from the brightest secondary source
-        for (auto& illuminator : secondaryIlluminators)
+        for (const auto & illuminator : secondaryIlluminators)
         {
             Vector3d toIllum = illuminator.position_v - objpos;  // reflector-to-object vector
             float distSquared = (float) toIllum.squaredNorm() / square(illuminator.radius);
@@ -2940,7 +2941,7 @@ void Renderer::renderObject(const Vector3f& pos,
     Texture* cloudNormalMap = nullptr;
     float cloudTexOffset    = 0.0f;
     // Ugly cast required because MultiResTexture::find() is non-const
-    Atmosphere* atmosphere  = const_cast<Atmosphere*>(obj.atmosphere);
+    auto* atmosphere  = const_cast<Atmosphere*>(obj.atmosphere);
 
     if (atmosphere != nullptr)
     {
@@ -3193,7 +3194,7 @@ bool Renderer::testEclipse(const Body& receiver,
 
         Vector3d dir = posCaster - posReceiver;
         double distToCaster = dir.norm() - receiver.getRadius();
-        float appOccluderRadius = (float) (caster.getRadius() / distToCaster);
+        auto appOccluderRadius = (float) (caster.getRadius() / distToCaster);
 
         // The shadow radius is the radius of the occluder plus some additional
         // amount that depends upon the apparent radius of the sun.  For
@@ -3251,7 +3252,7 @@ bool Renderer::testEclipse(const Body& receiver,
 
         // If the caster has a ring system, see if it casts a shadow on the receiver.
         // Ring shadows are only supported in the OpenGL 2.0 path.
-        if (caster.getRings())
+        if (caster.getRings() != nullptr)
         {
             bool shadowed = false;
 
@@ -3701,7 +3702,7 @@ void Renderer::renderCometTail(const Body& body,
                                float discSizeInPixels,
                                const Matrices &m)
 {
-    auto prog = shaderManager->getShader("comet");
+    auto *prog = shaderManager->getShader("comet");
     if (prog == nullptr)
         return;
 
@@ -3727,7 +3728,7 @@ void Renderer::renderCometTail(const Body& body,
     // as function of the comet's position;
     // irradiance = sun's luminosity / square(distanceFromSun);
     Vector3d sunPos(Vector3d::Zero());
-    for (const auto star : nearStars)
+    for (const auto *const star : nearStars)
     {
         if (star->getVisibility())
         {
@@ -3814,7 +3815,7 @@ void Renderer::renderCometTail(const Body& body,
         float radius = (float) i / (float) nTailPoints * dustTailRadius;
         for (int j = 0; j < nTailSlices; j++)
         {
-            float theta = (float) (2 * PI * (float) j / nTailSlices);
+            auto theta = (float) (2 * PI * (float) j / nTailSlices);
             float s, c;
             sincos(theta, s, c);
             CometTailVertex& vtx = cometTailVertices[i * nTailSlices + j];
@@ -3862,7 +3863,7 @@ void Renderer::renderCometTail(const Body& body,
     const size_t stride = sizeof(CometTailVertex);
     for (i = 0; i < nTailPoints - 1; i++)
     {
-        const auto p = &cometTailVertices[i * nTailSlices];
+        auto *const p = &cometTailVertices[i * nTailSlices];
         glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
                               3, GL_FLOAT, GL_FALSE, stride, &p->point);
         glVertexAttribPointer(CelestiaGLProgram::NormalAttributeIndex,
@@ -3946,7 +3947,7 @@ void Renderer::renderAsterisms(const Universe& universe, float dist, const Matri
 
 void Renderer::renderBoundaries(const Universe& universe, float dist, const Matrices& mvp)
 {
-    auto boundaries = universe.getBoundaries();
+    auto *boundaries = universe.getBoundaries();
     if ((renderFlags & ShowBoundaries) == 0 || boundaries == nullptr)
         return;
 
@@ -4076,7 +4077,7 @@ void Renderer::addRenderListEntries(RenderListEntry& rle,
     const list<ReferenceMark*>* refMarks = body.getReferenceMarks();
     if (refMarks != nullptr)
     {
-        for (const auto rm : *refMarks)
+        for (auto *const rm : *refMarks)
         {
             rle.renderableType = RenderListEntry::RenderableReferenceMark;
             rle.refMark = rm;
@@ -4106,7 +4107,7 @@ void Renderer::buildRenderLists(const Vector3d& astrocentricObserverPos,
     unsigned int nChildren = tree != nullptr ? tree->childCount() : 0;
     for (unsigned int i = 0; i < nChildren; i++)
     {
-        auto phase = tree->getChild(i);
+        const auto& phase = tree->getChild(i);
 
         // No need to do anything if the phase isn't active now
         if (!phase->includes(now))
@@ -4198,10 +4199,10 @@ void Renderer::buildRenderLists(const Vector3d& astrocentricObserverPos,
             // light from all nearby stars, we just consider the one with the
             // highest apparent brightness.
             float appMag = 100.0f;
-            for (unsigned int li = 0; li < lightSourceList.size(); li++)
+            for (auto & li : lightSourceList)
             {
-                Vector3d sunPos = pos_v - lightSourceList[li].position;
-                appMag = min(appMag, body->getApparentMagnitude(lightSourceList[li].luminosity, sunPos, pos_v));
+                Vector3d sunPos = pos_v - li.position;
+                appMag = min(appMag, body->getApparentMagnitude(li.luminosity, sunPos, pos_v));
             }
 
             bool visibleAsPoint = appMag < faintestPlanetMag && body->isVisibleAsPoint();
@@ -4254,10 +4255,10 @@ void Renderer::buildRenderLists(const Vector3d& astrocentricObserverPos,
 
                 // Compute the luminosity from reflected light of the largest object in the subtree
                 float lum = 0.0f;
-                for (unsigned int li = 0; li < lightSourceList.size(); li++)
+                for (auto & li : lightSourceList)
                 {
-                    Vector3d sunPos = pos_v - lightSourceList[li].position;
-                    lum += luminosityAtOpposition(lightSourceList[li].luminosity, (float) sunPos.norm(), (float) subtree->maxChildRadius());
+                    Vector3d sunPos = pos_v - li.position;
+                    lum += luminosityAtOpposition(li.luminosity, (float) sunPos.norm(), (float) subtree->maxChildRadius());
                 }
                 brightestPossible = astro::lumToAppMag(lum, astro::kilometersToLightYears(minPossibleDistance));
                 largestPossible = (float) subtree->maxChildRadius() / (float) minPossibleDistance / pixelSize;
@@ -4326,7 +4327,7 @@ void Renderer::buildOrbitLists(const Vector3d& astrocentricObserverPos,
     unsigned int nChildren = tree != nullptr ? tree->childCount() : 0;
     for (unsigned int i = 0; i < nChildren; i++)
     {
-        auto phase = tree->getChild(i);
+        const auto& phase = tree->getChild(i);
 
         // No need to do anything if the phase isn't active now
         if (!phase->includes(now))
@@ -4540,7 +4541,7 @@ void Renderer::buildLabelLists(const Frustum& viewFrustum,
                 // Compute the intersection of the viewer-to-labeled
                 // object ray with the tangent plane.
                 Vector3d posd = pos.cast<double>();
-                float u = (float)(distance / primaryVec.dot(posd));
+                auto u = (float)(distance / primaryVec.dot(posd));
 
                 // If the intersection point is closer to the viewer
                 // than the label, then project the label onto the
@@ -4840,7 +4841,7 @@ void Renderer::renderSkyGrids(const Observer& observer)
     if ((renderFlags & ShowHorizonGrid) != 0)
     {
         double tdb = observer.getTime();
-        auto frame = observer.getFrame();
+        const auto& frame = observer.getFrame();
         Body* body = frame->getRefObject().body();
 
         if (body != nullptr)
@@ -4886,7 +4887,7 @@ void Renderer::labelConstellations(const AsterismList& asterisms,
 {
     Vector3f observerPos = observer.getPosition().toLy().cast<float>();
 
-    for (auto ast : asterisms)
+    for (auto *ast : asterisms)
     {
         if (ast->getChainCount() > 0 && ast->getActive())
         {
@@ -5010,7 +5011,7 @@ Renderer::renderAnnotationLabel(const Annotation &a,
                                 int hOffset,
                                 int vOffset,
                                 float depth,
-                                const Matrices &m)
+                                const Matrices &m) const
 {
     glVertexAttrib(CelestiaGLProgram::ColorAttributeIndex, a.color);
 
@@ -5049,38 +5050,38 @@ void Renderer::renderAnnotations(const vector<Annotation>& annotations,
     Matrix4f mv = Matrix4f::Identity();
     Matrices m = { &m_orthoProjMatrix, &mv };
 
-    for (int i = 0; i < (int) annotations.size(); i++)
+    for (const auto & annotation : annotations)
     {
-        if (annotations[i].markerRep != nullptr)
+        if (annotation.markerRep != nullptr)
         {
-            renderAnnotationMarker(annotations[i], fs, 0.0f, m);
+            renderAnnotationMarker(annotation, fs, 0.0f, m);
         }
 
-        if (!annotations[i].labelText.empty())
+        if (!annotation.labelText.empty())
         {
             int labelWidth = 0;
             int hOffset = 2;
             int vOffset = 0;
 
-            switch (annotations[i].halign)
+            switch (annotation.halign)
             {
             case AlignCenter:
-                labelWidth = (font->getWidth(annotations[i].labelText));
+                labelWidth = (font->getWidth(annotation.labelText));
                 hOffset = -labelWidth / 2;
                 break;
 
             case AlignRight:
-                labelWidth = (font->getWidth(annotations[i].labelText));
+                labelWidth = (font->getWidth(annotation.labelText));
                 hOffset = -(labelWidth + 2);
                 break;
 
             case AlignLeft:
-                if (annotations[i].markerRep != nullptr)
-                    hOffset = 2 + (int) annotations[i].markerRep->size() / 2;
+                if (annotation.markerRep != nullptr)
+                    hOffset = 2 + (int) annotation.markerRep->size() / 2;
                 break;
             }
 
-            switch (annotations[i].valign)
+            switch (annotation.valign)
             {
             case VerticalAlignCenter:
                 vOffset = -font->getHeight() / 2;
@@ -5092,7 +5093,7 @@ void Renderer::renderAnnotations(const vector<Annotation>& annotations,
                 vOffset = 0;
                 break;
             }
-            renderAnnotationLabel(annotations[i], fs, hOffset, vOffset, 0.0f, m);
+            renderAnnotationLabel(annotation, fs, hOffset, vOffset, 0.0f, m);
         }
     }
 
@@ -5166,7 +5167,7 @@ Renderer::renderAnnotations(vector<Annotation>::iterator startIter,
     float d2 = -2.0f * nearDist * farDist / d0; // Used in perspective projection
     bool fisheye = projectionMode == ProjectionMode::FisheyeMode;
 
-    vector<Annotation>::iterator iter = startIter;
+    auto iter = startIter;
     for (; iter != endIter && iter->position.z() > nearDist; iter++)
     {
         // Compute normalized device z
@@ -5265,7 +5266,7 @@ Renderer::StarStyle Renderer::getStarStyle() const
 }
 
 
-void Renderer::loadTextures(Body* body)
+void Renderer::loadTextures(Body* body) const
 {
     Surface& surface = body->getSurface();
 
@@ -5341,7 +5342,7 @@ void Renderer::removeWatcher(RendererWatcher* watcher)
 
 void Renderer::notifyWatchers() const
 {
-    for (const auto watcher : watchers)
+    for (auto *const watcher : watchers)
     {
         watcher->notifyRenderSettingsChanged(this);
     }
@@ -5377,7 +5378,7 @@ void Renderer::setSolarSystemMaxDistance(float t)
     SolarSystemMaxDistance = celmath::clamp(t, 1.0f, 10.0f);
 }
 
-void Renderer::getViewport(int* x, int* y, int* w, int* h) const
+void Renderer::getViewport(int* x, int* y, int* w, int* h) 
 {
     GLint viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
@@ -5391,18 +5392,18 @@ void Renderer::getViewport(int* x, int* y, int* w, int* h) const
         *h = viewport[3];
 }
 
-void Renderer::getViewport(std::array<int, 4>& viewport) const
+void Renderer::getViewport(std::array<int, 4>& viewport) 
 {
     static_assert(sizeof(int) == sizeof(GLint), "int and GLint size mismatch");
     glGetIntegerv(GL_VIEWPORT, &viewport[0]);
 }
 
-void Renderer::setViewport(int x, int y, int w, int h) const
+void Renderer::setViewport(int x, int y, int w, int h) 
 {
     glViewport(x, y, w, h);
 }
 
-void Renderer::setViewport(const std::array<int, 4>& viewport) const
+void Renderer::setViewport(const std::array<int, 4>& viewport) 
 {
     glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 }
@@ -5531,7 +5532,7 @@ constexpr int formatWidth(PixelFormat format)
 }
 
 PixelFormat
-Renderer::getPreferredCaptureFormat() const noexcept
+Renderer::getPreferredCaptureFormat() noexcept
 {
 #ifdef GL_ES
     return PixelFormat::RGBA;
@@ -5540,7 +5541,7 @@ Renderer::getPreferredCaptureFormat() const noexcept
 #endif
 }
 
-bool Renderer::captureFrame(int x, int y, int w, int h, PixelFormat format, unsigned char* buffer) const
+bool Renderer::captureFrame(int x, int y, int w, int h, PixelFormat format, unsigned char* buffer) 
 {
     glReadPixels(x, y, w, h, toGLFormat(format), GL_UNSIGNED_BYTE, (void*) buffer);
     bool ok = glGetError() == GL_NO_ERROR;
@@ -5567,7 +5568,7 @@ bool Renderer::captureFrame(int x, int y, int w, int h, PixelFormat format, unsi
     return ok;
 }
 
-void Renderer::drawRectangle(const celestia::Rect &r, int fishEyeOverrideMode, const Eigen::Matrix4f& p, const Eigen::Matrix4f& m)
+void Renderer::drawRectangle(const celestia::Rect &r, int fishEyeOverrideMode, const Eigen::Matrix4f& p, const Eigen::Matrix4f& m) const
 {
     ShaderProperties shadprop;
     shadprop.lightModel = ShaderProperties::UnlitModel;
@@ -5701,7 +5702,7 @@ float Renderer::getAspectRatio() const
     return static_cast<float>(windowWidth) / static_cast<float>(windowHeight);
 }
 
-bool Renderer::getInfo(map<string, string>& info) const
+bool Renderer::getInfo(map<string, string>& info) 
 {
     info["API"] = "OpenGL";
 
@@ -5798,9 +5799,9 @@ Renderer::getShadowFBO(int index) const
 void
 Renderer::createShadowFBO()
 {
-    m_shadowFBO = unique_ptr<FramebufferObject>(new FramebufferObject(m_shadowMapSize,
+    m_shadowFBO = std::make_unique<FramebufferObject>(m_shadowMapSize,
                                                                       m_shadowMapSize,
-                                                                      FramebufferObject::DepthAttachment));
+                                                                      FramebufferObject::DepthAttachment);
     if (!m_shadowFBO->isValid())
     {
         GetLogger()->warn("Error creating shadow FBO.\n");
@@ -6086,7 +6087,7 @@ Renderer::buildNearSystemsLists(const Universe &universe,
 
     // Traverse the frame trees of each nearby solar system and
     // build the list of objects to be rendered.
-    for (const auto sun : nearStars)
+    for (const auto *const sun : nearStars)
     {
         addStarOrbitToRenderList(*sun, observer, now);
         // Skip if only star orbits to be shown

@@ -63,8 +63,7 @@ public:
         t = t - astro::J2000;
         if (flipped)
             return YRotation( degToRad(180.0 + meridian(t)));
-        else
-            return YRotation(-degToRad(180.0 + meridian(t)));
+                    return YRotation(-degToRad(180.0 + meridian(t)));
     }
 
     Quaterniond computeEquatorOrientation(double t) const override
@@ -79,8 +78,7 @@ public:
 
         if (flipped)
             return XRotation(PI) * XRotation(degToRad(-inclination)) * YRotation(degToRad(-node));
-        else
-            return XRotation(degToRad(-inclination)) * YRotation(degToRad(-node));
+                    return XRotation(degToRad(-inclination)) * YRotation(degToRad(-node));
     }
 
     // Return the RA and declination (in degrees) of the rotation axis
@@ -262,7 +260,7 @@ class IAULunarRotationModel : public IAURotationModel
 public:
     IAULunarRotationModel() : IAURotationModel(360.0 / 13.17635815) {}
 
-    void calcArgs(double d, double E[14]) const
+    static void calcArgs(double d, double E[14]) 
     {
         E[1]  = degToRad(125.045 -  0.0529921 * d);
         E[2]  = degToRad(250.089 -  0.1059842 * d);
@@ -1015,8 +1013,7 @@ GetCustomRotationModel(const std::string& name)
 
     if (CustomRotationModels.count(name) > 0)
         return CustomRotationModels[name];
-    else
-        return nullptr;
+            return nullptr;
 }
 
 

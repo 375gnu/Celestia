@@ -49,7 +49,7 @@ static QString BookmarkIconData(const QIcon& icon)
 BookmarkItem*
 XbelReader::read()
 {
-    BookmarkItem* rootItem = new BookmarkItem(BookmarkItem::Folder, nullptr);
+    auto* rootItem = new BookmarkItem(BookmarkItem::Folder, nullptr);
 
     while (!atEnd())
     {

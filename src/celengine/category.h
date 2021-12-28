@@ -38,14 +38,14 @@ public:
     bool hasChild(const std::string&) const;
     bool hasChild(UserCategory*) const;
 
-    bool addObject(Selection);
-    bool removeObject(Selection);
+    bool addObject(const Selection&);
+    bool removeObject(const Selection&);
     const ObjectSet &objects() const { return m_objlist; }
     const CategorySet &children() const { return m_catlist; }
 
 private:
-    bool _addObject(Selection);
-    bool _removeObject(Selection);
+    bool _addObject(const Selection&);
+    bool _removeObject(const Selection&);
     void _insertChild(UserCategory*);
     bool removeChild(UserCategory*);
     void setParent(UserCategory*);

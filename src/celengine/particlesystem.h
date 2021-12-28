@@ -56,7 +56,7 @@ public:
 
     void setLifespan(double startTime, double endTime);
     void setRotationRateRange(float minRate, float maxRate);
-    void setBlendMode(cmod::Material::BlendMode blendMode);
+    void setBlendMode(cmod::BlendMode blendMode);
 
 private:
     double m_startTime;
@@ -85,7 +85,7 @@ private:
     float m_rotationRateVariance;
     bool m_rotationEnabled;
 
-    cmod::Material::BlendMode m_blendMode;
+    cmod::BlendMode m_blendMode;
 
     cmod::Material m_material;
 };
@@ -106,7 +106,7 @@ class ParticleSystem : public Geometry
  public:
     std::list<ParticleEmitter*> m_emitterList;
 
-    cmod::Mesh::VertexDescription* m_vertexDesc;
+    cmod::VertexDescription* m_vertexDesc;
     ParticleVertex* m_vertexData;
     unsigned int m_particleCapacity;
     unsigned int m_particleCount;

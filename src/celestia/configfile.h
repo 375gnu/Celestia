@@ -73,8 +73,8 @@ public:
 
     Hash* params;
 
-    float getFloatValue(const std::string& name);
-    const std::string getStringValue(const std::string& name);
+    float getFloatValue(const std::string& name) const;
+    std::string getStringValue(const std::string& name) const;
 
     float SolarSystemMaxDistance;
     unsigned ShadowMapSize;

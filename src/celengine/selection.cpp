@@ -71,12 +71,11 @@ UniversalCoord Selection::getPosition(double t) const
             {
                 return body->getPosition(t).offsetKm(location()->getPlanetocentricPosition(t));
             }
-            else
-            {
-                // Bad location; all locations should have a parent.
+            
+                            // Bad location; all locations should have a parent.
                 assert(0);
                 return UniversalCoord::Zero();
-            }
+           
         }
 
     default:
@@ -168,12 +167,11 @@ Selection Selection::parent() const
         return Selection(location()->getParentBody());
 
     case Type_Body:
-        if (body()->getSystem())
+        if (body()->getSystem() != nullptr)
         {
             if (body()->getSystem()->getPrimaryBody() != nullptr)
                 return Selection(body()->getSystem()->getPrimaryBody());
-            else
-                return Selection(body()->getSystem()->getStar());
+                            return Selection(body()->getSystem()->getStar());
         }
         else
         {

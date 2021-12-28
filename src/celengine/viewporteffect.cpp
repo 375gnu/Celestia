@@ -22,7 +22,7 @@ bool ViewportEffect::preprocess(Renderer* renderer, FramebufferObject* fbo)
 
 bool ViewportEffect::prerender(Renderer* renderer, FramebufferObject* fbo)
 {
-    if (!fbo->unbind(oldFboId))
+    if (!FramebufferObject::unbind(oldFboId))
         return false;
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -36,7 +36,7 @@ bool ViewportEffect::distortXY(float &x, float &y)
 }
 
 PassthroughViewportEffect::PassthroughViewportEffect() :
-    ViewportEffect(),
+    
     vo(GL_ARRAY_BUFFER, 0, GL_STATIC_DRAW)
 {
 }
@@ -92,7 +92,7 @@ void PassthroughViewportEffect::draw(celgl::VertexObject& vo)
 }
 
 WarpMeshViewportEffect::WarpMeshViewportEffect(WarpMesh *mesh) :
-    ViewportEffect(),
+    
     vo(GL_ARRAY_BUFFER, 0, GL_STATIC_DRAW),
     mesh(mesh)
 {

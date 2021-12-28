@@ -36,7 +36,7 @@ FavoritesList* ReadFavoritesList(istream& in)
             return nullptr;
         }
 
-        FavoritesEntry* fav = new FavoritesEntry(); // FIXME: check
+        auto* fav = new FavoritesEntry(); // FIXME: check
         fav->name = tokenizer.getStringValue();
 
         Value* favParamsValue = parser.readValue();
@@ -45,7 +45,7 @@ FavoritesList* ReadFavoritesList(istream& in)
             GetLogger()->error("Error parsing favorites entry {}\n", fav->name);
             for_each(favorites->begin(), favorites->end(), [](FavoritesEntry* fav) { delete fav; });
             delete favorites;
-            if (favParamsValue != nullptr)
+            
                 delete favParamsValue;
             delete fav;
             return nullptr;
@@ -107,7 +107,7 @@ FavoritesList* ReadFavoritesList(istream& in)
 
 void WriteFavoritesList(FavoritesList& favorites, ostream& out)
 {
-    for (const auto fav : favorites)
+    for (auto *const fav : favorites)
     {
         AngleAxisf aa(fav->orientation);
         Vector3f axis = aa.axis();

@@ -22,7 +22,7 @@ void UserCategory::setParent(UserCategory *c)
     m_parent = c;
 }
 
-bool UserCategory::_addObject(Selection s)
+bool UserCategory::_addObject(const Selection& s)
 {
     if (s.empty() || m_objlist.count(s) > 0)
         return false;
@@ -30,7 +30,7 @@ bool UserCategory::_addObject(Selection s)
     return true;
 }
 
-bool UserCategory::addObject(Selection s)
+bool UserCategory::addObject(const Selection& s)
 {
     if (s.empty())
         return false;
@@ -40,7 +40,7 @@ bool UserCategory::addObject(Selection s)
     return s_.object()->_addToCategory(this);
 }
 
-bool UserCategory::removeObject(Selection s)
+bool UserCategory::removeObject(const Selection& s)
 {
     if (s.empty() || m_objlist.count(s) == 0)
         return false;
@@ -49,7 +49,7 @@ bool UserCategory::removeObject(Selection s)
     return s.object()->_removeFromCategory(this);
 }
 
-bool UserCategory::_removeObject(Selection s)
+bool UserCategory::_removeObject(const Selection& s)
 {
     m_objlist.erase(s);
     return true;
@@ -121,7 +121,7 @@ UserCategory *UserCategory::newCategory(const std::string &s, UserCategory *p, c
 {
     if (m_allcats.count(s) > 0)
         return nullptr;
-    UserCategory *c = new UserCategory(s, p, domain);
+    auto *c = new UserCategory(s, p, domain);
     m_allcats.insert(std::pair<const std::string, UserCategory*>(s, c));
     if (p == nullptr)
         m_roots.insert(c);
@@ -153,10 +153,10 @@ bool UserCategory::deleteCategory(const std::string &n)
 
 bool UserCategory::deleteCategory(UserCategory *c)
 {
-    if (!find(c->name()))
+    if (find(c->name()) == nullptr)
         return false;
     m_allcats.erase(c->name());
-    if (c->parent())
+    if (c->parent() != nullptr)
         c->parent()->m_catlist.erase(c);
     else
         m_roots.erase(c);

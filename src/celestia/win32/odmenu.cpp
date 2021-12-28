@@ -82,7 +82,7 @@ ODMenu::~ODMenu()
         DeleteObject(m_hHighlightItemBackgroundBrush);
 }
 
-bool ODMenu::Init(HWND hOwnerWnd, HMENU hMenu)
+static bool ODMenu::Init(HWND hOwnerWnd, HMENU hMenu)
 {
     m_hRootMenu = hMenu;
 
@@ -95,7 +95,7 @@ bool ODMenu::Init(HWND hOwnerWnd, HMENU hMenu)
     return true;
 }
 
-void ODMenu::EnumMenuItems(HMENU hMenu)
+static void ODMenu::EnumMenuItems(HMENU hMenu)
 {
     int i, numItems;
     MENUITEMINFO miInfo;
@@ -125,7 +125,7 @@ void ODMenu::EnumMenuItems(HMENU hMenu)
     }
 }
 
-void ODMenu::DeleteSubMenu(HMENU hMenu)
+static void ODMenu::DeleteSubMenu(HMENU hMenu)
 {
     //Recursively remove map items according to menu structure
     int i;
@@ -147,7 +147,7 @@ void ODMenu::DeleteSubMenu(HMENU hMenu)
     }
 }
 
-void ODMenu::SetMenuItemOwnerDrawn(HMENU hMenu, UINT item, UINT type)
+static void ODMenu::SetMenuItemOwnerDrawn(HMENU hMenu, UINT item, UINT type)
 {
     //Set menu item type to owner-drawn and set itemdata to sequence number.
     MENUITEMINFO miInfo;
@@ -191,7 +191,7 @@ void ODMenu::GenerateDisplayText(ODMENUITEM& item)
     }
 }
 
-void ODMenu::DrawItemText(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
+static void ODMenu::DrawItemText(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
 {
     int x, y;
     SIZE size;
@@ -227,7 +227,7 @@ void ODMenu::DrawItemText(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
         &rectText, DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
 }
 
-void ODMenu::DrawIconBar(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
+static void ODMenu::DrawIconBar(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
 {
     RECT rectBar;
     memcpy(&rectBar, &lpdis->rcItem, sizeof(RECT));
@@ -303,7 +303,7 @@ void ODMenu::DrawIconBar(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item)
     }
 }
 
-void ODMenu::ComputeMenuTextPos(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item, int& x, int& y, SIZE& size)
+static void ODMenu::ComputeMenuTextPos(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item, int& x, int& y, SIZE& size)
 {
     x = lpdis->rcItem.left;
     y = lpdis->rcItem.top;
@@ -321,7 +321,7 @@ void ODMenu::ComputeMenuTextPos(DRAWITEMSTRUCT* lpdis, ODMENUITEM& item, int& x,
     }
 }
 
-void ODMenu::DrawTransparentBitmap(HDC hDC, HBITMAP hBitmap, short xStart,
+static void ODMenu::DrawTransparentBitmap(HDC hDC, HBITMAP hBitmap, short xStart,
                                    short yStart, COLORREF cTransparentColor,
                                    bitmapType eType)
 {
@@ -502,7 +502,7 @@ void ODMenu::DrawTransparentBitmap(HDC hDC, HBITMAP hBitmap, short xStart,
     DeleteDC(hdcTemp);
 }
 
-void ODMenu::DrawCheckMark(HDC hDC, short x, short y, bool bNarrow)
+static void ODMenu::DrawCheckMark(HDC hDC, short x, short y, bool bNarrow)
 {
     HPEN hOldPen;
     int dp = 0;
@@ -588,7 +588,7 @@ COLORREF ODMenu::AverageColor(COLORREF col1, COLORREF col2, double weight)
     return RGB(avgRed, avgGreen, avgBlue);
 }
 
-double ODMenu::GetColorIntensity(COLORREF col)
+static double ODMenu::GetColorIntensity(COLORREF col)
 {
     BYTE red, green, blue;
 
@@ -600,7 +600,7 @@ double ODMenu::GetColorIntensity(COLORREF col)
     return (double)red/765.0 + (double)green/765.0 + (double)blue/765.0;
 }
 
-void ODMenu::MeasureItem(HWND hWnd, LPARAM lParam)
+static void ODMenu::MeasureItem(HWND hWnd, LPARAM lParam)
 {
     MEASUREITEMSTRUCT* lpmis = (MEASUREITEMSTRUCT*)lParam;
     ODMENUITEMS::iterator it;
@@ -644,7 +644,7 @@ void ODMenu::MeasureItem(HWND hWnd, LPARAM lParam)
     ReleaseDC(hWnd, hDC);
 }
 
-void ODMenu::DrawItem(HWND hWnd, LPARAM lParam)
+static void ODMenu::DrawItem(HWND hWnd, LPARAM lParam)
 {
     DRAWITEMSTRUCT* lpdis = (DRAWITEMSTRUCT*)lParam;
     ODMENUITEMS::iterator it;
@@ -747,11 +747,11 @@ void ODMenu::OnDestroy()
 {
 }
 
-bool ODMenu::GetItem(UINT id, ODMENUITEM** ppItem)
+static bool ODMenu::GetItem(UINT id, ODMENUITEM** ppItem)
 {
     bool bRC = true;
 
-    if(!ppItem)
+    if(ppItem == nullptr)
         return false;
 
     ODMENUITEMS::iterator it = m_menuItems.find(id);
@@ -761,7 +761,7 @@ bool ODMenu::GetItem(UINT id, ODMENUITEM** ppItem)
     return bRC;
 }
 
-void ODMenu::SetItemImage(HINSTANCE hInst, UINT wID, UINT idBitmap)
+static void ODMenu::SetItemImage(HINSTANCE hInst, UINT wID, UINT idBitmap)
 {
     // Get iterator to ODMENUITEM
     ODMENUITEMS::iterator it;
@@ -813,10 +813,7 @@ void ODMenu::AddItem(HMENU hMenu, int index, MENUITEMINFO* pItemInfo)
     //Add menu info to map of menu items
     if(pItemInfo)
     {
-        if(pItemInfo->hSubMenu != NULL && hMenu == m_hRootMenu)
-            odInfo.topMost = true;
-        else
-            odInfo.topMost = false;
+        odInfo.topMost = ;
         if(pItemInfo->fType == MFT_STRING)
         {
             odInfo.rawText = pItemInfo->dwTypeData;
@@ -835,7 +832,7 @@ void ODMenu::AddItem(HMENU hMenu, int index, MENUITEMINFO* pItemInfo)
     }
 }
 
-void ODMenu::DeleteItem(HMENU hMenu, int index)
+static void ODMenu::DeleteItem(HMENU hMenu, int index)
 {
     //Item data for item is map index
     MENUITEMINFO miInfo;

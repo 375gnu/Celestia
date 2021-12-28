@@ -313,22 +313,22 @@ class ShaderManager
 
  private:
     CelestiaGLProgram* buildProgram(const ShaderProperties&);
-    CelestiaGLProgram* buildProgram(const std::string&, const std::string&);
+    CelestiaGLProgram* buildProgram(const std::string&, const std::string&) const;
 
-    GLVertexShader* buildVertexShader(const ShaderProperties&);
-    GLFragmentShader* buildFragmentShader(const ShaderProperties&);
+    GLVertexShader* buildVertexShader(const ShaderProperties&) const;
+    static GLFragmentShader* buildFragmentShader(const ShaderProperties&);
 
-    GLVertexShader* buildRingsVertexShader(const ShaderProperties&);
-    GLFragmentShader* buildRingsFragmentShader(const ShaderProperties&);
+    GLVertexShader* buildRingsVertexShader(const ShaderProperties&) const;
+    static GLFragmentShader* buildRingsFragmentShader(const ShaderProperties&);
 
-    GLVertexShader* buildAtmosphereVertexShader(const ShaderProperties&);
-    GLFragmentShader* buildAtmosphereFragmentShader(const ShaderProperties&);
+    GLVertexShader* buildAtmosphereVertexShader(const ShaderProperties&) const;
+    static GLFragmentShader* buildAtmosphereFragmentShader(const ShaderProperties&);
 
-    GLVertexShader* buildEmissiveVertexShader(const ShaderProperties&);
-    GLFragmentShader* buildEmissiveFragmentShader(const ShaderProperties&);
+    GLVertexShader* buildEmissiveVertexShader(const ShaderProperties&) const;
+    static GLFragmentShader* buildEmissiveFragmentShader(const ShaderProperties&);
 
-    GLVertexShader* buildParticleVertexShader(const ShaderProperties&);
-    GLFragmentShader* buildParticleFragmentShader(const ShaderProperties&);
+    GLVertexShader* buildParticleVertexShader(const ShaderProperties&) const;
+    static GLFragmentShader* buildParticleFragmentShader(const ShaderProperties&);
 
     std::map<ShaderProperties, CelestiaGLProgram*> dynamicShaders;
     std::map<std::string, CelestiaGLProgram*> staticShaders;

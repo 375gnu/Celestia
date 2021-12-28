@@ -29,12 +29,12 @@ std::string::size_type getToken(const std::string& s, std::string::size_type sta
     std::string::size_type pos = start;
     token.clear();
 
-    while (pos < s.size() && isspace(s[pos]))
+    while (pos < s.size() && (isspace(s[pos]) != 0))
     {
         pos++;
     }
 
-    while (pos < s.size() && !isspace(s[pos]))
+    while (pos < s.size() && (isspace(s[pos]) == 0))
     {
         token += s[pos];
         pos++;
@@ -136,7 +136,7 @@ WavefrontLoader::load()
             {
                 cmod::Material material;
                 material.diffuse = cmod::Color(1.0f, 1.0f, 1.0f);
-                currentMaterialIndex = m_model->addMaterial(std::move(material)) - 1;
+                currentMaterialIndex = m_model->addMaterial(material) - 1;
                 if (!m_materialGroups.empty())
                 {
                     if (m_materialGroups.back().firstIndex == static_cast<int>(m_indexData.size()))
@@ -226,9 +226,8 @@ WavefrontLoader::load()
                 }
                 lastVertexType = faceVertexType;
 
-                for (unsigned int i = 0; i < faceVertices.size(); ++i)
+                for (auto vertex : faceVertices)
                 {
-                    ObjVertex vertex = faceVertices[i];
                     int index = convertIndex(vertex.vertexIndex, m_vertices.size());
                     if (index >= 0)
                     {

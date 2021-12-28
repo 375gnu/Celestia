@@ -56,7 +56,7 @@ HTREEITEM PopulateBookmarksTree(HWND hTree, CelestiaCore* appCore, HINSTANCE app
     TreeView_SetImageList(hTree, himlIcons, TVSIL_NORMAL);
 
     FavoritesList* favorites = appCore->getFavorites();
-    if (favorites != NULL)
+    if (favorites != nullptr)
     {
         // Create a subtree item called "Bookmarks"
         TVINSERTSTRUCT tvis;
@@ -161,7 +161,7 @@ HTREEITEM PopulateBookmarkFolders(HWND hTree, CelestiaCore* appCore, HINSTANCE a
     TreeView_SetImageList(hTree, himlIcons, TVSIL_NORMAL);
 
     FavoritesList* favorites = appCore->getFavorites();
-    if (favorites != NULL)
+    if (favorites != nullptr)
     {
         // Create a subtree item called "Bookmarks"
         TVINSERTSTRUCT tvis;
@@ -221,7 +221,7 @@ void BuildFavoritesMenu(HMENU menuBar,
     UINT bookmarksMenuPosition = 5;
 
     FavoritesList* favorites = appCore->getFavorites();
-    if (favorites == NULL)
+    if (favorites == nullptr)
         return;
 
     MENUITEMINFO menuInfo;
@@ -425,7 +425,7 @@ void SyncTreeFoldersWithFavoriteFolders(HWND hTree, CelestiaCore* appCore)
     char itemName[33];
     bool found;
 
-    if (favorites != NULL)
+    if (favorites != nullptr)
     {
         // Scan through tree control folders and add any folder that does
         // not exist in Favorites.
@@ -521,7 +521,7 @@ void InsertBookmarkInFavorites(HWND hTree, char* name, CelestiaCore* appCore)
         if (TreeView_GetItem(hTree, &tvItem))
         {
             FavoritesEntry* fav = reinterpret_cast<FavoritesEntry*>(tvItem.lParam);
-            if (fav != NULL && fav->isFolder)
+            if (fav != nullptr && fav->isFolder)
             {
                 appCore->addFavorite(newBookmark, string(itemName));
             }
@@ -555,7 +555,7 @@ void DeleteBookmarkFromFavorites(HWND hTree, CelestiaCore* appCore)
         return;
 
     FavoritesEntry* fav = reinterpret_cast<FavoritesEntry*>(tvItem.lParam);
-    if (!fav)
+    if (fav == nullptr)
         return;
 
     // Delete the item from the tree view; give up if this fails for some
@@ -605,7 +605,7 @@ void RenameBookmarkInFavorites(HWND hTree, char* newName, CelestiaCore* appCore)
         return;
 
     FavoritesEntry* fav = reinterpret_cast<FavoritesEntry*>(tvItem.lParam);
-    if (fav == NULL)
+    if (fav == nullptr)
         return;
 
     tvItem.hItem = hItem;
@@ -640,8 +640,8 @@ void MoveBookmarkInFavorites(HWND hTree, CelestiaCore* appCore)
     char dragItemFolderName[33];
     char dropFolderName[33];
     bool bMovedInTree = false;
-    FavoritesEntry* draggedFav = NULL;
-    FavoritesEntry* dropFolderFav = NULL;
+    FavoritesEntry* draggedFav = nullptr;
+    FavoritesEntry* dropFolderFav = nullptr;
 
     // First get the target folder name
     tvItem.hItem = hDropTargetItem;
@@ -706,7 +706,7 @@ void MoveBookmarkInFavorites(HWND hTree, CelestiaCore* appCore)
     }
 
     // Now perform the move in favorites
-    if (bMovedInTree && draggedFav != NULL)
+    if (bMovedInTree && draggedFav != nullptr)
     {
         draggedFav->parentFolder = dropFolderName;
     }
@@ -783,7 +783,7 @@ void OrganizeBookmarksOnMouseMove(HWND hTree, LONG xCur, LONG yCur)
             if (TreeView_GetItem(hTree, &tvItem))
             {
                 FavoritesEntry* fav = reinterpret_cast<FavoritesEntry*>(tvItem.lParam);
-                if (fav != NULL && fav->isFolder)
+                if (fav != nullptr && fav->isFolder)
                 {
                     hDropTargetItem = hItem;
                     TreeView_SelectDropTarget(hTree, hDropTargetItem);

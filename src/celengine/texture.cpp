@@ -450,7 +450,7 @@ void ImageTexture::bind()
 }
 
 
-const TextureTile ImageTexture::getTile(int lod, int u, int v)
+TextureTile ImageTexture::getTile(int lod, int u, int v)
 {
     if (lod != 0 || u != 0 || v != 0)
         return TextureTile(0);
@@ -513,7 +513,7 @@ TiledTexture::TiledTexture(Image& img,
     int tileWidth = img.getWidth() / uSplit;
     int tileHeight = img.getHeight() / vSplit;
     int tileMipLevelCount = CalcMipLevelCount(tileWidth, tileHeight);
-    Image* tile = new Image(img.getFormat(),
+    auto* tile = new Image(img.getFormat(),
                             tileWidth, tileHeight,
                             tileMipLevelCount);
 
@@ -682,7 +682,7 @@ int TiledTexture::getVTileCount(int /*lod*/) const
 }
 
 
-const TextureTile TiledTexture::getTile(int lod, int u, int v)
+TextureTile TiledTexture::getTile(int lod, int u, int v)
 {
     if (lod != 0 || u >= uSplit || u < 0 || v >= vSplit || v < 0)
         return TextureTile(0);
@@ -774,7 +774,7 @@ void CubeMap::bind()
 }
 
 
-const TextureTile CubeMap::getTile(int lod, int u, int v)
+TextureTile CubeMap::getTile(int lod, int u, int v)
 {
     if (lod != 0 || u != 0 || v != 0)
         return TextureTile(0);
@@ -797,7 +797,7 @@ Texture* CreateProceduralTexture(int width, int height,
                                  Texture::AddressMode addressMode,
                                  Texture::MipMapMode mipMode)
 {
-    Image* img = new Image(format, width, height);
+    auto* img = new Image(format, width, height);
 
     for (int y = 0; y < height; y++)
     {
@@ -822,7 +822,7 @@ Texture* CreateProceduralTexture(int width, int height,
                                  Texture::AddressMode addressMode,
                                  Texture::MipMapMode mipMode)
 {
-    Image* img = new Image(format, width, height);
+    auto* img = new Image(format, width, height);
 
     for (int y = 0; y < height; y++)
     {
@@ -904,9 +904,9 @@ Texture* CreateProceduralCubeMap(int size,
     Texture* tex = new CubeMap(faces);
 
     // Clean up the images
-    for (int i = 0; i < 6; i++)
+    for (auto & face : faces)
     {
-        delete faces[i];
+        delete face;
     }
 
     return tex;

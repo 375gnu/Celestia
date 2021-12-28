@@ -133,7 +133,7 @@ public:
      */
     float randSfloat()
     {
-        uint32_t randBits = (uint32_t) (randUint64() >> 16);
+        auto randBits = (uint32_t) (randUint64() >> 16);
         randBits = (randBits & 0x007fffff) | 0x40000000;
         return *reinterpret_cast<float*>(&randBits) - 3.0f;
     }
@@ -279,9 +279,9 @@ ParticleEmitter::setAcceleration(const Vector3f& acceleration)
 
 
 void
-ParticleEmitter::setBlendMode(cmod::Material::BlendMode blendMode)
+ParticleEmitter::setBlendMode(BlendMode BlendMode /*unused*/)
 {
-    m_blendMode = blendMode;
+    m_blendMode = m_blendMode;
 }
 
 
@@ -456,7 +456,7 @@ ParticleSystem::ParticleSystem() :
     // Create the vertex description; currently, it is the same for all
     // particle systems.
     ParticleVertex temp;
-    Mesh::VertexAttribute attributes[3];
+    VertexAttribute attributes[3];
     attributes[0] = cmod::Mesh::VertexAttribute(Mesh::Position, Mesh::Float3, STRUCT_OFFSET(temp, position));
     attributes[1] = Mesh::VertexAttribute(Mesh::Texture0, Mesh::Float2, STRUCT_OFFSET(temp, texCoord));
     attributes[2] = Mesh::VertexAttribute(Mesh::Color0, Mesh::UByte4, STRUCT_OFFSET(temp, color));
@@ -486,8 +486,8 @@ ParticleSystem::render(RenderContext& rc, double tsec)
 }
 
 
-bool
-ParticleSystem::pick(const Eigen::ParametrizedLine<double, 3>& /* r */, double& /* distance */) const
+static bool
+ParticleSystem::pick(const Eigen::ParametrizedLine<double, 3>& /* r */, double& /* distance */) 
 {
     // Pick selection for particle systems not supported (because it's
     // not typically desirable.)

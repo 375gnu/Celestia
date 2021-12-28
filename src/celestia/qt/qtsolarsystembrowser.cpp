@@ -37,24 +37,24 @@ class SolarSystemTreeModel : public QAbstractItemModel, public ModelHelper
 {
 public:
     SolarSystemTreeModel(const Universe* _universe);
-    virtual ~SolarSystemTreeModel() = default;
+    ~SolarSystemTreeModel() override = default;
 
-    Selection objectAtIndex(const QModelIndex& index) const;
+    [[nodiscard]] Selection objectAtIndex(const QModelIndex& index) const;
 
     // Methods from QAbstractTableModel
-    QModelIndex index(int row, int column, const QModelIndex& parent) const override;
-    QModelIndex parent(const QModelIndex& index) const override;
+    [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex& parent) const override;
+    [[nodiscard]] QModelIndex parent(const QModelIndex& index) const override;
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    int rowCount(const QModelIndex& index) const override;
-    int columnCount(const QModelIndex& index) const override;
+    [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override;
+    [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    [[nodiscard]] int rowCount(const QModelIndex& parent) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& index) const override;
     void sort(int column, Qt::SortOrder order) override;
-    QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
+    [[nodiscard]] QModelIndex sibling(int row, int column, const QModelIndex &index) const override;
 
     // Methods from ModelHelper
-    Selection itemForInfoPanel(const QModelIndex&) override;
+    Selection itemForInfoPanel(const QModelIndex& /*_index*/) override;
 
     enum
     {
@@ -79,7 +79,7 @@ private:
         int classification{0};
     };
 
-    TreeItem* createTreeItem(Selection sel, TreeItem* parent, int childIndex);
+    TreeItem* createTreeItem(const Selection& sel, TreeItem* parent, int childIndex);
     void addTreeItemChildren(TreeItem* item,
                              PlanetarySystem* sys,
                              const vector<Star*>* orbitingStars);
@@ -88,15 +88,15 @@ private:
     void addTreeItemChildrenGrouped(TreeItem* item,
                                     PlanetarySystem* sys,
                                     const vector<Star*>* orbitingStars,
-                                    Selection parent);
+                                    const Selection& parent);
     TreeItem* createGroupTreeItem(int classification,
                                   const vector<Body*>& objects,
                                   TreeItem* parent,
                                   int childIndex);
 
-    TreeItem* itemAtIndex(const QModelIndex& index) const;
+    [[nodiscard]] TreeItem* itemAtIndex(const QModelIndex& index) const;
 
-private:
+
     const Universe* universe{nullptr};
     TreeItem* rootItem{nullptr};
     bool groupByClass{false};
@@ -130,7 +130,7 @@ void SolarSystemTreeModel::buildModel(Star* star, bool _groupByClass, int _bodyF
     groupByClass = _groupByClass;
     bodyFilter = _bodyFilter;
 
-    if (rootItem != nullptr)
+    
         delete rootItem;
 
     rootItem = new TreeItem();
@@ -156,7 +156,7 @@ void SolarSystemTreeModel::buildModel(Star* star, bool _groupByClass, int _bodyF
 // and solar system bodies can be treated almost identically once
 // the new tree is built.
 SolarSystemTreeModel::TreeItem*
-SolarSystemTreeModel::createTreeItem(Selection sel,
+SolarSystemTreeModel::createTreeItem(const Selection& sel,
                                      TreeItem* parent,
                                      int childIndex)
 {
@@ -218,9 +218,9 @@ SolarSystemTreeModel::addTreeItemChildren(TreeItem* item,
         // Add the stars
         if (orbitingStars != nullptr)
         {
-            for (unsigned int i = 0; i < orbitingStars->size(); i++)
+            for (auto orbitingStar : *orbitingStars)
             {
-                Selection child(orbitingStars->at(i));
+                Selection child(orbitingStar);
                 item->children[childIndex] = createTreeItem(child, item, childIndex);
                 childIndex++;
             }
@@ -261,9 +261,9 @@ SolarSystemTreeModel::addTreeItemChildrenFiltered(TreeItem* item,
     item->children = new TreeItem*[item->nChildren];
 
     // Add the direct children
-    for (int i = 0; i < (int) bodies.size(); i++)
+    for (auto & bodie : bodies)
     {
-        item->children[childIndex] = createTreeItem(bodies[i], item, childIndex);
+        item->children[childIndex] = createTreeItem(bodie, item, childIndex);
         childIndex++;
     }
 }
@@ -278,7 +278,7 @@ void
 SolarSystemTreeModel::addTreeItemChildrenGrouped(TreeItem* item,
                                                  PlanetarySystem* sys,
                                                  const vector<Star*>* orbitingStars,
-                                                 Selection parent)
+                                                 const Selection& parent)
 {
     vector<Body*> asteroids;
     vector<Body*> spacecraft;
@@ -292,7 +292,7 @@ SolarSystemTreeModel::addTreeItemChildrenGrouped(TreeItem* item,
     bool groupSpacecraft = true;
     bool groupComponents = true;
     bool groupSurfaceFeatures = true;
-    if (parent.body())
+    if (parent.body() != nullptr)
     {
         // Don't put asteroid moons in the asteroid group; make them
         // immediate children of the parent.
@@ -375,18 +375,18 @@ SolarSystemTreeModel::addTreeItemChildrenGrouped(TreeItem* item,
             // Add the stars
             if (orbitingStars != nullptr)
             {
-                for (unsigned int i = 0; i < orbitingStars->size(); i++)
+                for (auto orbitingStar : *orbitingStars)
                 {
-                    Selection child(orbitingStars->at(i));
+                    Selection child(orbitingStar);
                     item->children[childIndex] = createTreeItem(child, item, childIndex);
                     childIndex++;
                 }
             }
 
             // Add the direct children
-            for (int i = 0; i < (int) normal.size(); i++)
+            for (auto & i : normal)
             {
-                item->children[childIndex] = createTreeItem(normal[i], item, childIndex);
+                item->children[childIndex] = createTreeItem(i, item, childIndex);
                 childIndex++;
             }
 
@@ -502,8 +502,7 @@ QModelIndex SolarSystemTreeModel::index(int row, int column, const QModelIndex& 
 
     if (row < parentItem->nChildren)
         return createIndex(row, column, parentItem->children[row]);
-    else
-        return QModelIndex();
+            return QModelIndex();
 }
 
 
@@ -513,12 +512,11 @@ QModelIndex SolarSystemTreeModel::parent(const QModelIndex& index) const
     if (!index.isValid())
         return QModelIndex();
 
-    TreeItem* child = static_cast<TreeItem*>(index.internalPointer());
+    auto* child = static_cast<TreeItem*>(index.internalPointer());
 
     if (child->parent == rootItem)
         return QModelIndex();
-    else
-        return createIndex(child->parent->childIndex, 0, child->parent);
+            return createIndex(child->parent->childIndex, 0, child->parent);
 }
 
 
@@ -538,8 +536,7 @@ static QString objectTypeName(const Selection& sel)
     {
         if (!sel.star()->getVisibility())
             return _("Barycenter");
-        else
-            return _("Star");
+                    return _("Star");
     }
     if (sel.body() != nullptr)
     {
@@ -612,8 +609,7 @@ QVariant SolarSystemTreeModel::data(const QModelIndex& index, int role) const
     {
         if (index.column() == NameColumn)
             return classificationName(item->classification);
-        else
-            return QVariant();
+                    return QVariant();
     }
 
     // Tree item is an object, not a group
@@ -630,8 +626,7 @@ QVariant SolarSystemTreeModel::data(const QModelIndex& index, int role) const
         }
         if (sel.body() != nullptr)
             return QString::fromStdString((sel.body()->getName(true)));
-        else
-            return QVariant();
+                    return QVariant();
 
     case TypeColumn:
         return objectTypeName(sel);
@@ -727,12 +722,12 @@ SolarSystemBrowser::SolarSystemBrowser(CelestiaCore* _appCore, QWidget* parent, 
     connect(treeView->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this, SLOT(slotSelectionChanged(const QItemSelection&, const QItemSelection&)));
 
-    QVBoxLayout* layout = new QVBoxLayout();
+    auto* layout = new QVBoxLayout();
     layout->addWidget(treeView);
 
     // Predefined filters
-    QGroupBox* objGroup = new QGroupBox();
-    QGridLayout* objGroupLayout = new QGridLayout();
+    auto* objGroup = new QGroupBox();
+    auto* objGroupLayout = new QGridLayout();
 
     // Buttons to select filtering criterion for objects
     planetsButton = new QCheckBox(_("Planets and moons"));
@@ -755,14 +750,14 @@ SolarSystemBrowser::SolarSystemBrowser(CelestiaCore* _appCore, QWidget* parent, 
     layout->addWidget(objGroup);
 
     // Additional filtering controls
-    QGroupBox* filterGroup = new QGroupBox(_("Filter"));
-    QGridLayout* filterGroupLayout = new QGridLayout();
+    auto* filterGroup = new QGroupBox(_("Filter"));
+    auto* filterGroupLayout = new QGridLayout();
 
     filterGroup->setLayout(filterGroupLayout);
     layout->addWidget(filterGroup);
     // End filtering controls
 
-    QPushButton* refreshButton = new QPushButton(_("Refresh"));
+    auto* refreshButton = new QPushButton(_("Refresh"));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(slotRefreshTree()));
     layout->addWidget(refreshButton);
 
@@ -771,20 +766,20 @@ SolarSystemBrowser::SolarSystemBrowser(CelestiaCore* _appCore, QWidget* parent, 
     layout->addWidget(groupCheckBox);
 
     // Controls for marking selected objects
-    QGroupBox* markGroup = new QGroupBox(_("Markers"));
-    QGridLayout* markGroupLayout = new QGridLayout();
+    auto* markGroup = new QGroupBox(_("Markers"));
+    auto* markGroupLayout = new QGridLayout();
 
-    QPushButton* markSelectedButton = new QPushButton(_("Mark Selected"));
+    auto* markSelectedButton = new QPushButton(_("Mark Selected"));
     connect(markSelectedButton, SIGNAL(clicked()), this, SLOT(slotMarkSelected()));
     markSelectedButton->setToolTip(_("Mark bodies selected in list view"));
     markGroupLayout->addWidget(markSelectedButton, 0, 0, 1, 2);
 
-    QPushButton* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
+    auto* unmarkSelectedButton = new QPushButton(_("Unmark Selected"));
     unmarkSelectedButton->setToolTip(_("Unmark stars selected in list view"));
     connect(unmarkSelectedButton, &QPushButton::clicked, this, &SolarSystemBrowser::slotUnmarkSelected);
     markGroupLayout->addWidget(unmarkSelectedButton, 0, 2, 1, 2);
 
-    QPushButton* clearMarkersButton = new QPushButton(_("Clear Markers"));
+    auto* clearMarkersButton = new QPushButton(_("Clear Markers"));
     connect(clearMarkersButton, SIGNAL(clicked()), this, SLOT(slotClearMarkers()));
     clearMarkersButton->setToolTip(_("Remove all existing markers"));
     markGroupLayout->addWidget(clearMarkersButton, 0, 5, 1, 2);
@@ -848,7 +843,7 @@ void SolarSystemBrowser::slotRefreshTree()
     SolarSystem* solarSys = sim->getUniverse()->getNearestSolarSystem(sim->getActiveObserver()->getPosition());
 
     // Don't update the solar system browser if no solar system is nearby
-    if (!solarSys)
+    if (solarSys == nullptr)
         return;
 
     Star* rootStar = solarSys->getStar();
@@ -915,9 +910,9 @@ void SolarSystemBrowser::slotMarkSelected()
     bool labelMarker = labelMarkerBox->checkState() == Qt::Checked;
     bool convertOK = false;
     QVariant markerData = markerSymbolBox->itemData(markerSymbolBox->currentIndex());
-    MarkerRepresentation::Symbol markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
+    auto markerSymbol = (MarkerRepresentation::Symbol) markerData.toInt(&convertOK);
     QVariant markerSize = markerSizeBox->itemData(markerSizeBox->currentIndex());
-    float size = (float) markerSize.toInt(&convertOK);
+    auto size = (float) markerSize.toInt(&convertOK);
     QColor markerColor = colorSwatch->color();
     Color color((float) markerColor.redF(),
                 (float) markerColor.greenF(),
@@ -977,6 +972,6 @@ void SolarSystemBrowser::slotClearMarkers()
 
 void SolarSystemBrowser::slotSelectionChanged(const QItemSelection& newSel, const QItemSelection& oldSel)
 {
-    if (infoPanel)
+    if (infoPanel != nullptr)
         infoPanel->updateHelper(solarSystemModel, newSel, oldSel);
 }

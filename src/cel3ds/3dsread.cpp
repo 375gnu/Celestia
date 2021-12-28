@@ -207,9 +207,9 @@ std::int32_t readFloatColor(std::istream& in, M3DColor& color)
 std::int32_t readMeshMatrix(std::istream& in, Eigen::Matrix4f& m)
 {
     float elements[12];
-    for (std::size_t i = 0; i < 12; ++i)
+    for (float & element : elements)
     {
-        if (!celutil::readLE<float>(in, elements[i])) { return READ_FAILURE; }
+        if (!celutil::readLE<float>(in, element)) { return READ_FAILURE; }
     }
 
     m << elements[0], elements[1], elements[2], 0,
@@ -225,7 +225,7 @@ std::int32_t readPointArray(std::istream& in, M3DTriangleMesh& triMesh)
 {
     std::uint16_t nPoints;
     if (!celutil::readLE<std::uint16_t>(in, nPoints)) { return READ_FAILURE; }
-    std::int32_t bytesRead = static_cast<std::int32_t>(sizeof(nPoints));
+    auto bytesRead = static_cast<std::int32_t>(sizeof(nPoints));
 
     for (int i = 0; i < static_cast<int>(nPoints); i++)
     {
@@ -322,7 +322,7 @@ std::int32_t readFaceArray(std::istream& in, M3DTriangleMesh& triMesh, std::int3
 {
     std::uint16_t nFaces;
     if (!celutil::readLE<std::uint16_t>(in, nFaces)) { return READ_FAILURE; }
-    std::int32_t bytesRead = static_cast<std::int32_t>(sizeof(nFaces));
+    auto bytesRead = static_cast<std::int32_t>(sizeof(nFaces));
 
     for (int i = 0; i < static_cast<int>(nFaces); i++)
     {

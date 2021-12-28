@@ -81,8 +81,7 @@ DeepSkyObject* DSODatabase::find(const AstroCatalog::IndexNumber catalogNumber) 
 
     if (dso != catalogNumberIndex + nDSOs && (*dso)->getIndex() == catalogNumber)
         return *dso;
-    else
-        return nullptr;
+            return nullptr;
 }
 
 
@@ -109,8 +108,7 @@ vector<string> DSODatabase::getCompletion(const string& name, bool i18n) const
     // only named DSOs are supported by completion.
     if (!name.empty() && namesDB != nullptr)
         return namesDB->getCompletion(name, i18n);
-    else
-        return completion;
+            return completion;
 }
 
 
@@ -120,7 +118,7 @@ string DSODatabase::getDSOName(const DeepSkyObject* const & dso, bool i18n) cons
 
     if (namesDB != nullptr)
     {
-        DSONameDatabase::NumberIndex::const_iterator iter   = namesDB->getFirstNameIter(catalogNumber);
+        auto iter   = namesDB->getFirstNameIter(catalogNumber);
         if (iter != namesDB->getFinalNameIter() && iter->first == catalogNumber)
         {
             if (i18n)
@@ -143,7 +141,7 @@ string DSODatabase::getDSONameList(const DeepSkyObject* const & dso, const unsig
 
     auto catalogNumber   = dso->getIndex();
 
-    DSONameDatabase::NumberIndex::const_iterator iter  = namesDB->getFirstNameIter(catalogNumber);
+    auto iter  = namesDB->getFirstNameIter(catalogNumber);
 
     unsigned int count = 0;
     while (iter != namesDB->getFinalNameIter() && iter->first == catalogNumber && count < maxNames)
@@ -304,7 +302,7 @@ bool DSODatabase::load(istream& in, const fs::path& resourcePath)
                 if (capacity < 100)
                     capacity = 100;
 
-                DeepSkyObject** newDSOs = new DeepSkyObject*[capacity];
+                auto** newDSOs = new DeepSkyObject*[capacity];
 
                 if (DSOs != nullptr)
                 {
@@ -354,7 +352,7 @@ bool DSODatabase::load(istream& in, const fs::path& resourcePath)
 }
 
 
-bool DSODatabase::loadBinary(istream&)
+bool DSODatabase::loadBinary(istream& /*unused*/)
 {
     // TODO: define a binary dso file format
     return true;
@@ -386,14 +384,14 @@ void DSODatabase::buildOctree()
     // TODO: investigate using a different center--it's possible that more
     // objects end up straddling the base level nodes when the center of the
     // octree is at the origin.
-    DynamicDSOOctree* root   = new DynamicDSOOctree(Vector3d::Zero(), absMag);
+    auto* root   = new DynamicDSOOctree(Vector3d::Zero(), absMag);
     for (int i = 0; i < nDSOs; ++i)
     {
         root->insertObject(DSOs[i], DSO_OCTREE_ROOT_SIZE);
     }
 
     GetLogger()->debug("Spatially sorting DSOs for improved locality of reference . . .\n");
-    DeepSkyObject** sortedDSOs    = new DeepSkyObject*[nDSOs];
+    auto** sortedDSOs    = new DeepSkyObject*[nDSOs];
     DeepSkyObject** firstDSO      = sortedDSOs;
 
     // The spatial sorting part is useless for DSOs since we

@@ -31,7 +31,7 @@ int observer_new(lua_State* l, Observer* o)
 {
     CelxLua celx(l);
 
-    Observer** ud = static_cast<Observer**>(lua_newuserdata(l, sizeof(Observer*)));
+    auto** ud = static_cast<Observer**>(lua_newuserdata(l, sizeof(Observer*)));
     *ud = o;
 
     celx.setClass(Celx_Observer);
@@ -43,7 +43,7 @@ Observer* to_observer(lua_State* l, int index)
 {
     CelxLua celx(l);
 
-    Observer** o = static_cast<Observer**>(lua_touserdata(l, index));
+    auto** o = static_cast<Observer**>(lua_touserdata(l, index));
     CelestiaCore* appCore = celx.appCore(AllErrors);
 
     // Check if pointer is still valid, i.e. is used by a view:
@@ -73,7 +73,7 @@ static int observer_isvalid(lua_State* l)
     CelxLua celx(l);
 
     celx.checkArgs(1, 1, "No arguments expected for observer:isvalid()");
-    lua_pushboolean(l, to_observer(l, 1) != nullptr);
+    lua_pushboolean(l, static_cast<int>(to_observer(l, 1) != nullptr));
     return 1;
 }
 
@@ -108,7 +108,7 @@ static int observer_setorientation(lua_State* l)
 
     Observer* o = this_observer(l);
 
-    auto q = celx.toRotation(2);
+    auto *q = celx.toRotation(2);
     if (q == nullptr)
     {
         celx.doError("Argument to observer:setorientation must be a rotation");
@@ -136,7 +136,7 @@ static int observer_rotate(lua_State* l)
 
     Observer* o = this_observer(l);
 
-    auto q = celx.toRotation(2);
+    auto *q = celx.toRotation(2);
     if (q == nullptr)
     {
         celx.doError("Argument to observer:setpos must be a rotation");
@@ -154,7 +154,7 @@ static int observer_orbit(lua_State* l)
 
     Observer* o = this_observer(l);
 
-    auto q = celx.toRotation(2);
+    auto *q = celx.toRotation(2);
     if (q == nullptr)
     {
         celx.doError("Argument for observer:orbit must be a rotation");
@@ -272,14 +272,14 @@ static int observer_gototable(lua_State* l)
 
     lua_pushstring(l, "initialOrientation");
     lua_gettable(l, 2);
-    auto rot1 = celx.toRotation(3);
+    auto *rot1 = celx.toRotation(3);
     if (rot1 != nullptr)
         jparams.initialOrientation = *rot1;
     lua_settop(l, 2);
 
     lua_pushstring(l, "finalOrientation");
     lua_gettable(l, 2);
-    auto rot2 = celx.toRotation(3);
+    auto *rot2 = celx.toRotation(3);
     if (rot2 != nullptr)
         jparams.finalOrientation = *rot2;
     lua_settop(l, 2);
@@ -397,7 +397,7 @@ static int observer_gotolonglat(lua_State* l)
     Vector3f up = Vector3f::UnitY();
     if (lua_gettop(l) >= 7)
     {
-        auto uparg = celx.toVector(7);
+        auto *uparg = celx.toVector(7);
         if (uparg == nullptr)
         {
             celx.doError("Sixth argument to observer:gotolonglat must be a vector");
@@ -454,7 +454,7 @@ static int observer_gotodistance(lua_State* l)
     Vector3f up = Vector3f::UnitY();
     if (lua_gettop(l) > 4)
     {
-        auto up_arg = celx.toVector(5);
+        auto *up_arg = celx.toVector(5);
         if (up_arg == nullptr)
         {
             celx.doError("Fourth arg to observer:gotodistance must be a vector");
@@ -720,7 +720,7 @@ static int observer_getframe(lua_State* l)
 
     Observer* obs = this_observer(l);
 
-    auto frame = obs->getFrame();
+    const auto& frame = obs->getFrame();
     celx.newFrame(*frame);
     return 1;
 }
@@ -858,7 +858,7 @@ static int observer_equal(lua_State* l)
     Observer* o1 = this_observer(l);
     Observer* o2 = to_observer(l, 2);
 
-    lua_pushboolean(l, (o1 == o2));
+    lua_pushboolean(l, static_cast<int>(o1 == o2));
     return 1;
 }
 
@@ -879,7 +879,7 @@ static int observer_setlocationflags(lua_State* l)
     {
         string key;
         bool value = false;
-        if (lua_isstring(l, -2))
+        if (lua_isstring(l, -2) != 0)
         {
             key = lua_tostring(l, -2);
         }
@@ -931,7 +931,7 @@ static int observer_getlocationflags(lua_State* l)
     for (const auto& it : LocationFlagMap)
     {
         lua_pushstring(l, it.first.c_str());
-        lua_pushboolean(l, (it.second & locationFlags) != 0);
+        lua_pushboolean(l, static_cast<int>((it.second & locationFlags) != 0));
         lua_settable(l, -3);
     }
     return 1;

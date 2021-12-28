@@ -28,16 +28,16 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
 
-    bool buildTxf();
-    bool buildTxf(const QFont& font, QDataStream& out, int texWidth, int texHeight);
+    static bool buildTxf();
+    static bool buildTxf(const QFont& font, QDataStream& out, int texWidth, int texHeight);
 
 public slots:
     void findStyles(const QFont& font);
-    void findSizes(const QFont& font);
+    static void findSizes(const QFont& font);
     void updateFont(const QFont& font);
     void updateSize(const QString& sizeString);
     void updateStyle(const QString& styleName);
-    void saveFont();
+    static void saveFont();
 
 private:
     QScrollArea *m_scrollArea;

@@ -9,7 +9,7 @@
 
 #include <cctype>
 #include <cstring>
-#include <wchar.h>
+#include <cwchar>
 #include <climits>
 #include <fmt/printf.h>
 #include "stringutils.h"
@@ -538,8 +538,7 @@ int UTF8StringCompare(const std::string& s0, const std::string& s1)
         return 1;
     if (len0 < len1)
         return -1;
-    else
-        return 0;
+            return 0;
 }
 
 int UTF8StringCompare(const std::string& s0, const std::string& s1, size_t n, bool ignoreCase)
@@ -584,8 +583,7 @@ int UTF8StringCompare(const std::string& s0, const std::string& s1, size_t n, bo
         return 1;
     if (len0 < len1)
         return -1;
-    else
-        return 0;
+            return 0;
 }
 
 
@@ -687,7 +685,7 @@ static std::string noAbbrev;
 
 // Greek alphabet crud . . . should probably moved to it's own module.
 
-static size_t greekChunkLength(const std::string&);
+static size_t greekChunkLength(const std::string& /*str*/);
 
 Greek* Greek::m_instance = nullptr;
 
@@ -801,7 +799,7 @@ std::string ReplaceGreekLetterAbbr(const std::string& str)
 
             std::string ret = greekAlphabetUTF8[i];
             auto len = prefix.length();
-            for (; str.length() > len && isdigit(str[len]); len++)
+            for (; str.length() > len && (isdigit(str[len]) != 0); len++)
                 ret += toSuperscript(str[len]);
             ret += str.substr(len);
             return ret;
@@ -901,7 +899,7 @@ ReplaceGreekLetterAbbr(char *dst, unsigned int dstSize, const char* src, unsigne
 }
 #endif
 
-static int findGreekNameIndexBySubstr(const std::string &, int = 0, unsigned int = UINT_MAX);
+static int findGreekNameIndexBySubstr(const std::string & /*s*/, int  /*start*/= 0, unsigned int  /*n*/= UINT_MAX);
 #if 0
 static std::string firstGreekAbbrCompletion(const std::string &);
 #endif
@@ -943,8 +941,8 @@ static size_t greekChunkLength(const std::string& str)
         npos = true;
     }
 
-    if (sp != 0 && isdigit(static_cast<unsigned char>(str[sp - 1])))
-        while(sp != 0 && isdigit(static_cast<unsigned char>(str[sp - 1]))) sp--;
+    if (sp != 0 && (isdigit(static_cast<unsigned char>(str[sp - 1])) != 0))
+        while(sp != 0 && (isdigit(static_cast<unsigned char>(str[sp - 1])) != 0)) sp--;
     else if (npos)
         sp = std::string::npos;
     return sp;

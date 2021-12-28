@@ -49,7 +49,7 @@ class HipparcosStar
 public:
     HipparcosStar() = default;
 
-    void write(ostream& /*out*/);
+    void write(ostream& /*out*/) const;
     void analyze();
 
     uint32_t HIPCatalogNumber{NullCatalogNumber};
@@ -76,7 +76,7 @@ template<class T> void binwrite(ostream& out, T x)
     out.write(reinterpret_cast<char*>(&x), sizeof(T));
 }
 
-void HipparcosStar::write(ostream& out)
+void HipparcosStar::write(ostream& out) const
 {
     if (status>=2)
         return;
@@ -173,8 +173,7 @@ bool operator<(const HipparcosStar& a, const HipparcosStar& b)
 struct HIPCatalogComparePredicate
 {
     HIPCatalogComparePredicate()
-    {
-    }
+    = default;
 
     bool operator()(const HipparcosStar* star0, const HipparcosStar* star1) const
     {
@@ -229,7 +228,7 @@ HipparcosStar* findStar(uint32_t hip)
 {
     HIPCatalogComparePredicate pred;
 
-    vector<HipparcosStar*>::iterator iter = lower_bound(starIndex.begin(),
+    auto iter = lower_bound(starIndex.begin(),
                                                         starIndex.end(),
                                                         hip, pred);
     if (iter == starIndex.end())
@@ -242,7 +241,7 @@ HipparcosStar* findStar(uint32_t hip)
 }
 
 
-StellarClass ParseStellarClass(char *starType)
+StellarClass ParseStellarClass(const char *starType)
 {
     StellarClass::StarType type = StellarClass::NormalStar;
     StellarClass::SpectralClass specClass = StellarClass::Spectral_A;
@@ -457,13 +456,13 @@ bool CheckStarRecord(istream& in)
 
     if (verbose>1)
         cout << "Testing HIP " << star.HIPCatalogNumber << " from Line " << lineno << " ." << endl;
-    if (!(hipstar=findStar(star.HIPCatalogNumber)))
+    if ((hipstar=findStar(star.HIPCatalogNumber)) == nullptr)
     {
         cout << "Error finding HIP " << star.HIPCatalogNumber << " from Line " << lineno << " ." << endl;
         return false;
     }
 
-    if (hipstar->tycline)
+    if (hipstar->tycline != 0u)
     {
         if (verbose>0)
             cout << "Duplicate Tycho Line for HIP " << star.HIPCatalogNumber << " from Line " << lineno << ", earlier Line at " << hipstar->tycline << " ." << endl;
@@ -887,7 +886,7 @@ void BuildMultistarSystemCatalog()
             auto it = starSystems.find(star.CCDMIdentifier);
             if (it == starSystems.end())
             {
-                MultistarSystem* multiSystem = new MultistarSystem();
+                auto* multiSystem = new MultistarSystem();
                 multiSystem->nStars = 1;
                 multiSystem->stars[0] = &star;
                 starSystems.insert(MultistarSystemCatalog::value_type(star.CCDMIdentifier, multiSystem));
@@ -1058,7 +1057,7 @@ int main(int argc, char* argv[])
             cout << "Usage: buildstardb [-v[<verbosity_level>] [-q] [-d <drop-level>\n";
             exit(1);
         case 'v':
-            if (optarg)
+            if (optarg != nullptr)
             {
                 verbose=(int)atol(optarg);
                 if (verbose<-1)
@@ -1161,9 +1160,9 @@ int main(int argc, char* argv[])
     {
         int aComp = 0, bComp = 0, cComp = 0, dComp = 0, eComp = 0, otherComp = 0;
         int bvComp = 0;
-        for (unsigned int i = 0; i < components.size(); i++)
+        for (auto & component : components)
         {
-            switch (components[i].componentID)
+            switch (component.componentID)
             {
             case 'A':
                 aComp++; break;
@@ -1178,7 +1177,7 @@ int main(int argc, char* argv[])
             default:
                 otherComp++; break;
             }
-            if (components[i].hasBV && components[i].componentID != 'A')
+            if (component.hasBV && component.componentID != 'A')
                 bvComp++;
         }
 
@@ -1214,7 +1213,7 @@ int main(int argc, char* argv[])
         ShowStarsWithComponents();
 
     const char* outputFile = "stars.dat";
-    if (argv[optind])
+    if (argv[optind] != nullptr)
         outputFile = argv[optind];
 
     cout << "Writing processed star records to " << outputFile << '\n';

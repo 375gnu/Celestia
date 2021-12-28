@@ -43,7 +43,7 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!strcmp(argv[i], "--spherical") || !strcmp(argv[i], "-s"))
+            if ((strcmp(argv[i], "--spherical") == 0) || (strcmp(argv[i], "-s") == 0))
             {
                 useSphericalCoords = true;
             }

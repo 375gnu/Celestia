@@ -37,16 +37,16 @@ class InfoPanel : public QDockWidget
     InfoPanel(CelestiaCore* appCore, const QString& title, QWidget* parent);
     ~InfoPanel() = default;
 
-    void buildInfoPage(Selection sel, Universe*, double tdb);
+    void buildInfoPage(const Selection& sel, Universe*, double tdb);
 
     void updateHelper(ModelHelper*, const QItemSelection&, const QItemSelection&);
 
  private:
-    void pageHeader(QTextStream&);
-    void pageFooter(QTextStream&);
-    void buildSolarSystemBodyPage(const Body* body, double tdb, QTextStream&);
-    void buildStarPage(const Star* star, const Universe* u, double tdb, QTextStream&);
-    void buildDSOPage(const DeepSkyObject* dso, const Universe* u, QTextStream&);
+    static void pageHeader(QTextStream&);
+    static void pageFooter(QTextStream&);
+    static void buildSolarSystemBodyPage(const Body* body, double tdb, QTextStream&);
+    static void buildStarPage(const Star* star, const Universe* u, double tdb, QTextStream&);
+    static void buildDSOPage(const DeepSkyObject* dso, const Universe* u, QTextStream&);
 
     CelestiaCore* appCore;
 

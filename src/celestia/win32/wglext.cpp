@@ -102,7 +102,7 @@ static void WGLCallback(HWND wnd)
 
     HDC hdc = GetDC(wnd);
 
-    if (hdc == NULL)
+    if (hdc == nullptr)
         return;
 
     PIXELFORMATDESCRIPTOR pfd = {
@@ -139,13 +139,13 @@ static void WGLCallback(HWND wnd)
     wglMakeCurrent(hdc, context);
 
     wglGetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC) wglGetProcAddress("wglGetExtensionsStringARB");
-    if (wglGetExtensionsStringARB == NULL)
+    if (wglGetExtensionsStringARB == nullptr)
         return;
 
     const char *ext = wglGetExtensionsStringARB(hdc);
     char       buff[100];
 
-    if (ext == NULL)
+    if (ext == nullptr)
         return;
 
     while (*ext != '\0')

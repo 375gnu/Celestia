@@ -39,8 +39,8 @@ public:
     GLuint colorTexture() const;
     GLuint depthTexture() const;
 
-    bool bind();
-    bool unbind();
+    bool bind() const;
+    static bool unbind();
 
 private:
     void generateColorTexture();

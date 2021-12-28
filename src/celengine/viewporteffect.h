@@ -45,8 +45,8 @@ class PassthroughViewportEffect : public ViewportEffect
  private:
     celgl::VertexObject vo;
 
-    void initializeVO(celgl::VertexObject&);
-    void draw(celgl::VertexObject&);
+    static void initializeVO(celgl::VertexObject&);
+    static void draw(celgl::VertexObject&);
 };
 
 class WarpMeshViewportEffect : public ViewportEffect

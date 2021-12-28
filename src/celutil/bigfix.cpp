@@ -254,7 +254,7 @@ int BigFix::sign() const
 
 
 // For debugging
-void BigFix::dump()
+void BigFix::dump() const
 {
     GetLogger()->info(
             "{:08x} {:08x} {:08x} {:08x}",
@@ -314,7 +314,7 @@ BigFix::BigFix(const std::string& val)
     {
         if (c == '=')
             break;
-        if (!inalphabet[c])
+        if (inalphabet[c] == 0)
             continue;
         bits += decoder[c];
         char_count++;
@@ -370,7 +370,7 @@ BigFix::BigFix(const std::string& val)
 }
 
 
-std::string BigFix::toString()
+std::string BigFix::toString() const
 {
     // Old BigFix class used 8 16-bit words. The bulk of this function
     // is copied from that class, so first we'll convert from two

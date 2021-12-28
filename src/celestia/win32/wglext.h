@@ -334,7 +334,7 @@ typedef BOOL (WINAPI * PFNWGLRESTOREBUFFERREGIONARBPROC) (HANDLE hRegion, int x,
 extern const char * WINAPI wglGetExtensionsStringARB (HDC);
 #endif /* WGL_WGLEXT_PROTOTYPES */
 typedef const char * (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC) (HDC hdc);
-extern PFNWGLGETEXTENSIONSSTRINGARBPROC    wglGetExtensionsStringARB;
+extern PFNGLDELETENAMEDSTRINGARBPROC    wglGetExtensionsStringARB;
 #endif
 
 #ifndef WGL_ARB_pixel_format

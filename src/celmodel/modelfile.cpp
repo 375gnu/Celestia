@@ -93,7 +93,7 @@ public:
 
     virtual std::unique_ptr<Model> load() = 0;
 
-    const std::string& getErrorMessage() const { return errorMessage; }
+    [[nodiscard]] const std::string& getErrorMessage() const { return errorMessage; }
     ResourceHandle getHandle(const fs::path& path) { return handleGetter(path); }
 
 protected:
@@ -209,8 +209,7 @@ parsePrimitiveGroupType(const std::string& name)
         return PrimitiveGroupType::PointList;
     if (name == "sprites")
         return PrimitiveGroupType::SpriteList;
-    else
-        return PrimitiveGroupType::InvalidPrimitiveGroupType;
+            return PrimitiveGroupType::InvalidPrimitiveGroupType;
 }
 
 
@@ -412,12 +411,7 @@ AsciiModelLoader::loadMaterial(Material& material)
         }
     }
 
-    if (tok.getTokenType() != Tokenizer::TokenName)
-    {
-        return false;
-    }
-
-    return true;
+    return tok.getTokenType() == Tokenizer::TokenName;
 }
 
 
@@ -583,7 +577,7 @@ AsciiModelLoader::loadVertices(const VertexDescription& vertexDesc,
             {
                 for (int k = 0; k < readCount; k++)
                 {
-                    float value = static_cast<float>(data[k]);
+                    auto value = static_cast<float>(data[k]);
                     std::memcpy(vertexData.data() + base + k, &value, sizeof(float));
                 }
             }
@@ -648,7 +642,7 @@ AsciiModelLoader::loadMesh(Mesh& mesh)
             return false;
         }
 
-        unsigned int indexCount = (unsigned int) tok.getIntegerValue();
+        auto indexCount = (unsigned int) tok.getIntegerValue();
 
         std::vector<Index32> indices;
         indices.reserve(indexCount);
@@ -661,7 +655,7 @@ AsciiModelLoader::loadMesh(Mesh& mesh)
                 return false;
             }
 
-            unsigned int index = (unsigned int) tok.getIntegerValue();
+            auto index = (unsigned int) tok.getIntegerValue();
             if (index >= vertexCount)
             {
                 reportError("Index out of range");
@@ -706,7 +700,7 @@ AsciiModelLoader::load()
                     return nullptr;
                 }
 
-                model->addMaterial(std::move(material));
+                model->addMaterial(material);
             }
             else if (name == "mesh")
             {
@@ -1277,7 +1271,7 @@ BinaryModelLoader::load()
                 return nullptr;
             }
 
-            model->addMaterial(std::move(material));
+            model->addMaterial(material);
         }
         else if (tok == CMOD_Mesh)
         {
@@ -1518,7 +1512,7 @@ BinaryModelLoader::loadMesh(Mesh& mesh)
             return false;
         }
 
-        PrimitiveGroupType type = static_cast<PrimitiveGroupType>(tok);
+        auto type = static_cast<PrimitiveGroupType>(tok);
         std::uint32_t materialIndex, indexCount;
         if (!celutil::readLE<std::uint32_t>(in, materialIndex)
             || !celutil::readLE<std::uint32_t>(in, indexCount))
@@ -1918,11 +1912,10 @@ OpenModel(std::istream& in, HandleGetter& getHandle)
     {
         return std::make_unique<BinaryModelLoader>(in, getHandle);
     }
-    else
-    {
-        celutil::GetLogger()->error("Model file has invalid header.\n");
+    
+            celutil::GetLogger()->error("Model file has invalid header.\n");
         return nullptr;
-    }
+   
 }
 
 

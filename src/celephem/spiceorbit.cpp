@@ -27,8 +27,8 @@ static const double MILLISEC = astro::secsToDays(0.001);
 /*! Create a new SPICE orbit using with a valid interval specified
  *  by beginning and ending.
  */
-SpiceOrbit::SpiceOrbit(std::string  _targetBodyName,
-                       std::string  _originName,
+SpiceOrbit::SpiceOrbit(const std::string&  _targetBodyName,
+                       const std::string&  _originName,
                        double _period,
                        double _boundingRadius,
                        double _beginning,
@@ -52,8 +52,8 @@ SpiceOrbit::SpiceOrbit(std::string  _targetBodyName,
  *  other than the first coverage span is desired, the SPICE orbit must
  *  be constructed with an explicitly specified time range.
  */
-SpiceOrbit::SpiceOrbit(std::string  _targetBodyName,
-                       std::string  _originName,
+SpiceOrbit::SpiceOrbit(const std::string&  _targetBodyName,
+                       const std::string&  _originName,
                        double _period,
                        double _boundingRadius) :
     targetBodyName(std::move(_targetBodyName)),

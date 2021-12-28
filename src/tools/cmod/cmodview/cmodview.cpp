@@ -38,7 +38,7 @@ main(int argc, char *argv[])
     MainWindow window;
 
     window.resize(QSize(800, 600));
-    window.readSettings();
+    MainWindow::readSettings();
     window.show();
 
     // If a file name was given on the command line, open it immediately.

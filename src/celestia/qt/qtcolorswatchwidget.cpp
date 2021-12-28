@@ -12,6 +12,7 @@
 
 #include "qtcolorswatchwidget.h"
 #include <QColorDialog>
+#include <utility>
 
 
 ColorSwatchWidget::ColorSwatchWidget(const QColor& c, QWidget* /*parent*/) :
@@ -31,7 +32,7 @@ QColor ColorSwatchWidget::color() const
 
 void ColorSwatchWidget::setColor(QColor c)
 {
-    m_color = c;
+    m_color = std::move(c);
     setPalette(QPalette(m_color));
     setAutoFillBackground(true);
 }

@@ -57,7 +57,7 @@ bool GLContext::setRenderPath(GLRenderPath path)
 }
 
 
-bool GLContext::renderPathSupported(GLRenderPath path) const
+bool GLContext::renderPathSupported(GLRenderPath path) 
 {
     switch (path)
     {

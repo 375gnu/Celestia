@@ -12,6 +12,8 @@
 #include <celengine/framebuffer.h>
 #include <celutil/color.h>
 #include <celutil/logger.h>
+
+#include <memory>
 #include "view.h"
 
 using namespace std;
@@ -252,7 +254,7 @@ void View::reset()
     fbo = nullptr;
 }
 
-void View::drawBorder(int gWidth, int gHeight, const Color &color, float linewidth)
+void View::drawBorder(int gWidth, int gHeight, const Color &color, float linewidth) const
 {
     celestia::Rect r(x * gWidth, y * gHeight, width * gWidth - 1, height * gHeight - 1);
     r.setColor(color);
@@ -265,12 +267,12 @@ void View::updateFBO(int gWidth, int gHeight)
 {
     int newWidth = width * gWidth;
     int newHeight = height * gHeight;
-    if (fbo && fbo.get()->width() == newWidth && fbo.get()->height() == newHeight)
+    if (fbo && fbo->width() == newWidth && fbo->height() == newHeight)
         return;
 
     // recreate FBO when FBO not exisits or on size change
-    fbo = unique_ptr<FramebufferObject>(new FramebufferObject(newWidth, newHeight,
-                                                              FramebufferObject::ColorAttachment | FramebufferObject::DepthAttachment));
+    fbo = std::make_unique<FramebufferObject>(newWidth, newHeight,
+                                                              FramebufferObject::ColorAttachment | FramebufferObject::DepthAttachment);
     if (!fbo->isValid())
     {
         GetLogger()->error("Error creating view FBO.\n");

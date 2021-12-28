@@ -816,7 +816,7 @@ StarDetails::StarDetails(const StarDetails& sd) :
     rotationModel(sd.rotationModel),
     semiAxes(sd.semiAxes),
     infoURL(sd.infoURL),
-    orbitingStars(nullptr),
+    
     isShared(false)
 {
     assert(sd.isShared);
@@ -1026,9 +1026,8 @@ Star::getPosition(double t) const
     {
         return UniversalCoord::CreateLy(position.cast<double>());
     }
-    else
-    {
-        const Star* barycenter = getOrbitBarycenter();
+    
+            const Star* barycenter = getOrbitBarycenter();
 
         if (barycenter == nullptr)
         {
@@ -1039,7 +1038,7 @@ Star::getPosition(double t) const
         {
             return barycenter->getPosition(t).offsetKm(orbit->positionAtTime(t));
         }
-    }
+   
 }
 
 
@@ -1052,10 +1051,9 @@ Star::getOrbitBarycenterPosition(double t) const
     {
         return UniversalCoord::CreateLy(position.cast<double>());
     }
-    else
-    {
-        return barycenter->getPosition(t);
-    }
+    
+            return barycenter->getPosition(t);
+   
 }
 
 
@@ -1071,9 +1069,8 @@ Star::getVelocity(double t) const
         // zero. (This will change when stellar proper motion is implemented.)
         return Vector3d::Zero();
     }
-    else
-    {
-        const Star* barycenter = getOrbitBarycenter();
+    
+            const Star* barycenter = getOrbitBarycenter();
 
         if (barycenter == nullptr)
         {
@@ -1086,7 +1083,7 @@ Star::getVelocity(double t) const
             // Sum the star's orbital velocity and the velocity of the barycenter.
             return barycenter->getVelocity(t) + orbit->velocityAtTime(t);
         }
-    }
+   
 }
 
 

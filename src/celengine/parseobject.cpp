@@ -27,6 +27,7 @@
 #include <celmath/geomutil.h>
 #include <celutil/logger.h>
 #include <cassert>
+#include <memory>
 
 using namespace Eigen;
 using namespace std;
@@ -242,9 +243,9 @@ CreateSampledTrajectory(Hash* trajData, const fs::path& path)
     TrajectoryInterpolation interpolation = TrajectoryInterpolationCubic;
     if (trajData->getString("Interpolation", interpolationString))
     {
-        if (!compareIgnoringCase(interpolationString, "linear"))
+        if (compareIgnoringCase(interpolationString, "linear") == 0)
             interpolation = TrajectoryInterpolationLinear;
-        else if (!compareIgnoringCase(interpolationString, "cubic"))
+        else if (compareIgnoringCase(interpolationString, "cubic") == 0)
             interpolation = TrajectoryInterpolationCubic;
         else
             GetLogger()->warn("Unknown interpolation type {}\n", interpolationString); // non-fatal error
@@ -653,10 +654,10 @@ CreateScriptedOrbit(Hash* orbitData,
     string moduleName;
     orbitData->getString("Module", moduleName);
 
-    Value* pathValue = new Value(path.string());
+    auto* pathValue = new Value(path.string());
     orbitData->addValue("AddonPath", *pathValue);
 
-    ScriptedOrbit* scriptedOrbit = new ScriptedOrbit();
+    auto* scriptedOrbit = new ScriptedOrbit();
     if (!scriptedOrbit->initialize(moduleName, funcName, orbitData))
     {
         delete scriptedOrbit;
@@ -878,14 +879,13 @@ CreateUniformRotationModel(Hash* rotationData,
     {
         return CreateFixedRotationModel(offset, inclination, ascendingNode);
     }
-    else
-    {
-        return new UniformRotationModel(period,
+    
+            return new UniformRotationModel(period,
                                         offset,
                                         epoch,
                                         inclination,
                                         ascendingNode);
-    }
+   
 }
 
 
@@ -989,15 +989,14 @@ CreatePrecessingRotationModel(Hash* rotationData,
     {
         return CreateFixedRotationModel(offset, inclination, ascendingNode);
     }
-    else
-    {
-        return new PrecessingRotationModel(period,
+    
+            return new PrecessingRotationModel(period,
                                            offset,
                                            epoch,
                                            inclination,
                                            ascendingNode,
                                            precessionPeriod);
-    }
+   
 }
 
 
@@ -1022,10 +1021,10 @@ CreateScriptedRotation(Hash* rotationData,
     string moduleName;
     rotationData->getString("Module", moduleName);
 
-    Value* pathValue = new Value(path.string());
+    auto* pathValue = new Value(path.string());
     rotationData->addValue("AddonPath", *pathValue);
 
-    ScriptedRotation* scriptedRotation = new ScriptedRotation();
+    auto* scriptedRotation = new ScriptedRotation();
     if (!scriptedRotation->initialize(moduleName, funcName, rotationData))
     {
          delete scriptedRotation;
@@ -1246,11 +1245,10 @@ CreateRotationModel(Hash* planetData,
 
         return rm;
     }
-    else
-    {
-        // No rotation fields specified
+    
+            // No rotation fields specified
         return nullptr;
-    }
+   
 }
 
 
@@ -1262,14 +1260,13 @@ RotationModel* CreateDefaultRotationModel(double syncRotationPeriod)
         // aperiodic and we'll just return a FixedRotation.
         return new ConstantOrientation(Quaterniond::Identity());
     }
-    else
-    {
-        return new UniformRotationModel(syncRotationPeriod,
+    
+            return new UniformRotationModel(syncRotationPeriod,
                                         0.0f,
                                         astro::J2000,
                                         0.0f,
                                         0.0f);
-    }
+   
 }
 
 
@@ -1312,7 +1309,7 @@ CreateBodyFixedFrame(const Universe& universe,
     if (center.empty())
         return nullptr;
 
-    return shared_ptr<BodyFixedFrame>(new BodyFixedFrame(center, center));
+    return std::make_shared<BodyFixedFrame>(center, center);
 }
 
 
@@ -1553,11 +1550,10 @@ CreateFrameVector(const Universe& universe,
 
         return new FrameVector(FrameVector::createConstantVector(vec, f));
     }
-    else
-    {
-        GetLogger()->error("Bad two-vector frame: unknown vector type\n");
+    
+            GetLogger()->error("Bad two-vector frame: unknown vector type\n");
         return nullptr;
-    }
+   
 }
 
 
@@ -1645,7 +1641,7 @@ CreateJ2000EclipticFrame(const Universe& universe,
     if (center.empty())
         return nullptr;
 
-    return shared_ptr<J2000EclipticFrame>(new J2000EclipticFrame(center));
+    return std::make_shared<J2000EclipticFrame>(center);
 }
 
 
@@ -1659,7 +1655,7 @@ CreateJ2000EquatorFrame(const Universe& universe,
     if (center.empty())
         return nullptr;
 
-    return shared_ptr<J2000EquatorFrame>(new J2000EquatorFrame(center));
+    return std::make_shared<J2000EquatorFrame>(center);
 }
 
 
@@ -1672,11 +1668,11 @@ CreateTopocentricFrame(const Selection& center,
                        const Selection& target,
                        const Selection& observer)
 {
-    auto eqFrame = shared_ptr<BodyMeanEquatorFrame>(new BodyMeanEquatorFrame(target, target));
+    auto eqFrame = std::make_shared<BodyMeanEquatorFrame>(target, target);
     FrameVector north = FrameVector::createConstantVector(Vector3d::UnitY(), eqFrame);
     FrameVector up = FrameVector::createRelativePositionVector(observer, target);
 
-    return shared_ptr<TwoVectorFrame>(new TwoVectorFrame(center, up, -2, north, -3));
+    return std::make_shared<TwoVectorFrame>(center, up, -2, north, -3);
 }
 
 

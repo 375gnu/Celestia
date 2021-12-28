@@ -37,7 +37,7 @@ void GtkSplashProgressNotifier::update(const string& filename)
     splashSetText(splash, filename.c_str());
 }
 
-GtkSplashProgressNotifier::~GtkSplashProgressNotifier() {};
+GtkSplashProgressNotifier::~GtkSplashProgressNotifier() = default;;
 
 
 /* ENTRY: Creates a new SplashData struct, starts the splash screen */

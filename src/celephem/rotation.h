@@ -36,7 +36,7 @@ class RotationModel
         return spin(tjd) * equatorOrientationAtTime(tjd);
     }
 
-    virtual Eigen::Vector3d angularVelocityAtTime(double tjd) const;
+    virtual Eigen::Vector3d angularVelocityAtTime(double tdb) const;
 
     /*! Return the orientation of the equatorial plane (normal to the primary
      *  axis of rotation.) The overall orientation of the object is
@@ -149,7 +149,7 @@ class UniformRotationModel : public RotationModel
     virtual double getPeriod() const;
     virtual Eigen::Quaterniond equatorOrientationAtTime(double tjd) const;
     virtual Eigen::Quaterniond spin(double tjd) const;
-    virtual Eigen::Vector3d angularVelocityAtTime(double tjd) const;
+    virtual Eigen::Vector3d angularVelocityAtTime(double tdb) const;
 
  private:
     double period;       // sidereal rotation period

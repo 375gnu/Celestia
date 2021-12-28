@@ -191,7 +191,7 @@ static gint changeTextureResolution(GtkRange *slider, AppData* app)
 
 
 /* CALLBACK: Format the label under the texture detail slider */
-static gchar* formatTextureSlider(GtkRange*, gdouble value)
+static gchar* formatTextureSlider(GtkRange* /*unused*/, gdouble value)
 {
     switch ((int)value) {
         case 0: return g_strdup("Low");

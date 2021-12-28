@@ -44,8 +44,8 @@ static AppData* app;
 
 
 /* Initializer. Sets the appData */
-GTKContextMenuHandler::GTKContextMenuHandler(AppData* _app) :
-    CelestiaCore::ContextMenuHandler()
+GTKContextMenuHandler::GTKContextMenuHandler(AppData* _app) 
+    
 {
     // FIXME: a workaround to have it referenced by any menu callback
     app = _app;
@@ -54,7 +54,7 @@ GTKContextMenuHandler::GTKContextMenuHandler(AppData* _app) :
 
 /* ENTRY: Context menu (event handled by appCore)
  *        Normally, float x and y, but unused, so removed. */
-void GTKContextMenuHandler::requestContextMenu(float, float, Selection sel)
+void GTKContextMenuHandler::requestContextMenu(float /*unused*/, float /*unused*/, Selection sel)
 {
     GtkWidget* popup = gtk_menu_new();
     string name;
@@ -77,7 +77,7 @@ void GTKContextMenuHandler::requestContextMenu(float, float, Selection sel)
             }
 
             const PlanetarySystem* satellites = sel.body()->getSatellites();
-            if (satellites != NULL && satellites->getSystemSize() != 0)
+            if (satellites != nullptr && satellites->getSystemSize() != 0)
             {
                 GtkMenu* satMenu = CreatePlanetarySystemMenu(name, satellites);
                 gtk_menu_item_set_submenu(AppendMenu(popup, NULL, "_Satellites", 0), GTK_WIDGET(satMenu));
@@ -162,7 +162,7 @@ static void wrapAction(GtkAction* action)
 static void menuMark()
 {
     Simulation* sim = app->simulation;
-    if (sim->getUniverse() != NULL)
+    if (sim->getUniverse() != nullptr)
     {
         using namespace celestia;
         MarkerRepresentation markerRep(MarkerRepresentation::Diamond, 10.0f, Color(0.0f, 1.0f, 0.0f, 0.9f));
@@ -175,7 +175,7 @@ static void menuMark()
 static void menuUnMark()
 {
     Simulation* sim = app->simulation;
-    if (sim->getUniverse() != NULL)
+    if (sim->getUniverse() != nullptr)
         sim->getUniverse()->unmarkObject(sim->getSelection(), 1);
 }
 
@@ -195,7 +195,7 @@ static void handleContextPlanet(gpointer data)
 
         case Selection::Type_Body:
             {
-                PlanetarySystem* satellites = (PlanetarySystem*) sel.body()->getSatellites();
+                auto* satellites = (PlanetarySystem*) sel.body()->getSatellites();
                 app->simulation->setSelection(Selection(satellites->getBody(value)));
                 break;
             }
@@ -218,7 +218,7 @@ static void handleContextPlanet(gpointer data)
 static void handleContextPrimary()
 {
     Selection sel = app->simulation->getSelection();
-    if (sel.body() != NULL)
+    if (sel.body() != nullptr)
     {
         app->simulation->setSelection(Helper::getPrimary(sel.body()));
     }
@@ -232,7 +232,7 @@ static void handleContextSurface(gpointer data)
 
     /* Handle the alternate surface submenu */
     Selection sel = app->simulation->getSelection();
-    if (sel.body() != NULL)
+    if (sel.body() != nullptr)
     {
         guint index = value - 1;
         vector<string>* surfNames = sel.body()->getAlternateSurfaceNames();
@@ -282,18 +282,18 @@ static GtkMenuItem* AppendMenu(GtkWidget* parent, GCallback callback, const gcha
 
 /* Typedefs and structs for sorting objects by name in context menu. */
 typedef pair<int,string> IntStrPair;
-typedef vector<IntStrPair> IntStrPairVec;
+using IntStrPairVec = int;
 
 struct IntStrPairComparePredicate
 {
-    IntStrPairComparePredicate() : dummy(0) {}
+    IntStrPairComparePredicate()  {}
 
     bool operator()(const IntStrPair pair1, const IntStrPair pair2) const
     {
         return (pair1.second.compare(pair2.second) < 0);
     }
 
-    int dummy;
+    int dummy{0};
 };
 
 /* HELPER: Create planetary submenu for context menu, return menu pointer. */

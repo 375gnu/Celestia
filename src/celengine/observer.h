@@ -54,7 +54,7 @@ public:
     };
 
     ObserverFrame();
-    ObserverFrame(CoordinateSystem cs,
+    ObserverFrame(CoordinateSystem _coordSys,
                   const Selection &_refObject,
                   const Selection &_targetObj = Selection());
     ObserverFrame(const ObserverFrame&);
@@ -85,7 +85,7 @@ public:
                                       double t);
 
 private:
-    ReferenceFrame::SharedConstPtr createFrame(CoordinateSystem _coordSys,
+    static ReferenceFrame::SharedConstPtr createFrame(CoordinateSystem _coordSys,
                                 const Selection &_refObject,
                                 const Selection &_targetObject);
 
@@ -140,14 +140,14 @@ public:
     void           update(double dt, double timeScale);
 
     Eigen::Vector3f getPickRay(float x, float y) const;
-    Eigen::Vector3f getPickRayFisheye(float x, float y) const;
+    static Eigen::Vector3f getPickRayFisheye(float x, float y) ;
 
 
     void orbit(const Selection&, const Eigen::Quaternionf &q);
     void rotate(const Eigen::Quaternionf &q);
     void changeOrbitDistance(const Selection&, float d);
     void setTargetSpeed(float s);
-    float getTargetSpeed();
+    float getTargetSpeed() const;
 
     Selection getTrackedObject() const;
     void setTrackedObject(const Selection&);
@@ -258,28 +258,28 @@ public:
     // void setSimulation(Simulation* _sim) { sim = _sim; };
 
  private:
-    void computeGotoParameters(const Selection &sel,
+    void computeGotoParameters(const Selection &destination,
                                JourneyParams &jparams,
                                double gotoTime,
                                double startInter,
                                double endInter,
                                double accelTime,
                                const Eigen::Vector3d &offset,
-                               ObserverFrame::CoordinateSystem offsetFrame,
+                               ObserverFrame::CoordinateSystem offsetCoordSys,
                                const Eigen::Vector3f &up,
-                               ObserverFrame::CoordinateSystem upFrame);
-    void computeGotoParametersGC(const Selection &sel,
+                               ObserverFrame::CoordinateSystem upCoordSys);
+    void computeGotoParametersGC(const Selection &destination,
                                  JourneyParams &jparams,
                                  double gotoTime,
                                  const Eigen::Vector3d &offset,
-                                 ObserverFrame::CoordinateSystem offsetFrame,
+                                 ObserverFrame::CoordinateSystem offsetCoordSys,
                                  const Eigen::Vector3f &up,
-                                 ObserverFrame::CoordinateSystem upFrame,
+                                 ObserverFrame::CoordinateSystem upCoordSys,
                                  const Selection &centerObj);
-    void computeCenterParameters(const Selection &sel,
+    void computeCenterParameters(const Selection &destination,
                                  JourneyParams &jparams,
                                  double centerTime);
-    void computeCenterCOParameters(const Selection &sel,
+    void computeCenterCOParameters(const Selection &destination,
                                    JourneyParams &jparams,
                                    double centerTime);
 

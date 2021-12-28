@@ -58,7 +58,7 @@ std::string getBodyShortName(const std::string &body)
 {
     if (!body.empty())
     {
-        auto pos = body.rfind(":");
+        auto pos = body.rfind(':');
         if (pos != std::string::npos)
             return D_(body.substr(pos + 1).c_str());
     }
@@ -418,7 +418,7 @@ bool Url::parse(celestia::compat::string_view urlStr)
     int nBodies = -1;
     CelestiaState state;
     auto lambda = [modeStr](Mode &m) { return compareIgnoringCase(modeStr, m.modeStr) == 0; };
-    auto it = std::find_if(std::begin(modes), std::end(modes), lambda);
+    auto *it = std::find_if(std::begin(modes), std::end(modes), lambda);
     if (it == std::end(modes))
     {
         GetLogger()->error(_("Unsupported URL mode \"{}\"!\n"), modeStr);
@@ -508,7 +508,7 @@ bool Url::parse(celestia::compat::string_view urlStr)
     m_nBodies = nBodies;
     if (version == 4 && !initVersion4(params, timeStr))
         return false;
-    else if (!initVersion3(params, timeStr))
+    if (!initVersion3(params, timeStr))
         return false;
     m_valid = true;
     evalName();

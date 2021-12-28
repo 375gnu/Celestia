@@ -122,7 +122,7 @@ AsterismList* ReadAsterismList(istream& in, const StarDatabase& stardb)
         }
 
         string name = tokenizer.getStringValue();
-        Asterism* ast = new Asterism(name);
+        auto* ast = new Asterism(name);
 
         Value* chainsValue = parser.readValue();
         if (chainsValue == nullptr || chainsValue->getType() != Value::ArrayType)
@@ -137,7 +137,7 @@ AsterismList* ReadAsterismList(istream& in, const StarDatabase& stardb)
 
         Array* chains = chainsValue->getArray();
 
-        for (const auto chain : *chains)
+        for (auto *const chain : *chains)
         {
             if (chain->getType() == Value::ArrayType)
             {
@@ -146,8 +146,8 @@ AsterismList* ReadAsterismList(istream& in, const StarDatabase& stardb)
                 if (a->size() <= 1)
                     continue;
 
-                Asterism::Chain* new_chain = new Asterism::Chain();
-                for (const auto i : *a)
+                auto* new_chain = new Asterism::Chain();
+                for (auto *const i : *a)
                 {
                     if (i->getType() == Value::StringType)
                     {

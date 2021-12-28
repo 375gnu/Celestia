@@ -18,8 +18,8 @@
 #include <iomanip>
 #include <cctype>
 #include <cassert>
-#include <stdio.h>
-#include <math.h>       /* All mathematics */
+#include <cstdio>
+#include <cmath>       /* All mathematics */
 #include <celutil/bytes.h>
 #include <celengine/astro.h>
 #include <celengine/stellarclass.h>
@@ -34,9 +34,9 @@ using namespace std;
 #define DATAN2   atan2
 #define DASIN    asin
 
-#define X1(i)    x1[i-1]
-#define X2(i)    x2[i-1]
-#define R(i,j)   r[i-1][j-1]
+#define X1(i)    x1[(i)-1]
+#define X2(i)    x2[(i)-1]
+#define R(i,j)   r[(i)-1][(j)-1]
 
 static string inputFilename;
 static string outputFilename;
@@ -56,12 +56,12 @@ double ARAD,DRAD,A,D,E,RAH,RA,DEC,RAL,RAU,DECL,DECD;
 double Ein ;
 char buf[BUFSIZ], *p;
 char dEin[] = "1991.25";
-int StringLength(char []);
+int StringLength(const char  /*x*/[]);
 
 double *RA1, *DEC1, *EPOCH1, *EPOCH2, *RA2, *DEC2;
 double RA2c,DE2c;
 
-FILE *f2 = 0;
+FILE *f2 = nullptr;
 
 extern "C"
 {
@@ -126,7 +126,7 @@ static uint8_t readUbyte(istream& in)
 
 void printStellarClass(uint16_t sc, ostream& out)
 {
-    StellarClass::StarType st = (StellarClass::StarType) (sc >> 12);
+    auto st = (StellarClass::StarType) (sc >> 12);
     if (st == StellarClass::WhiteDwarf)
     {
         unsigned int spectralClass = (sc >> 8 & 0xf);
@@ -201,7 +201,7 @@ bool DumpxRefDatabase(istream& in, ostream& out)
     // Verify that the star database file has a correct header
     char header[8];
     in.read(header, sizeof header);
-    if (strncmp(header, "CELINDEX", sizeof header))
+    if (strncmp(header, "CELINDEX", sizeof header) != 0 != 0)
     {
         cerr << "Bad header for cross index\n";
         return false;
@@ -255,7 +255,7 @@ C  ABBREVIATION OF THE CONSTELLATION IN WHICH IT IS LOCATED
 C
 -------------------------------------------------------*/
 {
-    f2 = fopen("data.dat", "r"); if (!f2) perror("data.dat") ;
+    f2 = fopen("data.dat", "r"); if (f2 == nullptr) perror("data.dat") ;
 
     E = Ein; //(ICRS, Epoch=JJJJ.nn)
 
@@ -278,12 +278,12 @@ C
        ASCENSION
     */
     fseek(f2, 0, 0);
-    while(fgets(buf, sizeof(buf), f2)) {
-        for (p=buf; isspace(*p); p++);
-        RAL = atof(p); while(isgraph(*p)) p++; while(isspace(*p)) p++;
-        RAU = atof(p); while(isgraph(*p)) p++; while(isspace(*p)) p++;
-        DECL= atof(p); while(isgraph(*p)) p++; while(isspace(*p)) p++;
-        CON = p; while(isgraph(*p)) p++; *p = 0;
+    while(fgets(buf, sizeof(buf), f2) != nullptr) {
+        for (p=buf; isspace(*p) != 0; p++);
+        RAL = atof(p); while(isgraph(*p) != 0) p++; while(isspace(*p) != 0) p++;
+        RAU = atof(p); while(isgraph(*p) != 0) p++; while(isspace(*p) != 0) p++;
+        DECL= atof(p); while(isgraph(*p) != 0) p++; while(isspace(*p) != 0) p++;
+        CON = p; while(isgraph(*p) != 0) p++; *p = 0;
         if (DECL > DEC) continue;
         if (RAU <= RA) continue;
         if (RAL >  RA) continue;
@@ -297,8 +297,7 @@ C
           fclose(f2);
           return *CON;
         }
-        else
-            if(RAU <  RA)
+                    if(RAU <  RA)
                 continue;
             else
             {
@@ -330,7 +329,7 @@ bool DumpStarDatabase(istream& in, ostream& out)
 
     char header[8];
     in.read(header, sizeof header);
-    if (strncmp(header, "CELSTARS", sizeof header))
+    if (strncmp(header, "CELSTARS", sizeof header) != 0 != 0)
     {
         cerr << "Missing header in star database.\n";
         return false;
@@ -479,7 +478,7 @@ bool Convert2csv(istream& in, ostream& out,bool all)
 
     char header[8];
     in.read(header, sizeof header);
-    if (strncmp(header, "CELSTARS", sizeof header))
+    if (strncmp(header, "CELSTARS", sizeof header) != 0 != 0)
     {
         cerr << "Missing header in star database.\n";
         return false;
@@ -676,7 +675,7 @@ bool Const2csv(istream& in, ostream& out)
 
     char header[8];
     in.read(header, sizeof header);
-    if (strncmp(header, "CELSTARS", sizeof header))
+    if (strncmp(header, "CELSTARS", sizeof header) != 0 != 0)
     {
         cerr << "Missing header in star database.\n";
         return false;
@@ -833,7 +832,7 @@ bool Const2csv(istream& in, ostream& out)
    return true;
 }
 
-int StringLength (char x[])
+int StringLength (const char x[])
 {
     int counter = 0;
     for (int index = 0; index < 80; index++)
@@ -854,19 +853,19 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!strcmp(argv[i], "-a") || !strcmp(argv[i], "--all"))
+            if ((strcmp(argv[i], "-a") == 0) || (strcmp(argv[i], "--all") == 0))
             {
                 DumpAll = true;
             }
-            else if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--convert"))
+            else if ((strcmp(argv[i], "-c") == 0) || (strcmp(argv[i], "--convert") == 0))
             {
                 convert = true;
             }
-            else if (!strcmp(argv[i], "-x") || !strcmp(argv[i], "--index"))
+            else if ((strcmp(argv[i], "-x") == 0) || (strcmp(argv[i], "--index") == 0))
             {
                 useXindexDump = true;
             }
-            else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--list"))
+            else if ((strcmp(argv[i], "-l") == 0) || (strcmp(argv[i], "--list") == 0))
             {
                 ConstDump = true;
             }

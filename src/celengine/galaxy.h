@@ -98,7 +98,7 @@ class Galaxy : public DeepSkyObject
                                   const Eigen::Quaternionf& viewerOrientation,
                                   float brightness,
                                   float pixelSize,
-                                  const Matrices& mvp,
+                                  const Matrices& ms,
                                   Renderer* r);
 #if 0
     void renderGalaxyEllipsoid(const Eigen::Vector3f& offset,

@@ -35,7 +35,7 @@ struct PerlinData
     PerlinData()
     {
         auto& rng = getRNG();
-        auto permutationMid = permutation.begin() + TableSize;
+        auto *permutationMid = permutation.begin() + TableSize;
         std::iota(permutation.begin(), permutationMid, 0);
         std::shuffle(permutation.begin(), permutationMid, rng);
         std::copy(permutation.begin(), permutationMid, permutationMid);
@@ -50,27 +50,27 @@ struct PerlinData
                       [&]() { return randomOnSphere<float>(rng); });
     }
 
-    inline int permuteIndices(int x, int y) const
+    [[nodiscard]] inline int permuteIndices(int x, int y) const
     {
         return permutation[permutation[x] + y];
     }
 
-    inline int permuteIndices(int x, int y, int z) const
+    [[nodiscard]] inline int permuteIndices(int x, int y, int z) const
     {
         return permutation[permutation[permutation[x] + y] + z];
     }
 
-    inline float gradientAt(int x) const
+    [[nodiscard]] inline float gradientAt(int x) const
     {
         return gradients1D[permutation[x]];
     }
 
-    inline const Eigen::Vector2f& gradientAt(int x, int y) const
+    [[nodiscard]] inline const Eigen::Vector2f& gradientAt(int x, int y) const
     {
         return gradients2D[permutation[permutation[x] + y]];
     }
 
-    inline const Eigen::Vector3f& gradientAt(int x, int y, int z) const
+    [[nodiscard]] inline const Eigen::Vector3f& gradientAt(int x, int y, int z) const
     {
         return gradients3D[permutation[permutation[permutation[x] + y] + z]];
     }

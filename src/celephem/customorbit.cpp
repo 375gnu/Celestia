@@ -302,9 +302,9 @@ void computePlanetElements(double t, vector<int> pList)
     double aa;
     int planet;
 
-    for(unsigned i = 0; i < pList.size(); i++)
+    for(int i : pList)
     {
-        planet = pList[i];
+        planet = i;
         ep = gElements[planet];
         pp = gPlanetElements[planet];
         aa = ep[1]*t;
@@ -3300,6 +3300,5 @@ Orbit* GetCustomOrbit(const string& name)
         return CreateUranianSatelliteOrbit(5);
     if (name == "triton")
         return new TritonOrbit();
-    else
-        return CreateVSOP87Orbit(name);
+            return CreateVSOP87Orbit(name);
 }

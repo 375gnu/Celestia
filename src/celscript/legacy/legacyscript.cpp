@@ -8,6 +8,7 @@
 // of the License, or (at your option) any later version.
 
 #include <fstream>
+#include <memory>
 #include <string>
 #include <celcompat/filesystem.h>
 #include <celestia/celestiacore.h>
@@ -18,9 +19,7 @@
 
 using namespace std;
 
-namespace celestia
-{
-namespace scripts
+namespace celestia::scripts
 {
 
 // Extremely basic implementation of an ExecutionEnvironment for
@@ -35,23 +34,23 @@ public:
     {
     }
 
-    Simulation* getSimulation() const
+    [[nodiscard]] Simulation* getSimulation() const override
     {
         return core.getSimulation();
     }
 
-    Renderer* getRenderer() const
+    [[nodiscard]] Renderer* getRenderer() const override
     {
         return core.getRenderer();
     }
 
-    CelestiaCore* getCelestiaCore() const
+    [[nodiscard]] CelestiaCore* getCelestiaCore() const override
     {
         return &core;
     }
 
     void showText(string s, int horig, int vorig, int hoff, int voff,
-                  double duration)
+                  double duration) override
     {
         core.showText(s, horig, vorig, hoff, voff, duration);
     }
@@ -74,7 +73,7 @@ bool LegacyScript::load(ifstream &scriptfile, const fs::path &/*path*/, string &
             errorMsg = errors[0];
         return false;
     }
-    m_runningScript = unique_ptr<Execution>(new Execution(*script, *m_execEnv));
+    m_runningScript = std::make_unique<Execution>(*script, *m_execEnv);
     return true;
 }
 
@@ -97,7 +96,7 @@ unique_ptr<IScript> LegacyScriptPlugin::loadScript(const fs::path &path)
         return nullptr;
     }
 
-    auto script = unique_ptr<LegacyScript>(new LegacyScript(appCore()));
+    auto script = std::make_unique<LegacyScript>(appCore());
     string errorMsg;
     if (!script->load(scriptfile, path, errorMsg))
     {
@@ -109,5 +108,4 @@ unique_ptr<IScript> LegacyScriptPlugin::loadScript(const fs::path &path)
     return script;
 }
 
-}
 }

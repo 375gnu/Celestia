@@ -15,6 +15,8 @@
 #include <celmath/solve.h>
 #include <celmath/geomutil.h>
 
+#include <memory>
+
 static const double maximumSimTime = 730486721060.00073; // 2000000000 Jan 01 12:00:00 UTC
 static const double minimumSimTime = -730498278941.99951; // -2000000000 Jan 01 12:00:00 UTC
 
@@ -312,7 +314,7 @@ void Observer::update(double dt, double timeScale)
                 if (centerObj.body() != nullptr)
                 {
                     Body* body = centerObj.body();
-                    if (body->getSystem())
+                    if (body->getSystem() != nullptr)
                     {
                         if (body->getSystem()->getPrimaryBody() != nullptr)
                             centerObj = Selection(body->getSystem()->getPrimaryBody());
@@ -768,7 +770,7 @@ void Observer::convertFrameCoordinates(const ObserverFrame::SharedConstPtr &newF
 */
 void Observer::setFrame(ObserverFrame::CoordinateSystem cs, const Selection& refObj, const Selection& targetObj)
 {
-    auto newFrame = shared_ptr<ObserverFrame>(new ObserverFrame(cs, refObj, targetObj));
+    auto newFrame = std::make_shared<ObserverFrame>(cs, refObj, targetObj);
     convertFrameCoordinates(newFrame);
     frame = newFrame;
 }
@@ -938,7 +940,7 @@ void Observer::setTargetSpeed(float s)
 }
 
 
-float Observer::getTargetSpeed()
+float Observer::getTargetSpeed() const
 {
     return (float) targetSpeed;
 }
@@ -1004,7 +1006,7 @@ static double getPreferredDistance(const Selection& selection)
             const vector<Star*>* orbitingStars = selection.star()->getOrbitingStars();
             if (orbitingStars != nullptr)
             {
-                for (const auto star : *orbitingStars)
+                for (auto *const star : *orbitingStars)
                 {
                     Orbit* orbit = star->getOrbit();
                     if (orbit != nullptr)
@@ -1355,7 +1357,7 @@ Vector3f Observer::getPickRay(float x, float y) const
     return pickDirection.normalized();
 }
 
-Vector3f Observer::getPickRayFisheye(float x, float y) const
+Vector3f Observer::getPickRayFisheye(float x, float y) 
 {
     float r = hypot(x, y);
     float phi = float(PI) * r;
@@ -1418,24 +1420,13 @@ ObserverFrame::ObserverFrame(const ReferenceFrame::SharedConstPtr &f) :
 
 
 /*! Copy constructor. */
-ObserverFrame::ObserverFrame(const ObserverFrame& f) :
-    coordSys(f.coordSys),
-    frame(f.frame),
-    targetObject(f.targetObject)
-{
-}
+ObserverFrame::ObserverFrame(const ObserverFrame& f) 
+    
+= default;
 
 
 ObserverFrame& ObserverFrame::operator=(const ObserverFrame& f)
-{
-    coordSys = f.coordSys;
-    targetObject = f.targetObject;
-
-    // In case frames are the same, make sure we addref before releasing
-    frame = f.frame;
-
-    return *this;
-}
+= default;
 
 ObserverFrame::CoordinateSystem
 ObserverFrame::getCoordinateSystem() const
@@ -1528,57 +1519,57 @@ ObserverFrame::createFrame(CoordinateSystem _coordSys,
     switch (_coordSys)
     {
     case Universal:
-        return shared_ptr<J2000EclipticFrame>(new J2000EclipticFrame(Selection()));
+        return std::make_shared<J2000EclipticFrame>(Selection());
 
     case Ecliptical:
-        return shared_ptr<J2000EclipticFrame>(new J2000EclipticFrame(_refObject));
+        return std::make_shared<J2000EclipticFrame>(_refObject);
 
     case Equatorial:
-        return shared_ptr<BodyMeanEquatorFrame>(new BodyMeanEquatorFrame(_refObject, _refObject));
+        return std::make_shared<BodyMeanEquatorFrame>(_refObject, _refObject);
 
     case BodyFixed:
-        return shared_ptr<BodyFixedFrame>(new BodyFixedFrame(_refObject, _refObject));
+        return std::make_shared<BodyFixedFrame>(_refObject, _refObject);
 
     case PhaseLock:
     {
-        return shared_ptr<TwoVectorFrame>(new TwoVectorFrame(_refObject,
+        return std::make_shared<TwoVectorFrame>(_refObject,
                                                              FrameVector::createRelativePositionVector(_refObject, _targetObject), 1,
-                                                             FrameVector::createRelativeVelocityVector(_refObject, _targetObject), 2));
+                                                             FrameVector::createRelativeVelocityVector(_refObject, _targetObject), 2);
     }
 
     case Chase:
     {
-        return shared_ptr<TwoVectorFrame>(new TwoVectorFrame(_refObject,
+        return std::make_shared<TwoVectorFrame>(_refObject,
                                                              FrameVector::createRelativeVelocityVector(_refObject, _refObject.parent()), 1,
-                                                             FrameVector::createRelativePositionVector(_refObject, _refObject.parent()), 2));
+                                                             FrameVector::createRelativePositionVector(_refObject, _refObject.parent()), 2);
     }
 
     case PhaseLock_Old:
     {
         FrameVector rotAxis(FrameVector::createConstantVector(Vector3d::UnitY(),
-                                                              shared_ptr<BodyMeanEquatorFrame>(new BodyMeanEquatorFrame(_refObject, _refObject))));
-        return shared_ptr<TwoVectorFrame>(new TwoVectorFrame(_refObject,
+                                                              std::make_shared<BodyMeanEquatorFrame>(_refObject, _refObject)));
+        return std::make_shared<TwoVectorFrame>(_refObject,
                                                              FrameVector::createRelativePositionVector(_refObject, _targetObject), 3,
-                                                             rotAxis, 2));
+                                                             rotAxis, 2);
     }
 
     case Chase_Old:
     {
         FrameVector rotAxis(FrameVector::createConstantVector(Vector3d::UnitY(),
-                                                              shared_ptr<BodyMeanEquatorFrame>(new BodyMeanEquatorFrame(_refObject, _refObject))));
+                                                              std::make_shared<BodyMeanEquatorFrame>(_refObject, _refObject)));
 
-        return shared_ptr<TwoVectorFrame>(new TwoVectorFrame(_refObject,
+        return std::make_shared<TwoVectorFrame>(_refObject,
                                                              FrameVector::createRelativeVelocityVector(_refObject.parent(), _refObject), 3,
-                                                             rotAxis, 2));
+                                                             rotAxis, 2);
     }
 
     case ObserverLocal:
         // TODO: This is only used for computing up vectors for orientation; it does
         // define a proper frame for the observer position orientation.
-        return shared_ptr<J2000EclipticFrame>(new J2000EclipticFrame(Selection()));
+        return std::make_shared<J2000EclipticFrame>(Selection());
 
     default:
-        return shared_ptr<J2000EclipticFrame>(new J2000EclipticFrame(_refObject));
+        return std::make_shared<J2000EclipticFrame>(_refObject);
     }
 }
 

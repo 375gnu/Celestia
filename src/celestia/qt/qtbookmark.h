@@ -119,8 +119,8 @@ public:
     QMimeData* mimeData(const QModelIndexList& indexes) const;
 
     QModelIndex itemIndex(BookmarkItem* item);
-    const BookmarkItem* getItem(const QModelIndex& index) const;
-    BookmarkItem* getItem(const QModelIndex& index);
+    static const BookmarkItem* getItem(const QModelIndex& index) ;
+    static BookmarkItem* getItem(const QModelIndex& index);
 
     void addItem(BookmarkItem* item, int position);
     void removeItem(BookmarkItem* item);
@@ -183,7 +183,7 @@ class AddBookmarkDialog : public QDialog, Ui_addBookmarkDialog
 
 public:
     AddBookmarkDialog(BookmarkManager* manager,
-                      QString defaultTitle,
+                      const QString& defaultTitle,
                       const CelestiaState& appState,
                       const QImage& iconImage);
 

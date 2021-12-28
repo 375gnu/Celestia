@@ -87,8 +87,7 @@ static celestia::MarkerRepresentation::Symbol parseMarkerSymbol(const string& na
         return MarkerRepresentation::Circle;
     if (compareIgnoringCase(name, "disk") == 0)
         return MarkerRepresentation::Disk;
-    else
-        return MarkerRepresentation::Diamond;
+            return MarkerRepresentation::Diamond;
 }
 
 
@@ -98,7 +97,7 @@ int object_new(lua_State* l, const Selection& sel)
 {
     CelxLua celx(l);
 
-    Selection* ud = reinterpret_cast<Selection*>(lua_newuserdata(l, sizeof(Selection)));
+    auto* ud = reinterpret_cast<Selection*>(lua_newuserdata(l, sizeof(Selection)));
     *ud = sel;
 
     celx.setClass(Celx_Object);
@@ -141,7 +140,7 @@ static int object_visible(lua_State* l)
     celx.checkArgs(1, 1, "No arguments expected to function object:visible");
 
     Selection* sel = this_object(l);
-    lua_pushboolean(l, sel->isVisible());
+    lua_pushboolean(l, static_cast<int>(sel->isVisible()));
 
     return 1;
 }
@@ -174,9 +173,9 @@ static int object_setorbitcolor(lua_State* l)
     celx.checkArgs(4, 4, "Red, green, and blue color values exepected for object:setorbitcolor()");
 
     Selection* sel = this_object(l);
-    float r = (float) celx.safeGetNumber(2, WrongType, "Argument 1 to object:setorbitcolor() must be a number", 0.0);
-    float g = (float) celx.safeGetNumber(3, WrongType, "Argument 2 to object:setorbitcolor() must be a number", 0.0);
-    float b = (float) celx.safeGetNumber(4, WrongType, "Argument 3 to object:setorbitcolor() must be a number", 0.0);
+    auto r = (float) celx.safeGetNumber(2, WrongType, "Argument 1 to object:setorbitcolor() must be a number", 0.0);
+    auto g = (float) celx.safeGetNumber(3, WrongType, "Argument 2 to object:setorbitcolor() must be a number", 0.0);
+    auto b = (float) celx.safeGetNumber(4, WrongType, "Argument 3 to object:setorbitcolor() must be a number", 0.0);
     Color orbitColor(r, g, b);
 
     if (sel->body() != nullptr)
@@ -200,7 +199,7 @@ static int object_orbitcoloroverridden(lua_State* l)
         isOverridden = sel->body()->isOrbitColorOverridden();
     }
 
-    lua_pushboolean(l, isOverridden);
+    lua_pushboolean(l, static_cast<int>(isOverridden));
 
     return 1;
 }
@@ -253,7 +252,7 @@ static int object_setorbitvisibility(lua_State* l)
     CelxLua celx(l);
     celx.checkArgs(2, 2, "One argument expected to object:setorbitcoloroverridden");
 
-    if (!lua_isstring(l, 2))
+    if (lua_isstring(l, 2) == 0)
     {
         celx.doError("First argument to object:setorbitvisibility() must be a string");
     }
@@ -309,7 +308,7 @@ static int object_addreferencemark(lua_State* l)
     lua_gettable(l, 2);
     // -1 indicates that the opacity wasn't set and the default value
     // should be used.
-    float rmopacity = (float) celx.safeGetNumber(3, NoErrors, "", -1.0f);
+    auto rmopacity = (float) celx.safeGetNumber(3, NoErrors, "", -1.0f);
     lua_settop(l, 2);
 
     lua_pushstring(l, "color");
@@ -338,7 +337,7 @@ static int object_addreferencemark(lua_State* l)
 
         if (compareIgnoringCase(rmtype, "body axes") == 0)
         {
-            BodyAxisArrows* arrow = new BodyAxisArrows(*body);
+            auto* arrow = new BodyAxisArrows(*body);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmopacity >= 0.0f)
@@ -347,7 +346,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "frame axes") == 0)
         {
-            FrameAxisArrows* arrow = new FrameAxisArrows(*body);
+            auto* arrow = new FrameAxisArrows(*body);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmopacity >= 0.0f)
@@ -356,7 +355,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "sun direction") == 0)
         {
-            SunDirectionArrow* arrow = new SunDirectionArrow(*body);
+            auto* arrow = new SunDirectionArrow(*body);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmcolorstring != nullptr)
@@ -365,7 +364,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "velocity vector") == 0)
         {
-            VelocityVectorArrow* arrow = new VelocityVectorArrow(*body);
+            auto* arrow = new VelocityVectorArrow(*body);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmcolorstring != nullptr)
@@ -374,7 +373,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "spin vector") == 0)
         {
-            SpinVectorArrow* arrow = new SpinVectorArrow(*body);
+            auto* arrow = new SpinVectorArrow(*body);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmcolorstring != nullptr)
@@ -383,7 +382,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "body to body direction") == 0 && rmtarget != nullptr)
         {
-            BodyToBodyDirectionArrow* arrow = new BodyToBodyDirectionArrow(*body, *rmtarget);
+            auto* arrow = new BodyToBodyDirectionArrow(*body, *rmtarget);
             arrow->setTag(rmtag);
             arrow->setSize(rmsize);
             if (rmcolorstring != nullptr)
@@ -392,7 +391,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "visible region") == 0 && rmtarget != nullptr)
         {
-            VisibleRegion* region = new VisibleRegion(*body, *rmtarget);
+            auto* region = new VisibleRegion(*body, *rmtarget);
             region->setTag(rmtag);
             if (rmopacity >= 0.0f)
                 region->setOpacity(rmopacity);
@@ -402,7 +401,7 @@ static int object_addreferencemark(lua_State* l)
         }
         else if (compareIgnoringCase(rmtype, "planetographic grid") == 0)
         {
-            PlanetographicGrid* grid = new PlanetographicGrid(*body);
+            auto* grid = new PlanetographicGrid(*body);
             body->addReferenceMark(grid);
         }
     }
@@ -425,7 +424,7 @@ static int object_removereferencemark(lua_State* l)
     {
         string refMark = celx.safeGetString(i, AllErrors, "Arguments to object:removereferencemark() must be strings");
 
-        if (body->findReferenceMark(refMark))
+        if (body->findReferenceMark(refMark) != nullptr)
             appCore->toggleReferenceMark(refMark, *sel);
     }
 
@@ -670,7 +669,7 @@ static int object_getinfo(lua_State* l)
         }
 
         lua_pushstring(l, "hasRings");
-        lua_pushboolean(l, body->getRings() != nullptr);
+        lua_pushboolean(l, static_cast<int>(body->getRings() != nullptr));
         lua_settable(l, -3);
 
         // TIMELINE-TODO: The code to retrieve orbital and rotation periods only works
@@ -700,7 +699,7 @@ static int object_getinfo(lua_State* l)
                  ->getDSOCatalog()->getDSOName(deepsky).c_str());
         celx.setTable("catalogNumber", deepsky->getIndex());
 
-        if (!strcmp(objTypeName, "galaxy"))
+        if (strcmp(objTypeName, "galaxy") == 0)
             celx.setTable("hubbleType", deepsky->getType());
 
         celx.setTable("absoluteMagnitude", (lua_Number)deepsky->getAbsoluteMagnitude());
@@ -773,13 +772,13 @@ static int object_mark(lua_State* l)
     if (markerString != nullptr)
         markSymbol = parseMarkerSymbol(markerString);
 
-    float markSize = (float)celx.safeGetNumber(4, WrongType, "Third arg to object:mark must be a number", 10.0);
+    auto markSize = (float)celx.safeGetNumber(4, WrongType, "Third arg to object:mark must be a number", 10.0);
     if (markSize < 1.0f)
         markSize = 1.0f;
     else if (markSize > 10000.0f)
         markSize = 10000.0f;
 
-    float markAlpha = (float)celx.safeGetNumber(5, WrongType, "Fourth arg to object:mark must be a number", 0.9);
+    auto markAlpha = (float)celx.safeGetNumber(5, WrongType, "Fourth arg to object:mark must be a number", 0.9);
     if (markAlpha < 0.0f)
         markAlpha = 0.0f;
     else if (markAlpha > 1.0f)
@@ -850,7 +849,7 @@ static int object_getchildren(lua_State* l)
     if (sel->star() != nullptr)
     {
         SolarSystemCatalog* solarSystemCatalog = sim->getUniverse()->getSolarSystemCatalog();
-        SolarSystemCatalog::iterator iter = solarSystemCatalog->find(sel->star()->getIndex());
+        auto iter = solarSystemCatalog->find(sel->star()->getIndex());
         if (iter != solarSystemCatalog->end())
         {
             SolarSystem* solarSys = iter->second;
@@ -996,7 +995,7 @@ static int object_locations_iter(lua_State* l)
     }
 
     // Get the current counter value
-    uint32_t i = (uint32_t) lua_tonumber(l, lua_upvalueindex(2));
+    auto i = (uint32_t) lua_tonumber(l, lua_upvalueindex(2));
 
     vector<Location*>* locations = nullptr;
     if (sel->body() != nullptr)
@@ -1244,7 +1243,7 @@ static int object_phases_iter(lua_State* l)
     }
 
     // Get the current counter value
-    uint32_t i = (uint32_t) lua_tonumber(l, lua_upvalueindex(2));
+    auto i = (uint32_t) lua_tonumber(l, lua_upvalueindex(2));
 
     const Timeline* timeline = nullptr;
     if (sel->body() != nullptr)
@@ -1258,7 +1257,7 @@ static int object_phases_iter(lua_State* l)
         lua_pushnumber(l, i + 1);
         lua_replace(l, lua_upvalueindex(2));
 
-        auto phase = timeline->getPhase(i);
+        const auto& phase = timeline->getPhase(i);
         celx.newPhase(phase);
 
         return 1;
@@ -1445,9 +1444,9 @@ static int object_setatmosphere(lua_State* l)
         Atmosphere* atmosphere = body->getAtmosphere();
         if (atmosphere != nullptr)
         {
-            float r = (float) celx.safeGetNumber(2, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
-            float g = (float) celx.safeGetNumber(3, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
-            float b = (float) celx.safeGetNumber(4, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
+            auto r = (float) celx.safeGetNumber(2, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
+            auto g = (float) celx.safeGetNumber(3, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
+            auto b = (float) celx.safeGetNumber(4, AllErrors, "Arguments to observer:setatmosphere() must be numbers");
             //            Color testColor(0.0f, 1.0f, 0.0f);
             Color testColor(r, g, b);
             atmosphere->lowerColor = testColor;
@@ -1488,9 +1487,9 @@ static int object_setatmosphere(lua_State* l)
 }
 
 #define checkEmpty(c,s) \
-    if (s->empty()) \
+    if ((s)->empty()) \
     { \
-        c.doError("Selection object is empty!"); \
+        (c).doError("Selection object is empty!"); \
         return 0; \
     }
 
@@ -1498,7 +1497,7 @@ static int object_getcategories(lua_State *l)
 {
     CelxLua celx(l);
 
-    Selection *s = celx.getThis<Selection>();
+    auto *s = celx.getThis<Selection>();
     checkEmpty(celx, s);
     AstroObject::CategorySet *set = s->object()->getCategories();
     return celx.pushIterable<UserCategory*>(set);
@@ -1508,7 +1507,7 @@ static int object_addtocategory(lua_State *l)
 {
     CelxLua celx(l);
 
-    Selection *s = celx.getThis<Selection>();
+    auto *s = celx.getThis<Selection>();
     checkEmpty(celx, s);
     bool ret;
     if (celx.isUserData(2))
@@ -1532,7 +1531,7 @@ static int object_removefromcategory(lua_State *l)
 {
     CelxLua celx(l);
 
-    Selection *s = celx.getThis<Selection>();
+    auto *s = celx.getThis<Selection>();
     checkEmpty(celx, s);
     bool ret;
     if (celx.isUserData(2))

@@ -18,7 +18,7 @@ float readS16(istream& in)
 
 float* readRowS16(istream& in, int width)
 {
-    float* row = new float[width];
+    auto* row = new float[width];
     for (int i = 0; i < width; i++)
         row[i] = readS16(in);
 
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
     cout << "P6\n";
     cout << width << ' ' << height << '\n' << "255\n";
 
-    float** samples = new float*[height];
+    auto** samples = new float*[height];
 
     for (int i = 0; i < kernelSize - 1; i++)
         samples[i] = readRowS16(cin, width);

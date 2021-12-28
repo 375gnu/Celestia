@@ -156,7 +156,7 @@ void Celx_RegisterMethod(lua_State* l, const char* name, lua_CFunction fn)
 bool Celx_istype(lua_State* l, int index, int id)
 {
     // get registry[metatable]
-    if (!lua_getmetatable(l, index))
+    if (lua_getmetatable(l, index) == 0)
         return false;
     lua_rawget(l, LUA_REGISTRYINDEX);
 
@@ -197,7 +197,7 @@ CelestiaCore* getAppCore(lua_State* l, FatalErrors fatalErrors)
         lua_error(l);
     }
 
-    CelestiaCore* appCore = static_cast<CelestiaCore*>(lua_touserdata(l, -1));
+    auto* appCore = static_cast<CelestiaCore*>(lua_touserdata(l, -1));
     lua_pop(l, 1);
     return appCore;
 }
@@ -245,7 +245,7 @@ static void checkTimeslice(lua_State* l, lua_Debug* /*ar*/)
         lua_pushstring(l, "Internal Error: Invalid table entry in checkTimeslice");
         lua_error(l);
     }
-    LuaState* luastate = static_cast<LuaState*>(lua_touserdata(l, -1));
+    auto* luastate = static_cast<LuaState*>(lua_touserdata(l, -1));
     if (luastate == nullptr)
     {
         lua_pushstring(l, "Internal Error: Invalid value in checkTimeslice");
@@ -274,9 +274,9 @@ void LuaState::cleanup()
         {
             lua_pushstring(state, "celestia-savedrenderflags");
             lua_gettable(state, LUA_REGISTRYINDEX);
-            if (lua_isuserdata(state, -1))
+            if (lua_isuserdata(state, -1) != 0)
             {
-                uint64_t* savedrenderflags = static_cast<uint64_t*>(lua_touserdata(state, -1));
+                auto* savedrenderflags = static_cast<uint64_t*>(lua_touserdata(state, -1));
                 appCore->getRenderer()->setRenderFlags(*savedrenderflags);
                 // now delete entry:
                 lua_pushstring(state, "celestia-savedrenderflags");
@@ -302,7 +302,7 @@ void LuaState::cleanup()
 bool LuaState::createThread()
 {
     // Initialize the coroutine which wraps the script
-    if (!(lua_isfunction(state, -1) && !lua_iscfunction(state, -1)))
+    if (!(lua_isfunction(state, -1) && (lua_iscfunction(state, -1) == 0)))
     {
         // Should never happen; we manually set up the stack in C++
         assert(0);
@@ -323,7 +323,7 @@ bool LuaState::createThread()
 
 string LuaState::getErrorMessage()
 {
-    if (lua_gettop(state) > 0 && lua_isstring(state, -1))
+    if (lua_gettop(state) > 0 && (lua_isstring(state, -1) != 0))
         return lua_tostring(state, -1);
 
     return "";
@@ -441,9 +441,9 @@ bool LuaState::charEntered(const char* c_p)
         // Restore renderflags:
         lua_pushstring(costate, "celestia-savedrenderflags");
         lua_gettable(costate, LUA_REGISTRYINDEX);
-        if (lua_isuserdata(costate, -1))
+        if (lua_isuserdata(costate, -1) != 0)
         {
-            uint64_t* savedrenderflags = static_cast<uint64_t*>(lua_touserdata(costate, -1));
+            auto* savedrenderflags = static_cast<uint64_t*>(lua_touserdata(costate, -1));
             appCore->getRenderer()->setRenderFlags(*savedrenderflags);
             // now delete entry:
             lua_pushstring(costate, "celestia-savedrenderflags");
@@ -515,7 +515,7 @@ bool LuaState::handleKeyEvent(const char* key)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -569,7 +569,7 @@ bool LuaState::handleMouseButtonEvent(float x, float y, int button, bool down)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -585,7 +585,7 @@ bool LuaState::handleMouseButtonEvent(float x, float y, int button, bool down)
 // Returns true if a handler is registered for the tick event
 bool LuaState::handleTickEvent(double dt)
 {
-    if (!costate)
+    if (costate == nullptr)
         return true;
 
     CelestiaCore* appCore = getAppCore(costate, NoErrors);
@@ -620,7 +620,7 @@ bool LuaState::handleTickEvent(double dt)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -718,9 +718,9 @@ int LuaState::resume()
 void Celx_DoError(lua_State* l, const char* errorMsg)
 {
     lua_Debug debug;
-    if (lua_getstack(l, 1, &debug))
+    if (lua_getstack(l, 1, &debug) != 0)
     {
-        if (lua_getinfo(l, "l", &debug))
+        if (lua_getinfo(l, "l", &debug) != 0)
         {
             string buf = fmt::sprintf("In line %i: %s", debug.currentline, errorMsg);
             lua_pushstring(l, buf.c_str());
@@ -758,7 +758,7 @@ bool LuaState::tick(double dt)
         if (lua_isnil(state, -1))
         {
             lua_pushstring(state, "celestia-savedrenderflags");
-            uint64_t* savedrenderflags = static_cast<uint64_t*>(lua_newuserdata(state, sizeof(int)));
+            auto* savedrenderflags = static_cast<uint64_t*>(lua_newuserdata(state, sizeof(int)));
             *savedrenderflags = appCore->getRenderer()->getRenderFlags();
             lua_settable(state, LUA_REGISTRYINDEX);
             appCore->getRenderer()->setRenderFlags(0);
@@ -804,7 +804,7 @@ bool LuaState::tick(double dt)
     // The values on the stack indicate what event will wake up the
     // script.  For now, we just support wait()
     double delay;
-    if (nArgs == 1 && lua_isnumber(state, -1))
+    if (nArgs == 1 && (lua_isnumber(state, -1) != 0))
         delay = lua_tonumber(state, -1);
     else
         delay = 0.0;
@@ -894,14 +894,14 @@ LuaState* getLuaStateObject(lua_State* l)
     if (!lua_islightuserdata(l, -1))
     {
         Celx_DoError(l, "Internal Error: Invalid table entry for LuaState-pointer");
-        return 0;
+        return nullptr;
     }
 
-    LuaState* luastate_ptr = static_cast<LuaState*>(lua_touserdata(l, -1));
+    auto* luastate_ptr = static_cast<LuaState*>(lua_touserdata(l, -1));
     if (luastate_ptr == nullptr)
     {
         Celx_DoError(l, "Internal Error: Invalid LuaState-pointer");
-        return 0;
+        return nullptr;
     }
 
     lua_settop(l, stackSize);
@@ -913,7 +913,7 @@ LuaState* getLuaStateObject(lua_State* l)
 // for this observer (anymore).
 View* getViewByObserver(CelestiaCore* appCore, Observer* obs)
 {
-    for (const auto view : appCore->views)
+    for (auto *const view : appCore->views)
         if (view->observer == obs)
             return view;
     return nullptr;
@@ -922,7 +922,7 @@ View* getViewByObserver(CelestiaCore* appCore, Observer* obs)
 // Fill list with all Observers
 void getObservers(CelestiaCore* appCore, vector<Observer*>& observerList)
 {
-    for (const auto view : appCore->views)
+    for (auto *const view : appCore->views)
         if (view->type == View::ViewWindow)
             observerList.push_back(view->observer);
 }
@@ -945,13 +945,13 @@ const char* Celx_SafeGetString(lua_State* l,
     int argc = lua_gettop(l);
     if (index < 1 || index > argc)
     {
-        if (fatalErrors & WrongArgc)
+        if ((fatalErrors & WrongArgc) != 0)
             Celx_DoError(l, errorMsg);
         return nullptr;
     }
-    if (!lua_isstring(l, index))
+    if (lua_isstring(l, index) == 0)
     {
-        if (fatalErrors & WrongType)
+        if ((fatalErrors & WrongType) != 0)
             Celx_DoError(l, errorMsg);
         return nullptr;
     }
@@ -972,16 +972,16 @@ lua_Number Celx_SafeGetNumber(lua_State* l, int index, FatalErrors fatalErrors,
     int argc = lua_gettop(l);
     if (index < 1 || index > argc)
     {
-        if (fatalErrors & WrongArgc)
+        if ((fatalErrors & WrongArgc) != 0)
         {
             Celx_DoError(l, errorMsg);
             return 0;
         }
         return defaultValue;
     }
-    if (!lua_isnumber(l, index))
+    if (lua_isnumber(l, index) == 0)
     {
-        if (fatalErrors & WrongType)
+        if ((fatalErrors & WrongType) != 0)
         {
             Celx_DoError(l, errorMsg);
             return 0;
@@ -1005,7 +1005,7 @@ bool Celx_SafeGetBoolean(lua_State* l, int index, FatalErrors fatalErrors,
     int argc = lua_gettop(l);
     if (index < 1 || index > argc)
     {
-        if (fatalErrors & WrongArgc)
+        if ((fatalErrors & WrongArgc) != 0)
         {
             Celx_DoError(l, errorMsg);
             return 0;
@@ -1015,7 +1015,7 @@ bool Celx_SafeGetBoolean(lua_State* l, int index, FatalErrors fatalErrors,
 
     if (!lua_isboolean(l, index))
     {
-        if (fatalErrors & WrongType)
+        if ((fatalErrors & WrongType) != 0)
         {
             Celx_DoError(l, errorMsg);
             return 0;
@@ -1200,7 +1200,7 @@ bool LuaState::callLuaHook(void* obj, const char* method)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -1244,7 +1244,7 @@ bool LuaState::callLuaHook(void* obj, const char* method, const char* keyName)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -1289,7 +1289,7 @@ bool LuaState::callLuaHook(void* obj, const char* method, float x, float y)
         }
         else
         {
-           handled = lua_toboolean(costate, -1) == 1 ? true : false;
+           handled = lua_toboolean(costate, -1) == 1;
         }
         lua_pop(costate, 1);             // pop the return value
     }
@@ -1403,7 +1403,7 @@ bool CelxLua::safeIsValid(int i, FatalErrors errors, const char *msg)
 {
     if (!isValid(i))
     {
-        if (errors & WrongArgc)
+        if ((errors & WrongArgc) != 0)
             doError(msg);
         return false;
     }
@@ -1433,7 +1433,7 @@ Value *CelxLua::getValue(int index)
         v = new Value(getString(index));
     else if (isTable(index))
     {
-        ::Array *array = new ::Array;
+        auto *array = new ::Array;
         Hash *hash = new Hash;
         push();
         while(lua_next(m_lua, index) != 0)
@@ -1664,7 +1664,7 @@ CelestiaCore* CelxLua::appCore(FatalErrors fatalErrors)
         lua_error(m_lua);
     }
 
-    CelestiaCore* appCore = static_cast<CelestiaCore*>(lua_touserdata(m_lua, -1));
+    auto* appCore = static_cast<CelestiaCore*>(lua_touserdata(m_lua, -1));
     lua_pop(m_lua, 1);
 
     return appCore;
@@ -1681,14 +1681,14 @@ LuaState* CelxLua::getLuaStateObject()
     if (!lua_islightuserdata(m_lua, -1))
     {
         Celx_DoError(m_lua, "Internal Error: Invalid table entry for LuaState-pointer");
-        return 0;
+        return nullptr;
     }
 
-    LuaState* luastate_ptr = static_cast<LuaState*>(lua_touserdata(m_lua, -1));
+    auto* luastate_ptr = static_cast<LuaState*>(lua_touserdata(m_lua, -1));
     if (luastate_ptr == nullptr)
     {
         Celx_DoError(m_lua, "Internal Error: Invalid LuaState-pointer");
-        return 0;
+        return nullptr;
     }
 
     lua_settop(m_lua, stackSize);

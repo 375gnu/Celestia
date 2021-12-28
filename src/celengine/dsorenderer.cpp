@@ -11,6 +11,8 @@
 #include <celengine/dsodb.h>
 #include <celengine/deepskyobj.h>
 #include <celmath/geomutil.h>
+
+#include <cmath>
 #include "glsupport.h"
 #include "render.h"
 #include "vecgl.h"
@@ -26,7 +28,7 @@ using namespace celmath;
 // enhance the too low sprite luminosity at close distance.
 constexpr const double enhance = 4.0;
 constexpr const double pc10 = 32.6167; // 10 parsecs
-static const float CubeCornerToCenterDistance = sqrt(3.0f);
+static const float CubeCornerToCenterDistance = std::sqrt(3.0f);
 
 DSORenderer::DSORenderer() :
     ObjectRenderer<DeepSkyObject*, double>(DSO_OCTREE_ROOT_SIZE)
@@ -67,9 +69,9 @@ void DSORenderer::process(DeepSkyObject* const &dso,
         // a - b * absMag = absMag / avgAbsMag ~ 1; a - b * faintestMag = 0.2.
         // The 2nd eq. guarantees that the faintest galaxies are still visible.
 
-        if (!strcmp(dso->getObjTypeName(), "globular"))
+        if (strcmp(dso->getObjTypeName(), "globular") == 0)
             avgAbsMag = -6.86; // average over 150 globulars in globulars.dsc.
-        else if (!strcmp(dso->getObjTypeName(), "galaxy"))
+        else if (strcmp(dso->getObjTypeName(), "galaxy") == 0)
             avgAbsMag = -19.04; // average over 10937 galaxies in galaxies.dsc.
 
         float r = absMag / (float)avgAbsMag;

@@ -147,8 +147,8 @@ static void createMainMenu(GtkWidget* window, AppData* app)
 class GtkWatcher : public CelestiaWatcher
 {
     public:
-        GtkWatcher(CelestiaCore*, AppData*);
-        virtual void notifyChange(CelestiaCore*, int);
+        GtkWatcher(CelestiaCore* /*_appCore*/, AppData* /*_app*/);
+        virtual void notifyChange(CelestiaCore* /*unused*/, int /*property*/);
     private:
         AppData* app;
 };
@@ -158,12 +158,12 @@ GtkWatcher::GtkWatcher(CelestiaCore* _appCore, AppData* _app) :
 {
 }
 
-void GtkWatcher::notifyChange(CelestiaCore*, int property)
+void GtkWatcher::notifyChange(CelestiaCore* /*unused*/, int property)
 {
-    if (property & CelestiaCore::LabelFlagsChanged)
+    if ((property & CelestiaCore::LabelFlagsChanged) != 0)
         resyncLabelActions(app);
 
-    else if (property & CelestiaCore::RenderFlagsChanged)
+    else if ((property & CelestiaCore::RenderFlagsChanged) != 0)
     {
         resyncRenderActions(app);
         resyncOrbitActions(app);
@@ -171,13 +171,13 @@ void GtkWatcher::notifyChange(CelestiaCore*, int property)
         resyncTextureResolutionActions(app);
     }
 
-    else if (property & CelestiaCore::VerbosityLevelChanged)
+    else if ((property & CelestiaCore::VerbosityLevelChanged) != 0)
         resyncVerbosityActions(app);
 
-    else if (property & CelestiaCore::TimeZoneChanged)
+    else if ((property & CelestiaCore::TimeZoneChanged) != 0)
         resyncTimeZoneAction(app);
 
-    else if (property & CelestiaCore::AmbientLightChanged)
+    else if ((property & CelestiaCore::AmbientLightChanged) != 0)
         resyncAmbientActions(app);
 
     /*
@@ -210,7 +210,7 @@ void GtkWatcher::notifyChange(CelestiaCore*, int property)
         }
     }
 
-    else if (property & CelestiaCore::GalaxyLightGainChanged)
+    else if ((property & CelestiaCore::GalaxyLightGainChanged) != 0)
         resyncGalaxyGainActions(app);
 }
 
@@ -224,13 +224,13 @@ private:
 public:
     GtkAlerter() = delete;
     GtkAlerter(AppData* _app) : app(_app) {};
-    ~GtkAlerter() = default;
+    ~GtkAlerter() override = default;
     GtkAlerter(const GtkAlerter&) = delete;
     GtkAlerter(GtkAlerter&&) = delete;
     GtkAlerter& operator=(const GtkAlerter&) = delete;
     GtkAlerter& operator=(GtkAlerter&&) = delete;
 
-    void fatalError(const std::string& errorMsg)
+    void fatalError(const std::string& errorMsg) override
     {
         GtkWidget* errBox = gtk_message_dialog_new(GTK_WINDOW(app->mainWindow),
                                                    GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
     app->lastY = 0;
     app->showLocalTime = FALSE;
     app->fullScreen = FALSE;
-    app->startURL = NULL;
+    app->startURL = nullptr;
 
     /* Watcher enables sending signals from inside of core */
     GtkWatcher* gtkWatcher;
@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
     createMainMenu(app->mainWindow, app);
 
     /* Initialize the context menu handler */
-    GTKContextMenuHandler *handler = new GTKContextMenuHandler(app);
+    auto *handler = new GTKContextMenuHandler(app);
 
     /* Set context menu handler for the core */
     app->core->setContextMenuHandler(handler);

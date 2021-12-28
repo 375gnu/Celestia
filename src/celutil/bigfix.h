@@ -48,8 +48,8 @@ class BigFix
     int sign() const;
 
     // for debugging
-    void dump();
-    std::string toString();
+    void dump() const;
+    std::string toString() const;
 
  private:
     bool isNegative() const

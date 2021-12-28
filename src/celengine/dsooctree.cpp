@@ -113,7 +113,7 @@ void DSOOctree::processVisibleObjects(DSOHandler&    processor,
         if (absMag < dimmest)
         {
             double distance    = (obsPosition - _obj->getPosition()).norm() - _obj->getBoundingSphereRadius();
-            float appMag = (float) ((distance >= 32.6167) ? astro::absToAppMag((double) absMag, distance) : absMag);
+            auto appMag = (float) ((distance >= 32.6167) ? astro::absToAppMag((double) absMag, distance) : absMag);
 
             if ( appMag < limitingFactor)
                 processor.process(_obj, distance, absMag);

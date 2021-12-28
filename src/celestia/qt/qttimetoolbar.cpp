@@ -42,21 +42,21 @@ TimeToolBar::TimeToolBar(CelestiaCore* _appCore,
     QAction* fastTimeAction = new QAction(QString(">>>"), this);
     fastTimeAction->setToolTip(_("10x faster"));
 #else
-    QAction* reverseTimeAction = new QAction(QIcon(":/icons/time-reverse.png"),
+    auto* reverseTimeAction = new QAction(QIcon(":/icons/time-reverse.png"),
                                              _("Reverse time"), this);
-    QAction* slowTimeAction = new QAction(QIcon(":/icons/time-slower.png"),
+    auto* slowTimeAction = new QAction(QIcon(":/icons/time-slower.png"),
                                           _("10x slower"), this);
-    QAction* halfTimeAction = new QAction(QIcon(":/icons/time-half.png"),
+    auto* halfTimeAction = new QAction(QIcon(":/icons/time-half.png"),
                                           _("2x slower"), this);
-    QAction* pauseAction = new QAction(QIcon(":/icons/time-pause.png"),
+    auto* pauseAction = new QAction(QIcon(":/icons/time-pause.png"),
                                        _("Pause time"), this);
-    QAction* realTimeAction = new QAction(QIcon(":/icons/time-realtime.png"),
+    auto* realTimeAction = new QAction(QIcon(":/icons/time-realtime.png"),
                                           _("Real time"), this);
-    QAction* doubleTimeAction = new QAction(QIcon(":/icons/time-double.png"),
+    auto* doubleTimeAction = new QAction(QIcon(":/icons/time-double.png"),
                                             _("2x faster"), this);
-    QAction* fastTimeAction = new QAction(QIcon(":/icons/time-faster.png"),
+    auto* fastTimeAction = new QAction(QIcon(":/icons/time-faster.png"),
                                           _("10x faster"), this);
-    QAction* currentTimeAction = new QAction(QIcon(":icons/time-currenttime.png"),
+    auto* currentTimeAction = new QAction(QIcon(":icons/time-currenttime.png"),
                                              _("Set to current time"), this);
 #endif
     connect(reverseTimeAction, SIGNAL(triggered()), this, SLOT(slotReverseTime()));

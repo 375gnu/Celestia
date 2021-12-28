@@ -179,7 +179,7 @@ GLFrameBufferObject::cleanup()
 
 
 bool
-GLFrameBufferObject::bind()
+GLFrameBufferObject::bind() const
 {
     if (isValid())
     {

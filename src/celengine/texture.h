@@ -120,7 +120,7 @@ class ImageTexture : public Texture
     ImageTexture(Image& img, AddressMode, MipMapMode);
     ~ImageTexture();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
+    virtual TextureTile getTile(int lod, int u, int v);
     virtual void bind();
     virtual void setBorderColor(Color);
 
@@ -137,7 +137,7 @@ class TiledTexture : public Texture
     TiledTexture(Image& img, int _uSplit, int _vSplit, MipMapMode);
     ~TiledTexture();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
+    virtual TextureTile getTile(int lod, int u, int v);
     virtual void bind();
     virtual void setBorderColor(Color);
 
@@ -157,7 +157,7 @@ class CubeMap : public Texture
     CubeMap(Image* faces[]);
     ~CubeMap();
 
-    virtual const TextureTile getTile(int lod, int u, int v);
+    virtual TextureTile getTile(int lod, int u, int v);
     virtual void bind();
     virtual void setBorderColor(Color);
 

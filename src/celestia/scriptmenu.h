@@ -22,4 +22,4 @@ struct ScriptMenuItem
 
 
 std::vector<ScriptMenuItem>*
-ScanScriptsDirectory(const fs::path &dirname, bool deep);
+ScanScriptsDirectory(const fs::path &scriptsDir, bool deep);

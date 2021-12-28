@@ -66,7 +66,7 @@ struct Color
     Color() = default;
     Color(float _r, float _g, float _b) : r(_r), g(_g), b(_b) {}
 
-    Color exposure(float e) const
+    [[nodiscard]] Color exposure(float e) const
     {
 #if 0
         float brightness = max(r, max(g, b));
@@ -110,8 +110,7 @@ static uint8_t floatToByte(float f)
         return 0;
     if (f >= 1.0f)
         return 255;
-    else
-        return (uint8_t) (f * 255.99f);
+            return (uint8_t) (f * 255.99f);
 }
 
 
@@ -126,7 +125,7 @@ public:
 
     Camera() = default;
 
-    Eigen::ParametrizedLine<double, 3>
+    [[nodiscard]] Eigen::ParametrizedLine<double, 3>
     getViewRay(double viewportX, double viewportY) const
     {
         Vector3d viewDir;
@@ -214,22 +213,22 @@ public:
     {
     }
 
-    double calcShellHeight()
+    double calcShellHeight() const
     {
         double maxScaleHeight = max(rayleighScaleHeight, max(mieScaleHeight, absorbScaleHeight));
         return -log(0.002) * maxScaleHeight;
     }
 
-    double miePhase(double cosAngle) const
+    [[nodiscard]] double miePhase(double cosAngle) const
     {
         return miePhaseFunction(cosAngle, mieAsymmetry);
     }
 
-    double rayleighDensity(double h) const;
-    double mieDensity(double h) const;
-    double absorbDensity(double h) const;
+    [[nodiscard]] double rayleighDensity(double h) const;
+    [[nodiscard]] double mieDensity(double h) const;
+    [[nodiscard]] double absorbDensity(double h) const;
 
-    Vector3d computeExtinction(const OpticalDepths&) const;
+    [[nodiscard]] Vector3d computeExtinction(const OpticalDepths& /*depth*/) const;
 
     double rayleighScaleHeight;
     double mieScaleHeight;
@@ -250,11 +249,11 @@ class LUT2
 public:
     LUT2(unsigned int _width, unsigned int _height);
 
-    Vector3d getValue(unsigned int x, unsigned int y) const;
-    void setValue(unsigned int x, unsigned int y, const Vector3d&);
-    Vector3d lookup(double x, double y) const;
-    unsigned int getWidth() const { return width; }
-    unsigned int getHeight() const { return height; }
+    [[nodiscard]] Vector3d getValue(unsigned int x, unsigned int y) const;
+    void setValue(unsigned int x, unsigned int y, const Vector3d& /*v*/);
+    [[nodiscard]] Vector3d lookup(double x, double y) const;
+    [[nodiscard]] unsigned int getWidth() const { return width; }
+    [[nodiscard]] unsigned int getHeight() const { return height; }
 
 private:
     unsigned int width;
@@ -268,12 +267,12 @@ class LUT3
 public:
     LUT3(unsigned int _width, unsigned int _height, unsigned int _depth);
 
-    Vector4d getValue(unsigned int x, unsigned int y, unsigned int z) const;
-    void setValue(unsigned int x, unsigned int y, unsigned int z, const Vector4d&);
-    Vector4d lookup(double x, double y, double z) const;
-    unsigned int getWidth() const { return width; }
-    unsigned int getHeight() const { return height; }
-    unsigned int getDepth() const { return depth; }
+    [[nodiscard]] Vector4d getValue(unsigned int x, unsigned int y, unsigned int z) const;
+    void setValue(unsigned int x, unsigned int y, unsigned int z, const Vector4d& /*v*/);
+    [[nodiscard]] Vector4d lookup(double x, double y, double z) const;
+    [[nodiscard]] unsigned int getWidth() const { return width; }
+    [[nodiscard]] unsigned int getHeight() const { return height; }
+    [[nodiscard]] unsigned int getDepth() const { return depth; }
 
 private:
     unsigned int width;
@@ -290,8 +289,8 @@ public:
 
     void setParameters(ParameterSet& params);
 
-    Color raytrace(const Eigen::ParametrizedLine<double, 3>& ray) const;
-    Color raytrace_LUT(const Eigen::ParametrizedLine<double, 3>& ray) const;
+    [[nodiscard]] Color raytrace(const Eigen::ParametrizedLine<double, 3>& ray) const;
+    [[nodiscard]] Color raytrace_LUT(const Eigen::ParametrizedLine<double, 3>& ray) const;
 
     Color background;
     Light light;
@@ -329,7 +328,7 @@ public:
                    unsigned int x,
                    unsigned int y,
                    unsigned int w,
-                   unsigned int h)
+                   unsigned int h) const
     {
 
         uint8_t r = floatToByte(color.r);
@@ -351,7 +350,7 @@ public:
         clearRect(color, 0, 0, width, height);
     }
 
-    void setPixel(unsigned int x, unsigned int y, const Color& color)
+    void setPixel(unsigned int x, unsigned int y, const Color& color) const
     {
         if (x < width && y < height)
         {
@@ -687,7 +686,7 @@ template<class T> bool raySphereIntersect(const Eigen::ParametrizedLine<T, 3>& r
         dist1 = sol1;
         return true;
     }
-    else if (sol1 < sol0)
+    if (sol1 < sol0)
     {
         dist0 = max(0.0, sol1);
         dist1 = sol0;
@@ -730,12 +729,11 @@ template<class T> bool raySphereIntersect2(const Eigen::ParametrizedLine<T, 3>& 
         dist1 = sol0;
         return true;
     }
-    else
-    {
-        // One solution to quadratic indicates grazing intersection; treat
+    
+            // One solution to quadratic indicates grazing intersection; treat
         // as no intersection.
         return false;
-    }
+   
 }
 
 
@@ -1033,7 +1031,7 @@ buildExtinctionLUT(const Scene& scene)
                          ExtinctionLUTViewAngleSteps);
 
     //Sphered planet = Sphered(scene.planet.radius);
-    Sphered shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
+    auto shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
 
     for (unsigned int i = 0; i < ExtinctionLUTHeightSteps; i++)
     {
@@ -1093,7 +1091,7 @@ buildOpticalDepthLUT(const Scene& scene)
                          ExtinctionLUTViewAngleSteps);
 
     //Sphered planet = Sphered(scene.planet.radius);
-    Sphered shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
+    auto shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
 
     for (unsigned int i = 0; i < ExtinctionLUTHeightSteps; i++)
     {
@@ -1159,7 +1157,7 @@ Vector3d integrateInscattering_LUT(const Scene& scene,
     const unsigned int nSteps = IntegrateScatterSteps;
 
     double shellHeight = scene.planet.radius + scene.atmosphereShellHeight;
-    Sphered shell = Sphered(shellHeight);
+    auto shell = Sphered(shellHeight);
     bool eyeInsideAtmosphere = eyePt.norm() < shellHeight;
 
     Vector3d lightDir = -scene.light.direction;
@@ -1244,9 +1242,9 @@ Vector4d integrateInscatteringFactors_LUT(const Scene& scene,
     const unsigned int nSteps = IntegrateScatterSteps;
 
     double shellHeight = scene.planet.radius + scene.atmosphereShellHeight;
-    Sphered shell = Sphered(shellHeight);
+    auto shell = Sphered(shellHeight);
 
-    Vector3d origin = atmStart;
+    const Vector3d& origin = atmStart;
     Vector3d viewDir = atmEnd - origin;
     double stepDist = viewDir.norm() / (double) nSteps;
     viewDir.normalize();
@@ -1310,7 +1308,7 @@ buildScatteringLUT(const Scene& scene)
                          ScatteringLUTViewAngleSteps,
                          ScatteringLUTLightAngleSteps);
 
-    Sphered shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
+    auto shell = Sphered(scene.planet.radius + scene.atmosphereShellHeight);
 
     for (unsigned int i = 0; i < ScatteringLUTHeightSteps; i++)
     {
@@ -1429,7 +1427,7 @@ Color Scene::raytrace(const Eigen::ParametrizedLine<double, 3>& ray) const
             Vector3d surfacePt = Vector3d::Zero() + (intersectPoint - planet.center);
             Color planetColor = getPlanetColor(*this, surfacePt);
 
-            Sphered shell = Sphered(shellRadius);
+            auto shell = Sphered(shellRadius);
 
             // Compute ray from surface point to edge of the atmosphere in the direction
             // of the sun.
@@ -1585,10 +1583,9 @@ Scene::raytrace_LUT(const Eigen::ParametrizedLine<double, 3>& ray) const
         return Color((float) inscatter.x(), (float) inscatter.y(), (float) inscatter.z()) +
             baseColor;
     }
-    else
-    {
-        return color;
-    }
+    
+            return color;
+   
 }
 
 
@@ -1768,10 +1765,9 @@ bool LoadParameterSet(ParameterSet& params, const string& filename)
         cerr << "Error in scene config file " << filename << endl;
         return false;
     }
-    else
-    {
-        return true;
-    }
+    
+            return true;
+   
 }
 
 template<class T> static Quaternion<T>
@@ -1820,19 +1816,19 @@ bool parseCommandLine(int argc, char* argv[])
     {
         if (argv[i][0] == '-')
         {
-            if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--lut"))
+            if ((strcmp(argv[i], "-l") == 0) || (strcmp(argv[i], "--lut") == 0))
             {
                 LUTUsage = UseExtinctionLUT;
             }
-            else if (!strcmp(argv[i], "-L") || !strcmp(argv[i], "--LUT"))
+            else if ((strcmp(argv[i], "-L") == 0) || (strcmp(argv[i], "--LUT") == 0))
             {
                 LUTUsage = UseScatteringLUT;
             }
-            else if (!strcmp(argv[i], "-f") || !strcmp(argv[i], "--fisheye"))
+            else if ((strcmp(argv[i], "-f") == 0) || (strcmp(argv[i], "--fisheye") == 0))
             {
                 UseFisheyeCameras = true;
             }
-            else if (!strcmp(argv[i], "-e") || !strcmp(argv[i], "--exposure"))
+            else if ((strcmp(argv[i], "-e") == 0) || (strcmp(argv[i], "--exposure") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -1841,7 +1837,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-s") || !strcmp(argv[i], "--scattersteps"))
+            else if ((strcmp(argv[i], "-s") == 0) || (strcmp(argv[i], "--scattersteps") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -1850,7 +1846,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-d") || !strcmp(argv[i], "--depthsteps"))
+            else if ((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "--depthsteps") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -1859,7 +1855,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-w") || !strcmp(argv[i], "--width"))
+            else if ((strcmp(argv[i], "-w") == 0) || (strcmp(argv[i], "--width") == 0))
             {
                 if (i == argc - 1)
                 {
@@ -1870,7 +1866,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--height"))
+            else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--height") == 0))
             {
                 if (i == argc - 1)
                     return false;
@@ -1879,7 +1875,7 @@ bool parseCommandLine(int argc, char* argv[])
                     return false;
                 i++;
             }
-            else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--image"))
+            else if ((strcmp(argv[i], "-i") == 0) || (strcmp(argv[i], "--image") == 0))
             {
                 if (i == argc - 1)
                     return false;

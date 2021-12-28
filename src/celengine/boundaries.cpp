@@ -25,7 +25,7 @@ ConstellationBoundaries::ConstellationBoundaries()
 
 ConstellationBoundaries::~ConstellationBoundaries()
 {
-    for (const auto chain : chains)
+    for (auto *const chain : chains)
         delete chain;
     chains.clear();
 

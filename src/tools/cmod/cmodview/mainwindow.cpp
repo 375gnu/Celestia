@@ -237,7 +237,7 @@ void MainWindow::initializeGL()
 
 
 
-bool
+static bool
 MainWindow::eventFilter(QObject* obj, QEvent* e)
 {
     if (e->type() == QEvent::FileOpen)
@@ -285,7 +285,7 @@ void
 MainWindow::showModelStatistics()
 {
     const cmod::Model* model = m_modelView->model();
-    if (model)
+    if (model != nullptr)
     {
         // Count triangles and vertices in the mesh
         unsigned int vertexCount = 0;
@@ -325,7 +325,7 @@ MainWindow::showModelStatistics()
 }
 
 
-void
+static void
 MainWindow::setModelFileName(const QString& fileName)
 {
     m_modelFileName = fileName;
@@ -346,8 +346,8 @@ MainWindow::setModelFileName(const QString& fileName)
 }
 
 
-bool
-MainWindow::exportSupported(const QString& fileName) const
+static bool
+MainWindow::exportSupported(const QString& fileName) 
 {
     QString ext = QFileInfo(fileName).suffix().toLower();
 
@@ -355,7 +355,7 @@ MainWindow::exportSupported(const QString& fileName) const
 }
 
 
-void
+static void
 MainWindow::openModel()
 {
     QSettings settings;
@@ -375,7 +375,7 @@ MainWindow::openModel()
 }
 
 
-void
+static void
 MainWindow::openModel(const QString& fileName)
 {
     if (!fileName.isEmpty())
@@ -502,7 +502,7 @@ MainWindow::saveModelAs()
 }
 
 
-void
+static void
 MainWindow::saveModel(const QString& saveFileName)
 {
     std::string fileNameStd = std::string(saveFileName.toUtf8().data());
@@ -565,7 +565,7 @@ void
 MainWindow::generateNormals()
 {
     const cmod::Model* model = m_modelView->model();
-    if (!model)
+    if (model == nullptr)
     {
         return;
     }
@@ -631,7 +631,7 @@ void
 MainWindow::generateTangents()
 {
     const cmod::Model* model = m_modelView->model();
-    if (!model)
+    if (model == nullptr)
     {
         return;
     }
@@ -696,7 +696,7 @@ void
 MainWindow::uniquifyVertices()
 {
     cmod::Model* model = m_modelView->model();
-    if (!model)
+    if (model == nullptr)
     {
         return;
     }
@@ -716,7 +716,7 @@ void
 MainWindow::mergeMeshes()
 {
     const cmod::Model* model = m_modelView->model();
-    if (!model)
+    if (model == nullptr)
     {
         return;
     }
@@ -738,7 +738,7 @@ MainWindow::updateSelectionInfo()
         QSetIterator<const cmod::PrimitiveGroup*> iter(m_modelView->selection());
         const cmod::PrimitiveGroup* selectedGroup = iter.next();
         const cmod::Material* material = m_modelView->model()->getMaterial(selectedGroup->materialIndex);
-        if (material)
+        if (material != nullptr)
         {
             m_materialWidget->setMaterial(*material);
         }

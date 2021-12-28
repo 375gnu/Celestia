@@ -42,7 +42,7 @@ enum class State
 
 bool isSeparator(char c)
 {
-    return !std::isdigit(c) && !std::isalpha(c) && c != '.';
+    return (std::isdigit(c) == 0) && (std::isalpha(c) == 0) && c != '.';
 }
 
 
@@ -67,7 +67,7 @@ bool handleUtf8Error(std::string& s, UTF8Status status)
         std::string::size_type pos = s.size();
         while (pos > 0)
         {
-            unsigned char u = static_cast<unsigned char>(s[--pos]);
+            auto u = static_cast<unsigned char>(s[--pos]);
             if (u >= 0xc0) { break; }
         }
 
@@ -163,11 +163,11 @@ Tokenizer::TokenType Tokenizer::nextToken()
             {
                 newToken = TokenEnd;
             }
-            else if (std::isspace(nextChar))
+            else if (std::isspace(nextChar) != 0)
             {
                 // no-op
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 textToken.push_back(nextChar);
                 state = State::Number;
@@ -186,7 +186,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
                 textToken.append("0.");
                 state = State::Fraction;
             }
-            else if (std::isalpha(nextChar) || nextChar == '_')
+            else if ((std::isalpha(nextChar) != 0) || nextChar == '_')
             {
                 textToken.push_back(nextChar);
                 state = State::Name;
@@ -244,7 +244,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
                 GetLogger()->error("Unexpected EOF in number\n");
                 newToken = TokenError;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
                 state = State::Number;
@@ -274,7 +274,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
             {
                 newToken = TokenNumber;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
             }
@@ -305,7 +305,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
             {
                 newToken = TokenNumber;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
             }
@@ -332,7 +332,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
                 GetLogger()->error("Unexpected EOF in number\n");
                 newToken = TokenError;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
                 state = State::Exponent;
@@ -355,7 +355,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
                 GetLogger()->error("Unexpected EOF in number\n");
                 newToken = TokenError;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
                 state = State::Exponent;
@@ -372,7 +372,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
             {
                 newToken = TokenNumber;
             }
-            else if (std::isdigit(nextChar))
+            else if (std::isdigit(nextChar) != 0)
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
             }
@@ -393,7 +393,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
             {
                 newToken = TokenName;
             }
-            else if (std::isalpha(nextChar) || std::isdigit(nextChar) || nextChar == '_')
+            else if ((std::isalpha(nextChar) != 0) || (std::isdigit(nextChar) != 0) || nextChar == '_')
             {
                 if (!tryPushBack(textToken, nextChar)) { newToken = TokenError; }
             }
@@ -467,7 +467,7 @@ Tokenizer::TokenType Tokenizer::nextToken()
                 GetLogger()->error("Unexpected EOF in string\n");
                 newToken = TokenError;
             }
-            else if (std::isxdigit(nextChar))
+            else if (std::isxdigit(nextChar) != 0)
             {
                 unicode[unicodeDigits++] = nextChar;
                 if (unicodeDigits == 4)
@@ -598,7 +598,7 @@ bool Tokenizer::skipUtf8Bom()
             GetLogger()->error("Incomplete UTF-8 sequence\n");
             return false;
         }
-        else if (in->fail())
+        if (in->fail())
         {
             GetLogger()->error("Unexpected error reading stream\n");
             return false;

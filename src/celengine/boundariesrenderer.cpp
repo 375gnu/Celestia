@@ -94,7 +94,7 @@ bool BoundariesRenderer::prepare(std::vector<LineEnds> &data)
     // we reserve 6 times the space so we can allow to
     // draw a line segment with two triangles
     data.reserve(m_lineCount * 6);
-    for (const auto chain : chains)
+    for (auto *const chain : chains)
     {
         for (unsigned i = 1; i < chain->size(); i++)
         {
