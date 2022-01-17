@@ -26,6 +26,7 @@
 #include "qtgettext.h"
 #include <QLocale>
 #include <QLibraryInfo>
+#include <locale>
 #include <vector>
 #include "qtappwin.h"
 #include <qtextcodec.h>
@@ -89,6 +90,7 @@ int main(int argc, char *argv[])
 
     // Gettext integration
     setlocale(LC_ALL, "");
+    std::locale::global(std::locale(""));
     setlocale(LC_NUMERIC, "C");
 #ifdef ENABLE_NLS
 #ifdef NATIVE_OSX_APP

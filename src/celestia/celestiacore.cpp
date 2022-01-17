@@ -86,10 +86,10 @@ static const float MaximumFOVFisheye = degToRad(179.99f);
 static const float MinimumFOV = degToRad(0.001f);
 static float KeyRotationAccel = degToRad(120.0f);
 static float MouseRotationSensitivity = degToRad(1.0f);
-static const double OneMiInKm = 1.609344;
-static const double OneFtInKm = 0.0003048;
-static const double OneLbInKg = 0.45359237;
-static const double OneLbPerFt3InKgPerM3 = OneLbInKg / pow(OneFtInKm * 1000.0, 3);
+static const float OneMiInKm = 1.609344f;
+static const float OneFtInKm = 0.0003048f;
+static const float OneLbInKg = 0.45359237f;
+static const float OneLbPerFt3InKgPerM3 = OneLbInKg / pow(OneFtInKm * 1000.0, 3);
 
 namespace
 {
@@ -103,37 +103,21 @@ float KelvinToFahrenheit(float kelvin)
     return kelvin * 1.8f - 459.67f;
 }
 
-FormattedNumber SigDigitNum(double v, int digits)
+std::string KelvinToStr(float value, CelestiaCore::TemperatureScale temperatureScale)
 {
-    return FormattedNumber(v, digits,
-                           FormattedNumber::GroupThousands |
-                           FormattedNumber::SignificantDigits);
-}
-
-string KelvinToStr(float value, int digits, CelestiaCore::TemperatureScale temperatureScale)
-{
-    const char* unitTemplate = "";
-
     switch (temperatureScale)
     {
-        case CelestiaCore::Celsius:
-            value = KelvinToCelsius(value);
-            unitTemplate = "{} °C";
-            break;
-        case CelestiaCore::Fahrenheit:
-            value = KelvinToFahrenheit(value);
-            unitTemplate = "{} °F";
-            break;
-        case CelestiaCore::Kelvin:
-        default:
-            unitTemplate = "{} K";
-            break;
+    case CelestiaCore::Celsius:
+        return fmt::format("{:.0Lf} " UTF8_DEGREE_SIGN "C", KelvinToCelsius(value));
+    case CelestiaCore::Fahrenheit:
+        return fmt::format("{:.0Lf} " UTF8_DEGREE_SIGN "F", KelvinToFahrenheit(value));
+    case CelestiaCore::Kelvin:
+    default:
+        return fmt::format("{:.0Lf} K", value);
     }
-    return fmt::format(unitTemplate, SigDigitNum(value, digits));
-}
 }
 
-static bool is_valid_directory(const fs::path& dir)
+bool is_valid_directory(const fs::path& dir)
 {
     if (dir.empty())
         return false;
@@ -147,7 +131,6 @@ static bool is_valid_directory(const fs::path& dir)
 
     return true;
 }
-
 
 // If right dragging to rotate, adjust the rotation rate based on the
 // distance from the reference object.  This makes right drag rotation
@@ -176,7 +159,7 @@ float ComputeRotationCoarseness(Simulation& sim)
 
     return coarseness;
 }
-
+} // namespace
 
 CelestiaCore::CelestiaCore() :
     /* Get a renderer here so it may be queried for capabilities of the
@@ -1436,9 +1419,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             if((renderer->getRenderFlags() & Renderer::ShowAutoMag))
             {
                 setFaintestAutoMag();
-                setlocale(LC_NUMERIC, "");
-                string buf = fmt::sprintf(_("Magnitude limit: %.2f"), sim->getFaintestVisible());
-                setlocale(LC_NUMERIC, "C");
+                string buf = fmt::format(_("Magnitude limit: {:.2Lf}"), sim->getFaintestVisible());
                 flash(buf);
             }
         }
@@ -1453,9 +1434,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             if((renderer->getRenderFlags() & Renderer::ShowAutoMag) != 0)
             {
                 setFaintestAutoMag();
-                setlocale(LC_NUMERIC, "");
-                string buf = fmt::sprintf(_("Magnitude limit: %.2f"), sim->getFaintestVisible());
-                setlocale(LC_NUMERIC, "C");
+                string buf = fmt::format(_("Magnitude limit: {:.2Lf}"), sim->getFaintestVisible());
                 flash(buf);
             }
         }
@@ -1576,9 +1555,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
                 sim->setTimeScale(sim->getTimeScale() / CoarseTimeScaleFactor);
             else
                 sim->setTimeScale(sim->getTimeScale() / FineTimeScaleFactor);
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Time rate: %.6g"),  sim->getTimeScale()); // XXX %'.12g
-            setlocale(LC_NUMERIC, "C");
+            string buf = fmt::format(_("Time rate: {:.6Lg}"),  sim->getTimeScale()); // XXX %'.12g
             flash(buf);
         }
         break;
@@ -1591,9 +1568,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
                 sim->setTimeScale(sim->getTimeScale() * CoarseTimeScaleFactor);
             else
                 sim->setTimeScale(sim->getTimeScale() * FineTimeScaleFactor);
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Time rate: %.6g"),  sim->getTimeScale()); // XXX %'.12g
-            setlocale(LC_NUMERIC, "C");
+            string buf = fmt::format(_("Time rate: {:.6Lg}"),  sim->getTimeScale()); // XXX %'.12g
             flash(buf);
         }
         break;
@@ -1709,10 +1684,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             {
                 setFaintest(sim->getFaintestVisible() - 0.2f);
                 notifyWatchers(FaintestChanged);
-                setlocale(LC_NUMERIC, "");
-                string buf = fmt::sprintf(_("Magnitude limit:  %.2f"),
+                string buf = fmt::format(_("Magnitude limit:  {:.2Lf}"),
                                           sim->getFaintestVisible());
-                setlocale(LC_NUMERIC, "C");
                 flash(buf);
             }
         }
@@ -1720,10 +1693,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         {
             renderer->setFaintestAM45deg(renderer->getFaintestAM45deg() - 0.1f);
             setFaintestAutoMag();
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Auto magnitude limit at 45 degrees:  %.2f"),
+            string buf = fmt::format(_("Auto magnitude limit at 45 degrees:  {:.2Lf}"),
                                       renderer->getFaintestAM45deg());
-            setlocale(LC_NUMERIC, "C");
             flash(buf);
         }
         break;
@@ -1740,10 +1711,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             {
                 setFaintest(sim->getFaintestVisible() + 0.2f);
                 notifyWatchers(FaintestChanged);
-                setlocale(LC_NUMERIC, "");
-                string buf = fmt::sprintf(_("Magnitude limit:  %.2f"),
+                string buf = fmt::format(_("Magnitude limit:  {:.2Lf}"),
                                           sim->getFaintestVisible());
-                setlocale(LC_NUMERIC, "C");
                 flash(buf);
             }
         }
@@ -1751,10 +1720,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
         {
             renderer->setFaintestAM45deg(renderer->getFaintestAM45deg() + 0.1f);
             setFaintestAutoMag();
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Auto magnitude limit at 45 degrees:  %.2f"),
+            string buf = fmt::format(_("Auto magnitude limit at 45 degrees:  {:.2Lf}"),
                                       renderer->getFaintestAM45deg());
-            setlocale(LC_NUMERIC, "C");
             flash(buf);
         }
         break;
@@ -1770,10 +1737,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             else
                 renderer->setAmbientLightLevel(0.0f);
             notifyWatchers(AmbientLightChanged);
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Ambient light level:  %.2f"),
+            string buf = fmt::format(_("Ambient light level:  {:.2Lf}"),
                                       renderer->getAmbientLightLevel());
-            setlocale(LC_NUMERIC, "C");
             flash(buf);
         }
         break;
@@ -1785,10 +1750,8 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
             else
                 renderer->setAmbientLightLevel(1.0f);
             notifyWatchers(AmbientLightChanged);
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf(_("Ambient light level:  %.2f"),
+            string buf = fmt::format(_("Ambient light level:  {:.2Lf}"),
                                       renderer->getAmbientLightLevel());
-            setlocale(LC_NUMERIC, "C");
             flash(buf);
         }
         break;
@@ -1796,9 +1759,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
     case '(':
         {
             Galaxy::decreaseLightGain();
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf("%s:  %3.0f %%", _("Light gain"), Galaxy::getLightGain() * 100.0f);
-            setlocale(LC_NUMERIC, "C");
+            string buf = fmt::format(_("Light gain:  {:.0Lf}%"), Galaxy::getLightGain() * 100.0f);
             flash(buf);
             notifyWatchers(GalaxyLightGainChanged);
         }
@@ -1807,9 +1768,7 @@ void CelestiaCore::charEntered(const char *c_p, int modifiers)
     case ')':
         {
             Galaxy::increaseLightGain();
-            setlocale(LC_NUMERIC, "");
-            string buf = fmt::sprintf("%s:  %3.0f %%", _("Light gain"), Galaxy::getLightGain() * 100.0f);
-            setlocale(LC_NUMERIC, "C");
+            string buf = fmt::format(_("Light gain:  {:.0Lf}%"), Galaxy::getLightGain() * 100.0f);
             flash(buf);
             notifyWatchers(GalaxyLightGainChanged);
         }
@@ -2523,7 +2482,7 @@ static string DistanceLyToStr(double distance, int digits, CelestiaCore::Measure
         }
     }
 
-    return fmt::sprintf("%s %s", SigDigitNum(distance, digits), units);
+    return fmt::format("{:.2Lf} {}", distance, units);
 }
 
 
@@ -2535,31 +2494,31 @@ static string DistanceKmToStr(double distance, int digits, CelestiaCore::Measure
 
 static void displayRotationPeriod(Overlay& overlay, double days)
 {
-    FormattedNumber n;
+    double n;
     const char *p;
 
     if (days > 1.0)
     {
-        n = FormattedNumber(days, 3, FormattedNumber::GroupThousands);
+        n = days;
         p = _("days");
     }
     else if (days > 1.0 / 24.0)
     {
-        n = FormattedNumber(days * 24.0, 3, FormattedNumber::GroupThousands);
+        n = days * 24.0;
         p = _("hours");
     }
     else if (days > 1.0 / (24.0 * 60.0))
     {
-        n = FormattedNumber(days * 24.0 * 60.0, 3, FormattedNumber::GroupThousands);
+        n = days * 24.0 * 60.0;
         p = _("minutes");
     }
     else
     {
-        n = FormattedNumber(days * 24.0 * 60.0 * 60.0, 3, FormattedNumber::GroupThousands);
+        n = days * 24.0 * 60.0 * 60.0;
         p = _("seconds");
     }
 
-    overlay.printf(_("Rotation period: %s %s\n"), n, p);
+    overlay.printf(_("Rotation period: %s %s\n"), fmt::format("{:.3Lf}", n), p);
 }
 
 static void displayMass(Overlay& overlay, float mass, CelestiaCore::MeasurementSystem measurement)
@@ -2579,51 +2538,32 @@ static void displayMass(Overlay& overlay, float mass, CelestiaCore::MeasurementS
 
 static void displaySpeed(Overlay& overlay, float speed, CelestiaCore::MeasurementSystem measurement)
 {
-    FormattedNumber n;
-    const char *u;
-
     if (speed >= (float) 1000.0_au)
     {
-        n = SigDigitNum(astro::kilometersToLightYears(speed), 3);
-        u = _("ly/s");
+        overlay.print(_("Speed: {:.3Lf} ly/s\n"), astro::kilometersToLightYears(speed));
     }
     else if (speed >= (float) 100.0_c)
     {
-        n = SigDigitNum(astro::kilometersToAU(speed), 3);
-        u = _("AU/s");
+        overlay.print(_("Speed: {:.3Lf} AU/s\n"), astro::kilometersToAU(speed));
     }
     else if (speed >= 10000.0f)
     {
-        n = SigDigitNum(speed / astro::speedOfLight, 3);
-        u = "c";
+        overlay.print(_("Speed: {:.3Lf} c\n"), speed / astro::speedOfLight);
     }
     else if (measurement == CelestiaCore::Imperial)
     {
-        if (speed >= (float) OneMiInKm)
-        {
-            n = SigDigitNum(speed / (float) OneMiInKm, 3);
-            u = _("mi/s");
-        }
+        if (speed >= OneMiInKm)
+            overlay.print(_("Speed: {:.3Lf} mi/s\n"), speed / OneMiInKm);
         else
-        {
-            n = SigDigitNum(speed / (float) OneFtInKm, 3);
-            u = _("ft/s");
-        }
+            overlay.print(_("Speed: {:.3Lf} ft/s\n"), speed / OneFtInKm);
     }
     else
     {
         if (speed >= 1.0f)
-        {
-            n = SigDigitNum(speed, 3);
-            u = _("km/s");
-        }
+            overlay.print(_("Speed: {:.3Lf} km/s\n"), speed);
         else
-        {
-            n = SigDigitNum(speed * 1000.0f, 3);
-            u = _("m/s");
-        }
+            overlay.print(_("Speed: {:.3Lf} m/s\n"), speed * 1000.0f);
     }
-    overlay.printf(_("Speed: %s %s\n"), n, u);
 }
 
 // Display a positive angle as degrees, minutes, and seconds. If the angle is less than one
@@ -2824,7 +2764,7 @@ static void displayStarInfo(Overlay& overlay,
                                 star.getApparentMagnitude(float(distance)));
 
         if (star.getLuminosity() > 1.0e-10f)
-            overlay.printf(_("Luminosity: %sx Sun\n"), SigDigitNum(star.getLuminosity(), 3));
+            overlay.print(_("Luminosity: {:.3Lf}x Sun\n"), star.getLuminosity());
 
         const char* star_class;
         switch (star.getSpectralType()[0])
@@ -2845,13 +2785,13 @@ static void displayStarInfo(Overlay& overlay,
 
         if (detail > 1)
         {
-            overlay.printf(_("Surface temp: %s\n"), KelvinToStr(star.getTemperature(), 3, temperatureScale));
+            overlay.printf(_("Surface temp: %s\n"), KelvinToStr(star.getTemperature(), temperatureScale));
             float solarRadii = star.getRadius() / 6.96e5f;
 
             if (solarRadii > 0.01f)
             {
-                overlay.printf(_("Radius: %s Rsun  (%s)\n"),
-                             SigDigitNum(star.getRadius() / 696000.0f, 2),
+                overlay.print(_("Radius: {:.2Lf} Rsun  ({})\n"),
+                             star.getRadius() / 696000.0f,
                              DistanceKmToStr(star.getRadius(), 3, measurement));
             }
             else
@@ -2985,7 +2925,7 @@ static void displayPlanetInfo(Overlay& overlay,
 
         float planetTemp = body.getTemperature(t);
         if (planetTemp > 0)
-            overlay.printf(_("Temperature: %s\n"), KelvinToStr(planetTemp, 3, temperatureScale));
+            overlay.printf(_("Temperature: %s\n"), KelvinToStr(planetTemp, temperatureScale));
     }
 }
 
