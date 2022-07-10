@@ -324,6 +324,11 @@ class Renderer
         return *m_modelViewPtr;
     }
 
+    const Eigen::Matrix4f& getLightMatrix() const
+    {
+        return m_lightMatrix;
+    }
+
     void setCurrentModelViewMatrix(const Eigen::Matrix4f& m)
     {
         m_modelViewPtr = &m;
@@ -550,6 +555,15 @@ class Renderer
                       float, float,
                       const Matrices&);
 
+    void renderPlanetDepth(Body& body,
+                           const Eigen::Vector3f& pos,
+                           float distance,
+                           float appMag,
+                           const Observer& observer,
+                           float nearPlaneDistance,
+                           float farPlaneDistance,
+                           const Matrices &m);
+
     void renderStar(const Star& star,
                     const Eigen::Vector3f& pos,
                     float distance,
@@ -667,6 +681,10 @@ class Renderer
                                   int nIntervals,
                                   double now);
 
+    void renderDepthPath(const Observer &observer,
+                         int nIntervals,
+                         double now);
+
     void updateBodyVisibilityMask();
 
     void createShadowFBO();
@@ -727,6 +745,8 @@ class Renderer
     Eigen::Matrix4f m_projMatrix;
     Eigen::Matrix4f m_MVPMatrix;
     Eigen::Matrix4f m_orthoProjMatrix;
+    Eigen::Matrix4f m_lightMatrix;
+
     const Eigen::Matrix4f *m_modelViewPtr  { &m_modelMatrix };
     const Eigen::Matrix4f *m_projectionPtr { &m_projMatrix };
 

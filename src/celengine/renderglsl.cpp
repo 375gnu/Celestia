@@ -45,76 +45,6 @@ using namespace celestia;
 namespace
 {
 
-// Calculate the matrix used to render the model from the
-// perspective of the light.
-Eigen::Matrix4f directionalLightMatrix(const Eigen::Vector3f& lightDirection)
-{
-    const Eigen::Vector3f &viewDir = lightDirection;
-    Eigen::Vector3f upDir = viewDir.unitOrthogonal();
-    Eigen::Vector3f rightDir = upDir.cross(viewDir);
-    Eigen::Matrix4f m = Eigen::Matrix4f::Identity();
-
-    m.row(0).head(3) = rightDir;
-    m.row(1).head(3) = upDir;
-    m.row(2).head(3) = viewDir;
-
-    return m;
-}
-
-
-/*! Render a mesh object
- *  Parameters:
- *    tsec : animation clock time in seconds
- */
-void renderGeometryShadow_GLSL(Geometry* geometry,
-                               FramebufferObject* shadowFbo,
-                               const LightingState& ls,
-                               int lightIndex,
-                               double tsec,
-                               Renderer* renderer,
-                               Eigen::Matrix4f *lightMatrix)
-{
-    auto *prog = renderer->getShaderManager().getShader("depth");
-    if (prog == nullptr)
-        return;
-
-    GLint oldFboId;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFboId);
-    shadowFbo->bind();
-    glViewport(0, 0, shadowFbo->width(), shadowFbo->height());
-
-    // Write only to the depth buffer
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    // Render backfaces only in order to reduce self-shadowing artifacts
-    glCullFace(GL_FRONT);
-
-    Renderer::PipelineState ps;
-    ps.depthMask = true;
-    ps.depthTest = true;
-    renderer->setPipelineState(ps);
-
-    Shadow_RenderContext rc(renderer);
-
-    prog->use();
-
-    // Enable poligon offset to decrease "shadow acne"
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(.001f, .001f);
-
-    Eigen::Matrix4f projMat = celmath::Ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
-    Eigen::Matrix4f modelViewMat = directionalLightMatrix(ls.lights[lightIndex].direction_obj);
-    *lightMatrix = projMat * modelViewMat;
-    prog->setMVPMatrices(projMat, modelViewMat);
-    geometry->render(rc, tsec);
-
-    glDisable(GL_POLYGON_OFFSET_FILL);
-    // Re-enable the color buffer
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glCullFace(GL_BACK);
-    shadowFbo->unbind(oldFboId);
-}
-
 class GLRingRenderData : public RingRenderData
 {
     static constexpr int nLODs = 4;
@@ -457,72 +387,6 @@ void renderGeometry_GLSL(Geometry* geometry,
                          const Matrices &m,
                          Renderer* renderer)
 {
-    auto *shadowBuffer = renderer->getShadowFBO(0);
-    Eigen::Matrix4f lightMatrix(Eigen::Matrix4f::Identity());
-
-    if (shadowBuffer != nullptr && shadowBuffer->isValid())
-    {
-        std::array<int, 4> viewport;
-        renderer->getViewport(viewport);
-
-        float range[2];
-        glGetFloatv(GL_DEPTH_RANGE, range);
-        glDepthRange(0.0f, 1.0f);
-
-#ifdef DEPTH_STATE_DEBUG
-        float bias, bits, clear, range[2], scale;
-        glGetFloatv(GL_DEPTH_BIAS, &bias);
-        glGetFloatv(GL_DEPTH_BITS, &bits);
-        glGetFloatv(GL_DEPTH_CLEAR_VALUE, &clear);
-        glGetFloatv(GL_DEPTH_RANGE, range);
-        glGetFloatv(GL_DEPTH_SCALE, &scale);
-        fmt::printf("bias: %f bits: %f clear: %f range: %f - %f, scale:%f\n", bias, bits, clear, range[0], range[1], scale);
-#endif
-
-        renderGeometryShadow_GLSL(geometry, shadowBuffer, ls, 0,
-                                  tsec, renderer, &lightMatrix);
-        renderer->setViewport(viewport);
-#ifdef DEPTH_BUFFER_DEBUG
-        glDisable(GL_DEPTH_TEST);
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadMatrixf(Ortho2D(0.0f, (float)viewport[2], 0.0f, (float)viewport[3]).data());
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glUseProgram(0);
-        glColor4f(1, 1, 1, 1);
-
-        glActiveTexture(GL_TEXTURE0);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, shadowBuffer->depthTexture());
-#if GL_ONLY_SHADOWS
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-#endif
-
-        glBegin(GL_QUADS);
-        float side = 300.0f;
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(0.0f, 0.0f);
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex2f(side, 0.0f);
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(side, side);
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(0.0f, side);
-        glEnd();
-
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glDisable(GL_TEXTURE_2D);
-        glEnable(GL_DEPTH_TEST);
-#endif
-        glDepthRange(range[0], range[1]);
-    }
-
     GLSL_RenderContext rc(renderer, ls, geometryScale, planetOrientation, m.modelview, m.projection);
 
     if ((renderFlags & Renderer::ShowAtmospheres) != 0)
@@ -530,8 +394,13 @@ void renderGeometry_GLSL(Geometry* geometry,
         rc.setAtmosphere(atmosphere);
     }
 
+    Eigen::Matrix4f lightMatrix;
+    auto *shadowBuffer = renderer->getShadowFBO(0);
     if (shadowBuffer != nullptr && shadowBuffer->isValid())
     {
+        Eigen::Matrix4f rotate(Eigen::Matrix4f::Identity());
+        rotate.topLeftCorner(3, 3) = planetOrientation.toRotationMatrix();
+        Eigen::Matrix4f lightMatrix = renderer->getLightMatrix() * rotate;
         rc.setShadowMap(shadowBuffer->depthTexture(), shadowBuffer->width(), &lightMatrix);
     }
 

@@ -86,6 +86,8 @@
 #endif
 #endif
 
+#define DEBUG_SHADOWS
+
 using namespace Eigen;
 using namespace std;
 using namespace celestia;
@@ -200,6 +202,10 @@ Color Renderer::HorizonGridColor        (0.38f,  0.38f,  0.38f);
 Color Renderer::EclipticColor           (0.5f,   0.1f,   0.1f);
 
 Color Renderer::SelectionCursorColor    (1.0f,   0.0f,   0.0f);
+
+#ifdef DEBUG_SHADOWS
+void debugDepthTexture(Renderer *r, FramebufferObject *shadowBuffer);
+#endif
 
 // Some useful unit conversions
 inline float mmToInches(float mm)
@@ -1686,6 +1692,8 @@ void Renderer::draw(const Observer& observer,
 #endif
 
     int nIntervals = buildDepthPartitions();
+    m_lightMatrix = Eigen::Matrix4f::Identity();
+    renderDepthPath(observer, nIntervals, now);
     renderSolarSystemObjects(observer, nIntervals, now);
 
     renderForegroundAnnotations(FontNormal);
@@ -1697,6 +1705,9 @@ void Renderer::draw(const Observer& observer,
 
 #ifndef GL_ES
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+#ifdef DEBUG_SHADOWS
+    debugDepthTexture(this, getShadowFBO(0));
 #endif
 }
 
@@ -5454,3 +5465,194 @@ void Renderer::buildProjectionMatrix(Eigen::Matrix4f &mat, float nearZ, float fa
 {
     mat = projectionMode->getProjectionMatrix(nearZ, farZ, zoom);
 }
+
+// Calculate the matrix used to render the model from the
+// perspective of the light.
+static Eigen::Matrix4f
+DirectionalLightMatrix(const LightSource &lightSource)
+{
+    // Direction == (Position - [0, 0, 0]).normalized() == Position.normalized()
+    Eigen::Vector3f viewDir = lightSource.position.cast<float>().normalized();
+    Eigen::Vector3f upDir = viewDir.unitOrthogonal();
+    Eigen::Vector3f rightDir = upDir.cross(viewDir);
+    Eigen::Matrix4f m = Eigen::Matrix4f::Identity();
+
+    m.row(0).head(3) = rightDir;
+    m.row(1).head(3) = upDir;
+    m.row(2).head(3) = viewDir;
+
+    return m;
+}
+
+static const Eigen::Matrix4f orthoProjMat = celmath::Ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
+
+void
+Renderer::renderPlanetDepth(Body& body,
+                            const Eigen::Vector3f& pos,
+                            float distance,
+                            float appMag,
+                            const Observer& observer,
+                            float nearPlaneDistance,
+                            float farPlaneDistance,
+                            const Matrices &m)
+{
+    Geometry* geometry = nullptr;
+    if (body.getGeometry() != InvalidResource)
+        geometry = GetGeometryManager()->find(body.getGeometry());
+
+    if (geometry == nullptr)
+        return;
+
+    float altitude = distance - body.getRadius();
+    float discSizeInPixels = body.getRadius() / (std::max(nearPlaneDistance, altitude) * pixelSize);
+
+    float maxDiscSize = (starStyle == ScaledDiscStars) ? MaxScaledDiscStarSize : 1.0f;
+    if (!(discSizeInPixels >= maxDiscSize && body.hasVisibleGeometry()))
+        return;
+
+    //float geometryScale = body.getGeometryScale();
+
+    double now = observer.getTime();
+    Eigen::Quaterniond q = body.getRotationModel(now)->spin(now) * body.getEclipticToEquatorial(now);
+    Eigen::Quaternionf orientation = body.getGeometryOrientation() * q.cast<float>();
+
+    Eigen::Matrix4f rotate(Eigen::Matrix4f::Identity());
+    rotate.topLeftCorner(3, 3) = orientation.toRotationMatrix();
+
+    auto *prog = getShaderManager().getShader("depth");
+    if (prog == nullptr)
+        return;
+
+    prog->use();
+    Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(lightSourceList[0]);
+    m_lightMatrix = orthoProjMat * modelViewMat;
+    prog->setMVPMatrices(orthoProjMat, modelViewMat * rotate);
+
+    //Vector3f scaleFactors;
+    //bool isNormalized = false;
+
+    Shadow_RenderContext rc(this);
+    geometry->render(rc, now);
+}
+
+void
+Renderer::renderDepthPath(const Observer &observer,
+                          int nIntervals,
+                          double now)
+{
+    if (lightSourceList.empty())
+        return;
+
+    auto *shadowBuffer = getShadowFBO(0);
+    if (shadowBuffer == nullptr || !shadowBuffer->isValid())
+        return;
+
+    std::array<int, 4> viewport;
+    getViewport(viewport);
+
+    GLint oldFboId;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFboId);
+    shadowBuffer->bind();
+    glViewport(0, 0, shadowBuffer->width(), shadowBuffer->height());
+
+    // Write only to the depth buffer
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    Renderer::PipelineState ps;
+    ps.depthMask = true;
+    ps.depthTest = true;
+    setPipelineState(ps);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    // Render backfaces only in order to reduce self-shadowing artifacts
+    glCullFace(GL_FRONT);
+
+    // Enable poligon offset to decrease "shadow acne"
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(.001f, .001f);
+
+    // Render everything that wasn't culled.
+    int i = static_cast<int>(renderList.size()) - 1;
+    int interval = nIntervals - 1;
+    {
+        currentIntervalIndex = interval;
+
+        const float nearPlaneDistance = -depthPartitions[interval].nearZ;
+        const float farPlaneDistance = -depthPartitions[interval].farZ;
+
+        Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(lightSourceList[0]);
+        m_lightMatrix = orthoProjMat * modelViewMat;
+        // Render just the opaque objects in the first pass
+        while (i >= 0 && renderList[i].farZ < depthPartitions[interval].nearZ)
+        {
+            // Treat objects that are smaller than one pixel as transparent and
+            // render them in the second pass.
+            if (renderList[i].isOpaque &&
+                renderList[i].discSizeInPixels > 1.0f &&
+                renderList[i].renderableType == RenderListEntry::RenderableBody &&
+                renderList[i].body->getGeometry() != InvalidResource)
+            {
+                renderPlanetDepth(*renderList[i].body,
+                                  renderList[i].position,
+                                  renderList[i].distance,
+                                  renderList[i].appMag,
+                                  observer,
+                                  nearPlaneDistance, farPlaneDistance,
+                                  {&orthoProjMat, &modelViewMat});
+            }
+            i--;
+        }
+    }
+
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    // Re-enable the color buffer
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glCullFace(GL_BACK);
+    shadowBuffer->unbind(oldFboId);
+    setViewport(viewport);
+}
+
+#ifdef DEBUG_SHADOWS
+void debugDepthTexture(Renderer *r, FramebufferObject *shadowBuffer)
+{
+    std::array<int, 4> viewport;
+    r->getViewport(viewport);
+
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadMatrixf(Ortho2D(0.0f, (float)viewport[2], 0.0f, (float)viewport[3]).data());
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glUseProgram(0);
+    glColor4f(1, 1, 1, 1);
+
+    glActiveTexture(GL_TEXTURE0);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, shadowBuffer->depthTexture());
+#if 1 /* GL_ONLY_SHADOWS */
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+#endif
+    // render scene
+    glBegin(GL_QUADS);
+    float side = 300.0f;
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(0.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(side, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(side, side);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(0.0f, side);
+    glEnd();
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_DEPTH_TEST);
+}
+#endif
