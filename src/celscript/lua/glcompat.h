@@ -139,6 +139,11 @@
 #endif
 #define gluLookAt(ix,iy,iz,cx,cy,cz,ux,uy,uz) fpcLookAt(ix,iy,iz,cx,cy,cz,ux,uy,uz)
 
+#ifdef glLineWidth
+#undef glLineWidth
+#endif
+#define glLineWidth(w) fpcLineWidth(w)
+
 void fpcMatrixMode(int _g_matrixMode) noexcept;
 void fpcPushMatrix() noexcept;
 void fpcPopMatrix() noexcept;
@@ -157,3 +162,4 @@ void fpcColor4f(float r, float g, float b, float a) noexcept;
 void fpcVertex2f(float x, float y) noexcept;
 void fpcTexCoord2f(float x, float y) noexcept;
 void fpcLookAt(float ix, float iy, float iz, float cx, float cy, float cz, float ux, float uy, float uz) noexcept;
+void fpcLineWidth(float w) noexcept;

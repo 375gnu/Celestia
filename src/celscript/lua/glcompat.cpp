@@ -18,6 +18,7 @@
 #include <celengine/glsupport.h>
 #include <celengine/shadermanager.h>    // CelestiaGLProgram::*Index
 #include <celengine/vecgl.h>            // vecgl::translate
+#include <celrender/linerenderer.h>
 #include "glcompat.h"
 
 using celestia::vecgl::translate;
@@ -49,6 +50,8 @@ std::array<Eigen::Matrix4f, PROJECTION_STACK_DEPTH> g_projectionStack =
 int g_modelViewPosition = 0;
 int g_projectionPosition = 0;
 int g_matrixMode = GL_MODELVIEW;
+float g_lineWidth = 1.0f;
+bool g_isLine = false;
 
 class GLSLProgram
 {
@@ -518,12 +521,31 @@ void fpcDisable(GLenum param) noexcept
 void fpcBegin(GLenum param) noexcept
 {
     if (gPrimitive == 0)
-        gPrimitive = (param == GL_POLYGON || param == GL_QUADS) ? GL_TRIANGLE_FAN : param;
+    {
+        switch (param)
+        {
+        case GL_POLYGON:
+        case GL_QUADS:
+            gPrimitive = GL_TRIANGLE_FAN;
+            break;
+        case GL_LINES:
+        case GL_LINE_LOOP:
+        case GL_LINE_STRIP:
+            g_isLine = true;
+            break;
+        default:
+            gPrimitive = param;
+            break;
+        }
+    }
 }
 
 void fpcEnd() noexcept
 {
-    Draw();
+    if (!g_isLine)
+        Draw();
+    else
+        /* TODO */;
 }
 
 void fpcColor4f(float r, float g, float b, float a) noexcept
@@ -536,7 +558,10 @@ void fpcColor4f(float r, float g, float b, float a) noexcept
 
 void fpcVertex2f(float x, float y) noexcept
 {
-    PushVertex(x, y);
+    if (!g_isLine)
+        PushVertex(x, y);
+    else
+        /* TODO */;
 }
 
 void fpcTexCoord2f(float x, float y) noexcept
@@ -560,4 +585,9 @@ void gluLookAt(float ix, float iy, float iz, float cx, float cy, float cz, float
 
     fpcMultMatrixf(&m(0, 0));
     fpcTranslatef(-ix, -iy, -iz);
+}
+
+void fpcLineWidth(float w) noexcept
+{
+    g_lineWidth = w;
 }
