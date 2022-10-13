@@ -16,8 +16,6 @@
 #include "texture.h"
 #include "pointstarvertexbuffer.h"
 
-PointStarVertexBuffer* PointStarVertexBuffer::current = nullptr;
-
 PointStarVertexBuffer::PointStarVertexBuffer(const Renderer& _renderer,
                                              unsigned int _capacity) :
     renderer(_renderer),
@@ -54,7 +52,6 @@ void PointStarVertexBuffer::render()
 {
     if (nStars != 0)
     {
-        makeCurrent();
         unsigned int stride = sizeof(StarVertex);
         glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
                               3, GL_FLOAT, GL_FALSE,
@@ -72,39 +69,12 @@ void PointStarVertexBuffer::render()
     }
 }
 
-void PointStarVertexBuffer::makeCurrent()
-{
-    if (current == this || program == nullptr)
-        return;
-
-    if (current != nullptr)
-        current->finish();
-
-    program->use();
-    program->setMVPMatrices(renderer.getCurrentProjectionMatrix(), renderer.getCurrentModelViewMatrix());
-    if (pointSizeFromVertex)
-    {
-        program->samplerParam("starTex") = 0;
-        glEnableVertexAttribArray(CelestiaGLProgram::PointSizeAttributeIndex);
-    }
-    else
-    {
-        program->pointScale = pointScale;
-        glVertexAttrib1f(CelestiaGLProgram::PointSizeAttributeIndex, 1.0f);
-    }
-
-    glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
-    glEnableVertexAttribArray(CelestiaGLProgram::ColorAttributeIndex);
-    current = this;
-}
-
 void PointStarVertexBuffer::finish()
 {
     render();
     glDisableVertexAttribArray(CelestiaGLProgram::ColorAttributeIndex);
     glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
     glDisableVertexAttribArray(CelestiaGLProgram::PointSizeAttributeIndex);
-    current = nullptr;
 }
 
 void PointStarVertexBuffer::enable()

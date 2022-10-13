@@ -1811,8 +1811,10 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
             gaussianGlareTex->bind();
             if (glareSize > gl::maxPointSize)
                 renderLargePoint(*this, center, {color, glareAlpha}, glareSize, mvp);
+            /*
             else
                 glareVertexBuffer->addStar(center, {color, glareAlpha}, glareSize);
+            */
         }
     }
 }
@@ -4320,18 +4322,18 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.cosFOV            = (float) cos(degToRad(calcMaxFOV(fov, getAspectRatio())) / 2.0f);
 
     starRenderer.pixelSize         = pixelSize;
-    starRenderer.brightnessScale   = brightnessScale * corrFac;
-    starRenderer.brightnessBias    = brightnessBias;
     starRenderer.faintestMag       = faintestMag;
-    starRenderer.faintestMagNight  = faintestMagNight;
-    starRenderer.saturationMag     = saturationMag;
     starRenderer.distanceLimit     = distanceLimit;
     starRenderer.labelMode         = labelMode;
     starRenderer.SolarSystemMaxDistance = SolarSystemMaxDistance;
 
     // = 1.0 at startup
     float effDistanceToScreen = mmToInches((float) REF_DISTANCE_TO_SCREEN) * pixelSize * getScreenDpi();
-    starRenderer.labelThresholdMag = 1.2f * max(1.0f, (faintestMag - 4.0f) * (1.0f - 0.5f * (float) log10(effDistanceToScreen)));
+    starRenderer.labelThresholdMag = 1.2f * max(1.0f, (faintestMag - 4.0f) * (1.0f - 0.5f * log10(effDistanceToScreen)));
+
+    starRenderer.size = BaseStarDiscSize * screenDpi / 96.0f;
+    starRenderer.brightnessScale *= 2.0f;
+    starRenderer.maxDiscSize = starRenderer.size * MaxScaledDiscStarSize;
 
     starRenderer.colorTemp = colorTemp;
 
@@ -5911,13 +5913,7 @@ Renderer::renderSolarSystemObjects(const Observer &observer,
         }
 
         PointStarVertexBuffer::enable();
-        glareVertexBuffer->startSprites();
-        glareVertexBuffer->render();
-        glareVertexBuffer->finish();
-        if (starStyle == PointStars)
-            pointStarVertexBuffer->startBasicPoints();
-        else
-            pointStarVertexBuffer->startSprites();
+        pointStarVertexBuffer->start();
         pointStarVertexBuffer->render();
         pointStarVertexBuffer->finish();
         PointStarVertexBuffer::disable();

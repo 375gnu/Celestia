@@ -50,4 +50,8 @@ class PointStarRenderer : public ObjectRenderer<Star, float>
     const ColorTemperatureTable* colorTemp      { nullptr };
     float SolarSystemMaxDistance                { 1.0f };
     float cosFOV                                { 1.0f };
+    float brightnessScale                       { 1.0f };
+    float brightnessBias                        { 0.0f };
+    float maxDiscSize                           { 1.0f };
+    float size                                  { 1.0f };
 };
