@@ -110,6 +110,7 @@ void
 renderBody(const Body* body, double tdb)
 {
     ImGui::TextUnformatted(body->getName(true).c_str());
+#if SDL_VERSION_ATLEAST(2, 0, 14)
     const std::string& url = body->getInfoURL();
     if (!url.empty())
     {
@@ -118,6 +119,7 @@ renderBody(const Body* body, double tdb)
         if (ImGui::SmallButton(url.c_str())) { SDL_OpenURL(url.c_str()); }
     }
     ImGui::Separator();
+#endif
     if (ImGui::BeginTable("##bodyinfo", 2))
     {
         ImGui::TableNextRow();
@@ -252,6 +254,7 @@ void
 renderStar(const Star* star, const Universe* universe, double tdb)
 {
     ImGui::TextUnformatted(universe->getStarCatalog()->getStarName(*star, true).c_str());
+#if SDL_VERSION_ATLEAST(2, 0, 14)
     const std::string& url = star->getInfoURL();
     if (!url.empty())
     {
@@ -260,6 +263,7 @@ renderStar(const Star* star, const Universe* universe, double tdb)
         if (ImGui::SmallButton(url.c_str())) { SDL_OpenURL(url.c_str()); }
     }
     ImGui::Separator();
+#endif
     if (ImGui::BeginTable("##starinfo", 2))
     {
         ImGui::TableNextRow();
@@ -343,6 +347,7 @@ void
 renderDso(const DeepSkyObject* dso, const Universe* universe)
 {
     ImGui::TextUnformatted(universe->getDSOCatalog()->getDSOName(dso).c_str());
+#if SDL_VERSION_ATLEAST(2, 0, 14)
     const std::string& url = dso->getInfoURL();
     if (!url.empty())
     {
@@ -351,6 +356,7 @@ renderDso(const DeepSkyObject* dso, const Universe* universe)
         if (ImGui::SmallButton(url.c_str())) { SDL_OpenURL(url.c_str()); }
     }
     ImGui::Separator();
+#endif
     if (ImGui::BeginTable("##dsoInfo", 2))
     {
         ImGui::TableNextRow();

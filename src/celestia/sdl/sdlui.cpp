@@ -275,8 +275,10 @@ SDL_UI::renderMainMenu(UIAction& action)
         }
         if (ImGui::BeginMenu(_("Help")))
         {
+#if SDL_VERSION_ATLEAST(2, 0, 14)
             if (ImGui::MenuItem(_("Celestia manual"))) { SDL_OpenURL("https://en.wikibooks.org/wiki/Celestia"); }
             ImGui::Separator();
+#endif
             if (ImGui::MenuItem(_("OpenGL info"))) { m_showGLInfo = true; }
             if (ImGui::MenuItem(_("About Celestia"))) { m_showAbout = true; }
             ImGui::EndMenu();
