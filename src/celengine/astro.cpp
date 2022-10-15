@@ -918,7 +918,7 @@ void astro::StateVectorToElements(const Vector3d& position,
     double om = atan2(P.y(), Q.y());
 
     // Compute the period
-    double T = 2 * PI * sqrt(cube(a) / GM);
+    double T = 2 * celestia::numbers::pi * sqrt(cube(a) / GM);
 
     elements->semimajorAxis     = a;
     elements->eccentricity      = e;
