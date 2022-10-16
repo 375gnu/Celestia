@@ -127,6 +127,7 @@ SDL_UI::init()
     static const ImWchar ranges[] = {
         0x0020, 0x00ff, // Latin-1
         0x0391, 0x03c9, // Greek letters
+        0x0400, 0x04ff, // Cyrillic letters
         0x2032, 0x2033, // Prime, double prime
         0x2070, 0x2079, // Superscript digits
         0,
