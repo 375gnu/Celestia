@@ -3,7 +3,11 @@
 #include <memory>
 
 #include <SDL.h>
+#ifdef GL_ES
+#include <SDL_opengles2.h>
+#else
 #include <SDL_opengl.h>
+#endif
 
 #include <celengine/glsupport.h>
 #include <celengine/selection.h>
