@@ -4350,6 +4350,11 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     ps.blendFunc = {GL_SRC_ALPHA, GL_ONE};
     setPipelineState(ps);
 
+    Renderer::PipelineState ps;
+    ps.blending = true;
+    ps.blendFunc = {GL_SRC_ALPHA, GL_ONE};
+    setPipelineState(ps);
+
 #ifdef OCTREE_DEBUG
     m_starProcStats.nodes = 0;
     m_starProcStats.height = 0;
@@ -5304,11 +5309,9 @@ bool Renderer::getInfo(map<string, string>& info) const
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
     info["MaxTextureSize"] = to_string(maxTextureSize);
 
-#ifndef GL_ES
     GLint maxTextureUnits = 1;
-    glGetIntegerv(GL_MAX_TEXTURE_UNITS, &maxTextureUnits);
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxTextureUnits);
     info["MaxTextureUnits"] = to_string(maxTextureUnits);
-#endif
 
     GLint pointSizeRange[2];
     GLfloat lineWidthRange[2];
