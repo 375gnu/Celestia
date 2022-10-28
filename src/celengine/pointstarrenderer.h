@@ -46,9 +46,12 @@ class PointStarRenderer : public ObjectRenderer<Star, float>
     Eigen::Vector3f viewNormal;
     std::vector<RenderListEntry>* renderList    { nullptr };
     PointStarVertexBuffer* starVertexBuffer     { nullptr };
-    PointStarVertexBuffer* glareVertexBuffer    { nullptr };
     const StarDatabase* starDB                  { nullptr };
     const ColorTemperatureTable* colorTemp      { nullptr };
     float SolarSystemMaxDistance                { 1.0f };
     float cosFOV                                { 1.0f };
+    float brightnessScale                       { 1.0f };
+    float brightnessBias                        { 0.0f };
+    float maxDiscSize                           { 1.0f };
+    float size                                  { 1.0f };
 };

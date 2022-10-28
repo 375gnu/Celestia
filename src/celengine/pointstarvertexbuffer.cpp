@@ -27,19 +27,20 @@ PointStarVertexBuffer::PointStarVertexBuffer(const Renderer &renderer,
 {
 }
 
-void PointStarVertexBuffer::startSprites()
+void PointStarVertexBuffer::start()
 {
     m_prog = m_renderer.getShaderManager().getShader("star");
-    m_pointSizeFromVertex = true;
-}
+    if (m_prog == nullptr)
+        return;
 
-void PointStarVertexBuffer::startBasicPoints()
-{
-    ShaderProperties shadprop;
-    shadprop.texUsage = ShaderProperties::VertexColors | ShaderProperties::StaticPointSize;
-    shadprop.lightModel = ShaderProperties::UnlitModel;
-    m_prog = m_renderer.getShaderManager().getShader(shadprop);
-    m_pointSizeFromVertex = false;
+    m_prog->use();
+    m_prog->setMVPMatrices(m_renderer.getProjectionMatrix(), m_renderer.getModelViewMatrix());
+    m_prog->samplerParam("starTex") = 0;
+    m_prog->floatParam("limitingMagnitude") = m_limitingMagnitude;
+    m_prog->floatParam("pointScale") = m_pointScale;
+    std::array<int, 4> viewport;
+    m_renderer.getViewport(viewport);
+    m_prog->vec4Param("viewport") = Eigen::Map<Eigen::Vector4i>(viewport.data()).cast<float>();
 }
 
 void PointStarVertexBuffer::render()
@@ -148,4 +149,9 @@ void PointStarVertexBuffer::setTexture(Texture *texture)
 void PointStarVertexBuffer::setPointScale(float pointSize)
 {
     m_pointScale = pointSize;
+}
+
+void PointStarVertexBuffer::setLimitingMagnitude(float limitingMagnitude)
+{
+    m_limitingMagnitude = limitingMagnitude;
 }

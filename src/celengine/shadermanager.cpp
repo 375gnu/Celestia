@@ -3611,6 +3611,12 @@ CelestiaGLProgram::samplerParam(const std::string& paramName)
 }
 
 
+Vec2ShaderParameter
+CelestiaGLProgram::vec2Param(const std::string& paramName)
+{
+    return Vec2ShaderParameter(program->getID(), paramName.c_str());
+}
+
 Vec3ShaderParameter
 CelestiaGLProgram::vec3Param(const std::string& paramName)
 {

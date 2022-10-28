@@ -263,7 +263,6 @@ Renderer::Renderer() :
     saturationMag(1.0f),
     starStyle(FuzzyPointStars),
     pointStarVertexBuffer(nullptr),
-    glareVertexBuffer(nullptr),
     textureResolution(medres),
     frameCount(0),
     lastOrbitCacheFlush(0),
@@ -279,7 +278,6 @@ Renderer::Renderer() :
     m_eclipticLineRenderer(std::make_unique<EclipticLineRenderer>(*this))
 {
     pointStarVertexBuffer = new PointStarVertexBuffer(*this, 2048);
-    glareVertexBuffer = new PointStarVertexBuffer(*this, 2048);
     colorTemp = GetStarColorTable(ColorTableType::Blackbody_D65);
 
     for (int i = 0; i < (int) FontCount; i++)
@@ -294,7 +292,6 @@ Renderer::Renderer() :
 Renderer::~Renderer()
 {
     delete pointStarVertexBuffer;
-    delete glareVertexBuffer;
     delete shaderManager;
 
     for (auto p : m_VertexObjects)
@@ -1875,8 +1872,10 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
             gaussianGlareTex->bind();
             if (glareSize > gl::maxPointSize)
                 renderLargePoint(*this, center, {color, glareAlpha}, glareSize, mvp);
+            /*
             else
                 glareVertexBuffer->addStar(center, {color, glareAlpha}, glareSize);
+            */
         }
     }
 }
@@ -3897,7 +3896,6 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.viewNormal        = observer.getOrientationf().conjugate() * -Vector3f::UnitZ();
     starRenderer.renderList        = &renderList;
     starRenderer.starVertexBuffer  = pointStarVertexBuffer;
-    starRenderer.glareVertexBuffer = glareVertexBuffer;
     starRenderer.fov               = fov;
     starRenderer.cosFOV            = (float) cos(degToRad(calcMaxFOV(fov, getAspectRatio())) / 2.0f);
 
@@ -3909,22 +3907,21 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 
     // = 1.0 at startup
     float effDistanceToScreen = mmToInches((float) REF_DISTANCE_TO_SCREEN) * pixelSize * getScreenDpi();
-    starRenderer.labelThresholdMag = 1.2f * max(1.0f, (faintestMag - 4.0f) * (1.0f - 0.5f * (float) log10(effDistanceToScreen)));
+    starRenderer.labelThresholdMag = 1.2f * max(1.0f, (faintestMag - 4.0f) * (1.0f - 0.5f * log10(effDistanceToScreen)));
+
+    starRenderer.size = BaseStarDiscSize * screenDpi / 96.0f;
+    starRenderer.brightnessScale *= 2.0f;
+    starRenderer.maxDiscSize = starRenderer.size * MaxScaledDiscStarSize;
 
     starRenderer.colorTemp = colorTemp;
 
     gaussianDiscTex->bind();
     starRenderer.starVertexBuffer->setTexture(gaussianDiscTex);
     starRenderer.starVertexBuffer->setPointScale(screenDpi / 96.0f);
-    starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
-    starRenderer.glareVertexBuffer->setPointScale(screenDpi / 96.0f);
+    starRenderer.starVertexBuffer->setLimitingMagnitude(faintestMag);
 
     PointStarVertexBuffer::enable();
-    starRenderer.glareVertexBuffer->startSprites();
-    if (starStyle == PointStars)
-        starRenderer.starVertexBuffer->startBasicPoints();
-    else
-        starRenderer.starVertexBuffer->startSprites();
+    starRenderer.starVertexBuffer->start();
 
     Renderer::PipelineState ps;
     ps.blending = true;
@@ -3949,7 +3946,6 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 #endif
 
     starRenderer.starVertexBuffer->finish();
-    starRenderer.glareVertexBuffer->finish();
     PointStarVertexBuffer::disable();
 
 #ifndef GL_ES
@@ -5439,13 +5435,7 @@ Renderer::renderSolarSystemObjects(const Observer &observer,
         setPipelineState(ps);
 
         PointStarVertexBuffer::enable();
-        glareVertexBuffer->startSprites();
-        glareVertexBuffer->render();
-        glareVertexBuffer->finish();
-        if (starStyle == PointStars)
-            pointStarVertexBuffer->startBasicPoints();
-        else
-            pointStarVertexBuffer->startSprites();
+        pointStarVertexBuffer->start();
         pointStarVertexBuffer->render();
         pointStarVertexBuffer->finish();
         PointStarVertexBuffer::disable();
