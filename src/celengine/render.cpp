@@ -3917,7 +3917,7 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     g_moffatDiscTex->bind();
     starRenderer.starVertexBuffer->setTexture(g_moffatDiscTex);
     starRenderer.starVertexBuffer->setPointScale(screenDpi / 96.0f);
-    starRenderer.starVertexBuffer->setLimitingMagnitude(faintestMag);
+    starRenderer.starVertexBuffer->setLimitingMagnitude(satPoint);
 
     starRenderer.starVertexBuffer->start();
 
