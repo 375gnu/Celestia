@@ -33,16 +33,13 @@ public:
     PointStarVertexBuffer& operator=(const PointStarVertexBuffer&) = delete;
     PointStarVertexBuffer& operator=(PointStarVertexBuffer&&) = delete;
 
-    void startBasicPoints();
-    void startSprites();
+    void start();
     void render();
     void finish();
     void addStar(const Eigen::Vector3f &pos, const Color &color, float size);
     void setTexture(Texture* texture);
     void setPointScale(float);
-
-    static void enable();
-    static void disable();
+    void setLimitingMagnitude(float);
 
 private:
     struct StarVertex
@@ -57,14 +54,11 @@ private:
     capacity_t                      m_nStars                { 0 };
     std::unique_ptr<StarVertex[]>   m_vertices;
     Texture                        *m_texture               { nullptr };
-    bool                            m_pointSizeFromVertex   { false };
+    float                           m_limitingMagnitude     { 7.0f };
     float                           m_pointScale            { 1.0f };
     CelestiaGLProgram              *m_prog                  { nullptr };
     celestia::render::VertexObject  m_vao;
 
-    static PointStarVertexBuffer    *current;
-
-    void makeCurrent();
     void setupVertexArrayObject();
 };
 

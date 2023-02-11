@@ -8,6 +8,7 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
+#include <fmt/format.h>
 #include "glsupport.h"
 #include <celutil/color.h>
 #include "objectrenderer.h"
@@ -15,8 +16,6 @@
 #include "render.h"
 #include "texture.h"
 #include "pointstarvertexbuffer.h"
-
-PointStarVertexBuffer* PointStarVertexBuffer::current = nullptr;
 
 PointStarVertexBuffer::PointStarVertexBuffer(const Renderer &renderer,
                                              capacity_t capacity) :
@@ -27,58 +26,36 @@ PointStarVertexBuffer::PointStarVertexBuffer(const Renderer &renderer,
 {
 }
 
-void PointStarVertexBuffer::startSprites()
+void PointStarVertexBuffer::start()
 {
     m_prog = m_renderer.getShaderManager().getShader("star");
-    m_pointSizeFromVertex = true;
-}
-
-void PointStarVertexBuffer::startBasicPoints()
-{
-    ShaderProperties shadprop;
-    shadprop.texUsage = ShaderProperties::VertexColors | ShaderProperties::StaticPointSize;
-    shadprop.lightModel = ShaderProperties::UnlitModel;
-    m_prog = m_renderer.getShaderManager().getShader(shadprop);
-    m_pointSizeFromVertex = false;
+    if (m_prog == nullptr)
+        return;
+#ifndef GL_ES
+    glEnable(GL_POINT_SPRITE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+#endif
+    m_prog->use();
+    m_prog->setMVPMatrices(m_renderer.getCurrentProjectionMatrix(), m_renderer.getCurrentModelViewMatrix());
+    m_prog->samplerParam("starTex") = 0;
+    m_prog->floatParam("limitingMagnitude") = m_limitingMagnitude;
+    m_prog->floatParam("pointScale") = m_pointScale;
 }
 
 void PointStarVertexBuffer::render()
 {
-    if (m_nStars != 0)
-    {
-        makeCurrent();
-        if (m_texture != nullptr)
-            m_texture->bind();
-        m_vao.allocate(nullptr); // orphan the buffer
-        m_vao.setBufferData(m_vertices.get(), 0, m_nStars * sizeof(StarVertex));
-        m_vao.draw(GL_POINTS, m_nStars);
-        m_nStars = 0;
-    }
-}
-
-void PointStarVertexBuffer::makeCurrent()
-{
-    if (current == this || m_prog == nullptr)
+    if (m_nStars == 0)
         return;
 
-    if (current != nullptr)
-        current->finish();
+    if (m_texture != nullptr)
+        m_texture->bind();
 
     setupVertexArrayObject();
-
-    m_prog->use();
-    m_prog->setMVPMatrices(m_renderer.getCurrentProjectionMatrix(), m_renderer.getCurrentModelViewMatrix());
-    if (m_pointSizeFromVertex)
-    {
-        m_prog->samplerParam("starTex") = 0;
-        m_vao.enableVertexAttribArray(CelestiaGLProgram::PointSizeAttributeIndex);
-    }
-    else
-    {
-        m_prog->pointScale = m_pointScale;
-        m_vao.setVertexAttribConstant(CelestiaGLProgram::PointSizeAttributeIndex, 1.0f);
-    }
-    current = this;
+    m_vao.allocate(nullptr); // orphan the buffer
+    m_vao.setBufferData(m_vertices.get(), 0, m_nStars * sizeof(StarVertex));
+    m_vao.draw(GL_POINTS, m_nStars);
+    m_nStars = 0;
+    //fmt::print("render -> {}\n", glGetError());
 }
 
 void PointStarVertexBuffer::setupVertexArrayObject()
@@ -115,25 +92,13 @@ void PointStarVertexBuffer::setupVertexArrayObject()
             sizeof(StarVertex),
             offsetof(StarVertex, size));
     }
+    //fmt::print("setupVertexArrayObject -> {}\n", glGetError());
 }
 
 void PointStarVertexBuffer::finish()
 {
     render();
     m_vao.unbind();
-    current = nullptr;
-}
-
-void PointStarVertexBuffer::enable()
-{
-#ifndef GL_ES
-    glEnable(GL_POINT_SPRITE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
-}
-
-void PointStarVertexBuffer::disable()
-{
 #ifndef GL_ES
     glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
     glDisable(GL_POINT_SPRITE);
@@ -148,4 +113,9 @@ void PointStarVertexBuffer::setTexture(Texture *texture)
 void PointStarVertexBuffer::setPointScale(float pointSize)
 {
     m_pointScale = pointSize;
+}
+
+void PointStarVertexBuffer::setLimitingMagnitude(float limitingMagnitude)
+{
+    m_limitingMagnitude = limitingMagnitude;
 }

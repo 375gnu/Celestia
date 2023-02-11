@@ -15,6 +15,8 @@
 #include "render.h"
 #include "pointstarrenderer.h"
 
+#include <iostream>
+
 using namespace std;
 using namespace Eigen;
 
@@ -36,6 +38,8 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
 {
     if (distance > distanceLimit)
         return;
+
+    //std::cout << appMag <<'\n';
 
     Vector3f starPos = star.getPosition();
 
@@ -93,19 +97,7 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
         // planets.
         if (distance > SolarSystemMaxDistance)
         {
-            float pointSize, alpha, glareSize, glareAlpha;
-            float size = BaseStarDiscSize * static_cast<float>(renderer->getScreenDpi()) / 96.0f;
-            renderer->calculatePointSize(appMag,
-                                         size,
-                                         pointSize,
-                                         alpha,
-                                         glareSize,
-                                         glareAlpha);
-
-            /*if (glareSize != 0.0f)
-                glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), glareSize);*/
-            if (pointSize != 0.0f)
-                starVertexBuffer->addStar(relPos, Color(starColor, alpha), pointSize);
+            starVertexBuffer->addStar(relPos, starColor, appMag);
 
             // Place labels for stars brighter than the specified label threshold brightness
             if (((labelMode & Renderer::StarLabels) != 0) && appMag < labelThresholdMag)
