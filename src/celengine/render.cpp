@@ -355,21 +355,21 @@ static void RectToSphericalMapEval(float x, float y, float z,
 #endif
 
 
-static void BuildMoffatDiscMipLevel(unsigned char* mipPixels,
-                                    unsigned int log2size,
+static void BuildMoffatDiscMipLevel(std::uint8_t* mipPixels,
+                                    int log2size,
                                     float fwhm,
                                     float power)
 {
-    unsigned int size = 1 << log2size;
+    int size = 1 << log2size;
     constexpr float beta = 4.765f;
     float alpha = fwhm / (2.f * sqrt(pow(2.f, 1.f / beta) - 1.f));
     float alpha2 = alpha * alpha;
     float a = (beta - 1.f) / (celestia::numbers::pi_v<float> * alpha2);
 
-    for (unsigned int i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
     {
         float y = static_cast<float>(i - size / 2);
-        for (unsigned int j = 0; j < size; j++)
+        for (int j = 0; j < size; j++)
         {
             float x = static_cast<float>(j - size / 2);
             float r2 = x * x + y * y;
@@ -1872,6 +1872,7 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
         //
         // TODO: Stars look fine but planets look unrealistically bright
         // with halos.
+        /*
         if (useHalos && glareAlpha > 0.0f)
         {
             Eigen::Vector3f center = calculateQuadCenter(m_cameraOrientation, position, radius);
@@ -1881,6 +1882,7 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
             else
                 glareVertexBuffer->addStar(center, {color, glareAlpha}, glareSize);
         }
+        */
     }
 }
 

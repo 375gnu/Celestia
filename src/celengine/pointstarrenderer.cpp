@@ -102,8 +102,8 @@ void PointStarRenderer::process(const Star& star, float distance, float appMag)
                                          glareSize,
                                          glareAlpha);
 
-            if (glareSize != 0.0f)
-                glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), glareSize);
+            /*if (glareSize != 0.0f)
+                glareVertexBuffer->addStar(relPos, Color(starColor, glareAlpha), glareSize);*/
             if (pointSize != 0.0f)
                 starVertexBuffer->addStar(relPos, Color(starColor, alpha), pointSize);
 
