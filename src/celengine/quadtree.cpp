@@ -1,0 +1,978 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <memory>
+#include <vector>
+
+#include <epoxy/gl.h>
+
+#include <SDL.h>
+#include <SDL_opengl.h>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
+#include "vecgl.h"
+
+#define PI (0x1.921fb54442d18469898cc51701b839a2p1)
+
+using namespace celestia;
+
+static int offset = -1;
+
+constexpr int N = 9;
+
+static const char VertexShader[] = R"glsl(
+uniform vec2 offset;
+
+const float PI = 3.1415927;
+void main(void)
+{
+    float phi   = (gl_Vertex.x + offset.x) * PI;         // longitude
+    float theta = (0.5 - (gl_Vertex.y + offset.y)) * PI; // latitude
+
+    float sphi   = sin(phi);
+    float cphi   = cos(phi);
+    float stheta = sin(theta);
+    float ctheta = cos(theta);
+
+    vec4 pos = vec4(ctheta * cphi, stheta, ctheta * sphi, 1.0);
+    gl_Position = gl_ModelViewProjectionMatrix * pos;
+}
+)glsl";
+
+static const char FragmentShader[] = R"glsl(
+void main(void)
+{
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+}
+)glsl";
+
+
+namespace celestia::engine
+{
+namespace
+{
+Eigen::Vector4f MapToSphere(double x, double y)
+{
+    //fmt::print("MapToSphere({}, {})\n", x, y);
+    double phi   = x * double(PI);         // longitude
+    double theta = (0.5 - y) * double(PI); // latitude
+
+    double sphi, cphi, stheta, ctheta;
+    sincos(phi, &sphi, &cphi);
+    sincos(theta, &stheta, &ctheta);
+
+    return Eigen::Vector4d(ctheta * cphi, stheta, -ctheta * sphi, 1.0).cast<float>();
+} // anonymous namespace
+}
+
+class QuadTree;
+
+class Frustum
+{
+public:
+    Frustum() = default;
+
+    Frustum(const Eigen::Matrix4f &m)
+    {
+        Eigen::Vector4f n;
+
+        // Left clipping plane
+        n = m.col(3) + m.col(0);
+        p[0] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        // Right clipping plane
+        n = m.col(3) - m.col(0);
+        p[1] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        // Bottom clipping plane
+        n = m.col(3) + m.col(1);
+        p[2] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        // Top clipping plane
+        n = m.col(3) - m.col(1);
+        p[3] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        // Near clipping plane
+        n = m.col(3) + m.col(2);
+        p[4] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        // Far clipping plane
+        n = m.col(3) - m.col(2);
+        p[5] = Eigen::Hyperplane<float, 3>(n.head(3), n.w());
+
+        for (auto &plane : p)
+            plane.normalize();
+    }
+
+    bool isInside(const Eigen::Vector3f &v) const
+    {
+        return std::all_of(std::begin(p), std::end(p), [&v](const auto &plane) { return plane.signedDistance(v) >= 0; });
+    }
+
+private:
+    std::array<Eigen::Hyperplane<float, 3>, 6> p;
+};
+
+class Patch
+{
+public:
+    Patch(double width, double height);
+    ~Patch() = default;
+
+    void render(double offsetX, double offsetY) const;
+
+private:
+    double m_width;
+    double m_height;
+
+    GLuint m_vbo { 0 };
+    static GLuint m_ibo;
+    static int m_idxCount;
+
+public:
+    static int rendered;
+};
+
+int Patch::rendered = 0;
+GLuint Patch::m_ibo = 0;
+int Patch::m_idxCount = 0;
+
+class Node
+{
+public:
+    Node(QuadTree *qt, int level, double startX, double startY, double endX, double endY);
+    ~Node() = default;
+
+    const Patch*    getPatch()  const;
+    bool            visible()   const;
+    void            render();
+
+    void debug() const;
+
+private:
+    void split();
+    bool splitable() const;
+
+    std::array<std::unique_ptr<Node>, 4> m_nodes;
+
+    QuadTree *m_qt;
+
+    int m_level;
+
+    double m_startX;
+    double m_startY;
+    double m_endX;
+    double m_endY;
+
+    double m_error;
+
+    std::array<Eigen::Vector4f, 4> m_mapped;
+};
+
+class QuadTree
+{
+public:
+    QuadTree(double error, double startX, double startY, double endX, double endY);
+
+    const Node* getNode()  const { return m_node.get(); }
+
+    double getError() const { return m_error; }
+    void setError(double error) { m_error = error; }
+
+    void setMVPMatrix(const Eigen::Matrix4f&);
+    void setFrustum(const Frustum&);
+    const Eigen::Matrix4f& getMVPMatrix() const { return m_mvp; }
+    const Frustum& getFrustum() const { return m_frustum; }
+
+    void render() const;
+
+    void debug() const { m_node->debug(); }
+
+private:
+    const Patch* getPatch(int level) const;
+    const Patch* createPatch(int level, double width, double height);
+
+    Eigen::Matrix4f m_mvp;
+    Frustum         m_frustum;
+
+    std::vector<std::unique_ptr<Patch>> m_patches;
+
+    double m_error;
+
+    std::unique_ptr<Node> m_node;
+
+    friend class Node;
+};
+} // namespace celestia::engine
+
+
+namespace celestia::engine
+{
+namespace
+{
+} // anonymous namespace
+
+QuadTree::QuadTree(double error, double startX, double startY, double endX, double endY) :
+    m_error(error),
+    m_node(std::make_unique<Node>(this, 0, startX, startY, endX, endY))
+{
+}
+
+const Patch*
+QuadTree::getPatch(int level) const
+{
+    if (m_patches.size() < level + 1)
+        return nullptr;
+
+    return m_patches[level].get();
+}
+
+const Patch*
+QuadTree::createPatch(int level, double width, double height)
+{
+    if (m_patches.size() < level + 1)
+    {
+        while (m_patches.size() < level)
+            m_patches.emplace_back(nullptr);
+        m_patches.emplace_back(std::make_unique<Patch>(width, height));
+    }
+
+    if (auto *patch = m_patches[level].get(); patch != nullptr)
+        return patch;
+
+    m_patches[level] = std::make_unique<Patch>(width, height);
+    return m_patches[level].get();
+}
+
+void
+QuadTree::render() const
+{
+    m_node->render();
+}
+
+void
+QuadTree::setMVPMatrix(const Eigen::Matrix4f &mvp)
+{
+    m_mvp = mvp;
+}
+
+void
+QuadTree::setFrustum(const Frustum &frustum)
+{
+    m_frustum = frustum;
+}
+
+Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, double endY) :
+    m_qt(qt),
+    m_level(level),
+    m_startX(startX),
+    m_startY(startY),
+    m_endX(endX),
+    m_endY(endY),
+    m_error(-1.0)
+{
+    //fmt::print("{} {}\n", m_startX,m_endX);
+    m_mapped[0] = MapToSphere(m_startX, m_startY);
+    m_mapped[1] = MapToSphere(m_startX, m_endY);
+    m_mapped[2] = MapToSphere(m_endX, m_startY);
+    m_mapped[3] = MapToSphere(m_endX, m_endY);
+}
+
+void
+Node::render()
+{
+    if (!visible())
+        return;
+
+    if (!splitable())
+    {
+        auto patch = m_qt->getPatch(m_level);
+        if (patch == nullptr)
+            patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
+        patch->render(m_startX, m_startY);
+    }
+    else
+    {
+        split();
+        std::for_each(m_nodes.begin(), m_nodes.end(), [](const auto &node) { node->render(); });
+    }
+}
+
+void
+Node::split()
+{
+    if (m_error == m_qt->getError())
+        return;
+    // endY     +---------+---------+
+    //          |    2    |    3    |
+    // halfY    +---------+---------+
+    //          |    0    |    1    |
+    // startY   +---------+---------+
+    //        startX    halfX      endX
+    double halfX = (m_startX + m_endX) * 0.5;
+    double halfY = (m_startY + m_endY) * 0.5;
+    int    level = m_level + 1;
+
+    m_nodes[0] = std::make_unique<Node>(m_qt, level, m_startX, m_startY, halfX, halfY);
+    m_nodes[1] = std::make_unique<Node>(m_qt, level, halfX, m_startY, m_endX, halfY);
+    m_nodes[2] = std::make_unique<Node>(m_qt, level, m_startX, halfY, halfX, m_endY);
+    m_nodes[3] = std::make_unique<Node>(m_qt, level, halfX, halfY, m_endX, m_endY);
+
+    m_error = m_qt->getError();
+}
+
+bool
+Node::splitable() const
+{
+    return (m_endX - m_startX > m_qt->getError()) && (m_endY - m_startY > m_qt->getError());
+}
+
+const Patch*
+Node::getPatch() const
+{
+    return m_qt->getPatch(m_level);
+}
+
+bool check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point)
+{
+    Eigen::Vector4f pos = mvp * point;
+    //fmt::print("{}\n", pos.transpose());
+    return (pos.x() >= -pos.w() && pos.x() <= pos.w() && pos.y() >= -pos.w() && pos.y() <= pos.w());
+}
+
+bool
+Node::visible() const // TODO: check patch normal direction
+{
+    if (m_level == 0)
+        return true;
+
+    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[0]))
+        return true;
+    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[1]))
+        return true;
+    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[2]))
+        return true;
+    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[3]))
+        return true;
+    return false;
+}
+
+void
+Node::debug() const
+{
+    bool _split = splitable();
+    //fmt::print("start=[{}, {}], end=[{}, {}], level={}, split={}.\n", m_startX, m_startY, m_endX, m_endY, m_level, _split);
+
+    if (_split)
+    {
+        for (const auto &node : m_nodes)
+            if (node != nullptr) node->debug();
+    }
+}
+
+Patch::Patch(double width, double height) :
+    m_width(width),
+    m_height(height)
+{
+    std::vector<Eigen::Vector2f> vertices;
+    vertices.reserve(N*N);
+
+    double stepX = m_width / static_cast<double>(N);
+    double stepY = m_height / static_cast<double>(N);
+
+    for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
+    {
+        for (double y = 0.0; y < m_height + stepY * 0.1; y += stepY)
+        {
+            vertices.emplace_back((float) x, (float) y);
+        }
+    }
+
+    glGenBuffers(1, &m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(vertices[0]), vertices.data(), GL_STATIC_DRAW);
+
+    if (m_ibo == 0)
+    {
+        std::vector<unsigned short> indices;
+        indices.reserve(2*N*(N+1)+N);
+        for (int i = 0; i < N; i++)
+        {
+            int baseVertex = i * (N+1);
+
+            //if (i != 0) m_indices.push_back(baseVertex);
+            for (int j = 0; j <= N; j++)
+            {
+                int v = baseVertex + j;
+                indices.push_back(v);
+                indices.push_back(v + N + 1);
+            }
+            indices.push_back(65535);
+            //if (i != N-1) m_indices.push_back(m_indices.back());
+        }
+        glGenBuffers(1, &m_ibo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(indices[0]), indices.data(), GL_STATIC_DRAW);
+        m_idxCount = indices.size();
+    }
+}
+
+void
+Patch::render(double offsetX, double offsetY) const
+{
+#if 0
+    std::vector<Eigen::Vector4f> mapped;
+    mapped.reserve(m_vertices.size());
+
+    for (const auto &v : m_vertices)
+    {
+        mapped.push_back(MapToSphere(v.x() + offsetX, v.y() + offsetY));
+    }
+#endif
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+
+    glEnable(GL_PRIMITIVE_RESTART);
+    glPrimitiveRestartIndex(65535);
+    float v[2] = { (float) offsetX, (float) offsetY };
+    glUniform2fv(offset, 1, v);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(2, GL_FLOAT, 0, nullptr);
+    glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisable(GL_PRIMITIVE_RESTART);
+
+    rendered++;
+}
+
+} // namespace celestia::engine
+
+namespace
+{
+template<typename T> inline constexpr T degToRad(T d)
+{
+    return d / static_cast<T>(180) * (T)PI;
+}
+
+/*! Return an perspective projection matrix
+ */
+template<class T> Eigen::Matrix<T, 4, 4>
+Perspective(T fovy, T aspect, T nearZ, T farZ)
+{
+    using std::cos, std::sin;
+
+    if (aspect == static_cast<T>(0))
+        return Eigen::Matrix<T, 4, 4>::Identity();
+
+    T deltaZ = farZ - nearZ;
+    if (deltaZ == static_cast<T>(0))
+        return Eigen::Matrix<T, 4, 4>::Identity();
+
+    T angle = degToRad(fovy / static_cast<T>(2));
+    T sine = sin(angle);
+    if (sine == static_cast<T>(0))
+        return Eigen::Matrix<T, 4, 4>::Identity();
+    T ctg = cos(angle) / sine;
+
+    Eigen::Matrix<T, 4, 4> m = Eigen::Matrix<T, 4, 4>::Identity();
+    m(0, 0) = ctg / aspect;
+    m(1, 1) = ctg;
+    m(2, 2) = -(farZ + nearZ) / deltaZ;
+    m(2, 3) = static_cast<T>(-2) * nearZ * farZ / deltaZ;
+    m(3, 2) = static_cast<T>(-1);
+    m(3, 3) = static_cast<T>(0);
+    return m;
+}
+
+class SDL_Application
+{
+ public:
+    SDL_Application() = delete;
+    SDL_Application(std::string_view name, int w, int h) :
+        m_appName       { name },
+        m_windowWidth   { w },
+        m_windowHeight  { h }
+    {
+            m_qt = std::make_unique<celestia::engine::QuadTree>(m_error, 0.0, 0.0, 1.0, 1.0);
+    }
+    ~SDL_Application();
+
+    static std::shared_ptr<SDL_Application> init(std::string_view, int, int);
+
+    bool createOpenGLWindow();
+
+    bool initCelestiaCore();
+    void run();
+    std::string_view getError() const;
+
+ private:
+    void display();
+    float getAspectRatio() const;
+    void updateGL();
+
+    // handlers
+    void handleTextInputEvent(const SDL_TextInputEvent &event);
+    void handleKeyPressEvent(const SDL_KeyboardEvent &event);
+    void handleKeyReleaseEvent(const SDL_KeyboardEvent &event);
+    void handleMousePressEvent(const SDL_MouseButtonEvent &event);
+    void handleMouseReleaseEvent(const SDL_MouseButtonEvent &event);
+    void handleMouseWheelEvent(const SDL_MouseWheelEvent &event);
+    void handleMouseMotionEvent(const SDL_MouseMotionEvent &event);
+    void handleWindowEvent(const SDL_WindowEvent &event);
+
+    // aux functions
+    void toggleFullscreen();
+    void copyURL();
+    void pasteURL();
+    void configure() const;
+
+    // state variables
+    std::string m_appName;
+    int m_windowWidth;
+    int m_windowHeight;
+
+    int m_lastX                 { 0 };
+    int m_lastY                 { 0 };
+    bool m_cursorVisible        { true };
+    bool m_fullscreen           { false };
+
+    SDL_Window   *m_mainWindow  { nullptr };
+    SDL_GLContext m_glContext   { nullptr };
+
+    std::unique_ptr<celestia::engine::QuadTree> m_qt;
+
+    Eigen::Matrix4f m_projection { Eigen::Matrix4f::Identity() };
+    Eigen::Matrix4f m_modelView  { Eigen::Matrix4f::Identity() };
+
+    Eigen::Vector3f m_cameraPos{ 0.0f, 0.0f, -3.0f };
+
+    double m_error { 0.5 };
+};
+
+std::shared_ptr<SDL_Application>
+SDL_Application::init(std::string_view name, int w, int h)
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        return nullptr;
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+#ifdef GL_ES
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
+    return std::make_shared<SDL_Application>(name, w, h);
+}
+
+SDL_Application::~SDL_Application()
+{
+    //m_qt->debug();
+    if (m_glContext != nullptr)
+        SDL_GL_DeleteContext(m_glContext);
+    if (m_mainWindow != nullptr)
+        SDL_DestroyWindow(m_mainWindow);
+    SDL_Quit();
+}
+
+bool
+SDL_Application::createOpenGLWindow()
+{
+    m_mainWindow = SDL_CreateWindow(m_appName.c_str(),
+                                    SDL_WINDOWPOS_CENTERED,
+                                    SDL_WINDOWPOS_CENTERED,
+                                    m_windowWidth,
+                                    m_windowHeight,
+                                    SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_RESIZABLE);
+    if (m_mainWindow == nullptr)
+        return false;
+
+    m_glContext = SDL_GL_CreateContext(m_mainWindow);
+    if (m_glContext == nullptr)
+        return false;
+
+    // First try to enable adaptive sync and then vsync
+    if (SDL_GL_SetSwapInterval(-1) == -1)
+        SDL_GL_SetSwapInterval(1);
+    return true;
+}
+
+void
+SDL_Application::run()
+{
+    updateGL();
+
+    SDL_StartTextInput();
+
+    bool quit = false;
+    while (!quit)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event) != 0)
+        {
+            switch (event.type)
+            {
+            case SDL_QUIT:
+                quit = true;
+                break;
+            case SDL_TEXTINPUT:
+                handleTextInputEvent(event.text);
+                break;
+            case SDL_KEYDOWN:
+                handleKeyPressEvent(event.key);
+                break;
+            case SDL_KEYUP:
+                handleKeyReleaseEvent(event.key);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                handleMousePressEvent(event.button);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                handleMouseReleaseEvent(event.button);
+                break;
+            case SDL_MOUSEWHEEL:
+                handleMouseWheelEvent(event.wheel);
+                break;
+            case SDL_MOUSEMOTION:
+                handleMouseMotionEvent(event.motion);
+                break;
+            case SDL_WINDOWEVENT:
+                handleWindowEvent(event.window);
+                break;
+            default:
+                break;
+            }
+        }
+        display();
+    }
+}
+
+float
+SDL_Application::getAspectRatio() const
+{
+    return static_cast<float>(m_windowWidth) / static_cast<float>(m_windowHeight);
+}
+
+void
+SDL_Application::updateGL()
+{
+    m_projection = Perspective(45.0f, getAspectRatio(), 0.0f, 1.0f);
+    m_modelView = Eigen::Matrix4f::Identity() * vecgl::translate(m_cameraPos);
+    m_qt->setMVPMatrix(m_projection * m_modelView);
+    m_qt->setFrustum(celestia::engine::Frustum(m_projection * Eigen::Matrix4f::Identity().transpose()));
+
+    glViewport(0, 0, m_windowWidth, m_windowHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadMatrixf(m_projection.data());
+    glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(m_modelView.data());
+}
+
+void
+SDL_Application::display()
+{
+    using celestia::engine::Patch;
+    int oldPatches = Patch::rendered;
+    Patch::rendered = 0;
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    m_qt->setError(m_error);
+    m_qt->render();
+    SDL_GL_SwapWindow(m_mainWindow);
+
+    if (oldPatches != Patch::rendered)
+        fmt::print("Rendered {} patches\n", Patch::rendered);
+}
+
+void
+SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
+{
+    switch (event.keysym.sym)
+    {
+    case SDLK_KP_PLUS:
+        m_error *= 0.5;
+        break;
+    case SDLK_KP_MINUS:
+        m_error *= 1.0/0.5;
+        break;
+    case SDLK_UP:
+        m_cameraPos.z() += 0.1f;
+        updateGL();
+        break;
+    case SDLK_DOWN:
+        m_cameraPos.z() -= 0.1f;
+        updateGL();
+        break;
+    case SDLK_LEFT:
+        m_cameraPos.x() -= 0.1f;
+        updateGL();
+        break;
+    case SDLK_RIGHT:
+        m_cameraPos.x() += 0.1f;
+        updateGL();
+        break;
+    case SDLK_PAGEDOWN:
+        m_cameraPos.y() -= 0.1f;
+        updateGL();
+        break;
+    case SDLK_PAGEUP:
+        m_cameraPos.y() += 0.1f;
+        updateGL();
+        break;
+    default:
+        break;
+    }
+#if 0
+    switch (event.keysym.sym)
+    {
+    case SDLK_TAB:
+    case SDLK_BACKSPACE:
+    case SDLK_DELETE:
+    case SDLK_ESCAPE:
+        m_appCore->charEntered(event.keysym.sym, 0);
+    case SDLK_RETURN:
+        return;
+    }
+
+    int key = toCelestiaKey(event.keysym.sym);
+    if (key == -1)
+        return;
+
+    int mod = 0;
+    if ((event.keysym.mod & KMOD_CTRL) != 0)
+    {
+        int k = std::tolower(key);
+        if (k >= 'a' && k <= 'z')
+        {
+            switch (k)
+            {
+            case 'c':
+                copyURL();
+                break;
+            case 'v':
+                pasteURL();
+                break;
+            default:
+                key = k + 1 - 'a';
+                m_appCore->charEntered(key, mod);
+            }
+            return;
+        }
+        mod |= CelestiaCore::ControlKey;
+    }
+    if ((event.keysym.mod & KMOD_SHIFT) != 0)
+        mod |= CelestiaCore::ShiftKey;
+
+    m_appCore->keyDown(key, mod);
+#endif
+}
+
+void
+SDL_Application::handleKeyReleaseEvent(const SDL_KeyboardEvent &event)
+{
+#if 0
+    if (event.keysym.sym == SDLK_RETURN)
+    {
+        if ((event.keysym.mod & KMOD_ALT) != 0)
+            toggleFullscreen();
+        else
+            m_appCore->charEntered(SDLK_RETURN, 0);
+    }
+    else
+    {
+        int key = toCelestiaKey(event.keysym.sym);
+        if (key == -1)
+            return;
+        int mod = 0;
+        if ((event.keysym.mod & KMOD_CTRL) != 0)
+        {
+            mod |= CelestiaCore::ControlKey;
+            if (key >= '0' && key <= '9')
+                m_appCore->charEntered(key, mod);
+        }
+        if ((event.keysym.mod & KMOD_SHIFT) != 0)
+            mod |= CelestiaCore::ShiftKey;
+
+        m_appCore->keyUp(key, 0);
+    }
+#endif
+}
+
+void
+SDL_Application::handleTextInputEvent(const SDL_TextInputEvent &event)
+{
+    //m_appCore->charEntered(event.text, 0);
+}
+
+#if 0
+static int
+toCelestiaButton(int button)
+{
+    switch (button)
+    {
+    case SDL_BUTTON_LEFT:
+        return CelestiaCore::LeftButton;
+    case SDL_BUTTON_MIDDLE:
+        return CelestiaCore::MiddleButton;
+    case SDL_BUTTON_RIGHT:
+        return CelestiaCore::RightButton;
+    default:
+        return -1;
+    }
+}
+#endif
+
+void
+SDL_Application::handleMousePressEvent(const SDL_MouseButtonEvent &event)
+{
+#if 0
+    m_lastX = event.x;
+    m_lastY = event.y;
+    m_appCore->mouseButtonDown(event.x, event.y, button);
+#endif
+}
+
+void
+SDL_Application::handleMouseReleaseEvent(const SDL_MouseButtonEvent &event)
+{
+#if 0
+    int button = toCelestiaButton(event.button);;
+    if (button == -1)
+        return;
+
+    if (button & (CelestiaCore::LeftButton | CelestiaCore::RightButton))
+    {
+        if (!m_cursorVisible)
+        {
+            SDL_ShowCursor(SDL_ENABLE);
+            m_cursorVisible = true;
+            SDL_WarpMouseInWindow(m_mainWindow, m_lastX, m_lastY);
+        }
+    }
+    m_lastX = event.x;
+    m_lastY = event.y;
+    m_appCore->mouseButtonUp(event.x, event.y, button);
+#endif
+}
+
+void
+SDL_Application::handleMouseWheelEvent(const SDL_MouseWheelEvent &event)
+{
+#if 0
+    if (event.y > 0) // scroll up
+        m_appCore->mouseWheel(-1.0f, 0);
+    else if (event.y < 0) // scroll down
+        m_appCore->mouseWheel(1.0f, 0);
+#endif
+}
+
+void
+SDL_Application::handleMouseMotionEvent(const SDL_MouseMotionEvent &event)
+{
+#if 0
+    if (event.state & (SDL_BUTTON_LMASK | SDL_BUTTON_RMASK))
+    {
+        int buttons = 0;
+        if (event.state & SDL_BUTTON_LMASK)
+            buttons |= CelestiaCore::LeftButton;
+        if (event.state & SDL_BUTTON_RMASK)
+            buttons |= CelestiaCore::RightButton;
+
+        int x = event.x - m_lastX;
+        int y = event.y - m_lastY;
+        if (m_cursorVisible)
+        {
+            SDL_ShowCursor(SDL_DISABLE);
+            m_cursorVisible = false;
+            m_lastX = event.x;
+            m_lastY = event.y;
+        }
+        SDL_WarpMouseInWindow(m_mainWindow, m_lastX, m_lastY);
+    }
+#endif
+}
+
+void
+SDL_Application::handleWindowEvent(const SDL_WindowEvent &event)
+{
+    switch (event.event)
+    {
+    case SDL_WINDOWEVENT_RESIZED:
+        m_windowWidth  = event.data1;
+        m_windowHeight = event.data2;
+        updateGL();
+        break;
+    default:
+        break;
+    }
+}
+
+
+}
+
+int main()
+{
+    auto app = SDL_Application::init("quadtree", 640, 480);
+
+    if (!app->createOpenGLWindow())
+    {
+        return 1;
+    }
+
+    GLint status;
+
+    GLuint vsid = glCreateShader(GL_VERTEX_SHADER);
+    const char *v[] = { VertexShader };
+    glShaderSource(vsid, 1, v, nullptr);
+    glCompileShader(vsid);
+    glGetShaderiv(vsid, GL_COMPILE_STATUS, &status);
+    if (status != GL_TRUE)
+    {
+        fmt::print("Failed to compile vertex shader!\n");
+        return 1;
+    }
+
+    GLuint fsid = glCreateShader(GL_FRAGMENT_SHADER);
+    const char *f[] = { FragmentShader };
+    glShaderSource(fsid, 1, f, nullptr);
+    glCompileShader(fsid);
+    glGetShaderiv(fsid, GL_COMPILE_STATUS, &status);
+    if (status != GL_TRUE)
+    {
+        fmt::print("Failed to compile fragment shader!\n");
+        return 1;
+    }
+
+    GLuint id = glCreateProgram();
+    glAttachShader(id, vsid);
+    glAttachShader(id, fsid);
+
+    glLinkProgram(id);
+    glGetProgramiv(id, GL_LINK_STATUS, &status);
+    if (status != GL_TRUE)
+    {
+        fmt::print("Failed to link program!\n");
+        return 1;
+    }
+
+    offset = glGetUniformLocation(id, "offset");
+    if (offset == -1)
+    {
+        fmt::print("Failed to get `offset` uniform location!\n");
+        return 1;
+    }
+
+    glUseProgram(id);
+    glFrontFace(GL_CCW);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    app->run();
+}
