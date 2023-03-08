@@ -150,7 +150,7 @@ public:
 
     const Patch*    getPatch()  const;
     bool            visible()   const;
-    void            render();
+    void            render(int level);
 
     void debug() const;
 
@@ -162,34 +162,32 @@ private:
 
     QuadTree *m_qt;
 
-    int m_level;
-
     double m_startX;
     double m_startY;
     double m_endX;
     double m_endY;
 
-    double m_error;
-
     std::array<Eigen::Vector4f, 4> m_mapped;
+
+    int m_level;
 };
 
 class QuadTree
 {
 public:
-    QuadTree(double error, double startX, double startY, double endX, double endY);
+    QuadTree(double startX, double startY, double endX, double endY);
 
     const Node* getNode()  const { return m_node.get(); }
 
-    double getError() const { return m_error; }
-    void setError(double error) { m_error = error; }
+//    double getError() const { return m_error; }
+//    void setError(double error) { m_error = error; }
 
     void setMVPMatrix(const Eigen::Matrix4f&);
     void setFrustum(const Frustum&);
     const Eigen::Matrix4f& getMVPMatrix() const { return m_mvp; }
     const Frustum& getFrustum() const { return m_frustum; }
 
-    void render() const;
+    void render(int level) const;
 
     void debug() const { m_node->debug(); }
 
@@ -201,8 +199,6 @@ private:
     Frustum         m_frustum;
 
     std::vector<std::unique_ptr<Patch>> m_patches;
-
-    double m_error;
 
     std::unique_ptr<Node> m_node;
 
@@ -217,8 +213,7 @@ namespace
 {
 } // anonymous namespace
 
-QuadTree::QuadTree(double error, double startX, double startY, double endX, double endY) :
-    m_error(error),
+QuadTree::QuadTree(double startX, double startY, double endX, double endY) :
     m_node(std::make_unique<Node>(this, 0, startX, startY, endX, endY))
 {
 }
@@ -250,9 +245,9 @@ QuadTree::createPatch(int level, double width, double height)
 }
 
 void
-QuadTree::render() const
+QuadTree::render(int level) const
 {
-    m_node->render();
+    m_node->render(level);
 }
 
 void
@@ -273,8 +268,7 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
     m_startX(startX),
     m_startY(startY),
     m_endX(endX),
-    m_endY(endY),
-    m_error(-1.0)
+    m_endY(endY)
 {
     //fmt::print("{} {}\n", m_startX,m_endX);
     m_mapped[0] = MapToSphere(m_startX, m_startY);
@@ -284,12 +278,12 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
 }
 
 void
-Node::render()
+Node::render(int level)
 {
     if (!visible())
         return;
 
-    if (!splitable())
+    if (level == m_level)
     {
         auto patch = m_qt->getPatch(m_level);
         if (patch == nullptr)
@@ -299,15 +293,13 @@ Node::render()
     else
     {
         split();
-        std::for_each(m_nodes.begin(), m_nodes.end(), [](const auto &node) { node->render(); });
+        std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
     }
 }
 
 void
 Node::split()
 {
-    if (m_error == m_qt->getError())
-        return;
     // endY     +---------+---------+
     //          |    2    |    3    |
     // halfY    +---------+---------+
@@ -322,14 +314,13 @@ Node::split()
     m_nodes[1] = std::make_unique<Node>(m_qt, level, halfX, m_startY, m_endX, halfY);
     m_nodes[2] = std::make_unique<Node>(m_qt, level, m_startX, halfY, halfX, m_endY);
     m_nodes[3] = std::make_unique<Node>(m_qt, level, halfX, halfY, m_endX, m_endY);
-
-    m_error = m_qt->getError();
 }
 
 bool
 Node::splitable() const
 {
-    return (m_endX - m_startX > m_qt->getError()) && (m_endY - m_startY > m_qt->getError());
+    //return (m_endX - m_startX > m_qt->getError()) && (m_endY - m_startY > m_qt->getError());
+    return true;
 }
 
 const Patch*
@@ -499,7 +490,7 @@ class SDL_Application
         m_windowWidth   { w },
         m_windowHeight  { h }
     {
-            m_qt = std::make_unique<celestia::engine::QuadTree>(m_error, 0.0, 0.0, 1.0, 1.0);
+            m_qt = std::make_unique<celestia::engine::QuadTree>(0.0, 0.0, 1.0, 1.0);
     }
     ~SDL_Application();
 
@@ -542,6 +533,8 @@ class SDL_Application
     bool m_cursorVisible        { true };
     bool m_fullscreen           { false };
 
+    int m_level                 { 0 };
+
     SDL_Window   *m_mainWindow  { nullptr };
     SDL_GLContext m_glContext   { nullptr };
 
@@ -551,8 +544,6 @@ class SDL_Application
     Eigen::Matrix4f m_modelView  { Eigen::Matrix4f::Identity() };
 
     Eigen::Vector3f m_cameraPos{ 0.0f, 0.0f, -3.0f };
-
-    double m_error { 0.5 };
 };
 
 std::shared_ptr<SDL_Application>
@@ -684,8 +675,7 @@ SDL_Application::display()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_qt->setError(m_error);
-    m_qt->render();
+    m_qt->render(m_level);
     SDL_GL_SwapWindow(m_mainWindow);
 
     if (oldPatches != Patch::rendered)
@@ -698,10 +688,10 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
     switch (event.keysym.sym)
     {
     case SDLK_KP_PLUS:
-        m_error *= 0.5;
+        m_level = std::min(6, m_level+1);
         break;
     case SDLK_KP_MINUS:
-        m_error *= 1.0/0.5;
+        m_level = std::max(0, m_level-1);
         break;
     case SDLK_UP:
         m_cameraPos.z() += 0.1f;
