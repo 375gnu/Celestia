@@ -18,12 +18,14 @@
 #include "vecgl.h"
 
 #define PI (0x1.921fb54442d18469898cc51701b839a2p1)
+#define FOV 30.0f
 
 using namespace celestia;
 
 static int offset = -1;
 
 constexpr int N = 9;
+constexpr int kMaxLevel = 4;
 
 static const char VertexShader[] = R"glsl(
 uniform vec2 offset;
@@ -157,6 +159,8 @@ public:
 private:
     void split();
     bool splitable() const;
+    float checkDirection() const;
+
 
     std::array<std::unique_ptr<Node>, 4> m_nodes;
 
@@ -183,9 +187,13 @@ public:
 //    void setError(double error) { m_error = error; }
 
     void setMVPMatrix(const Eigen::Matrix4f&);
+    void setModelViewMatrix(const Eigen::Matrix4f& m) { m_modelViewMatrix = m; }
     void setFrustum(const Frustum&);
     const Eigen::Matrix4f& getMVPMatrix() const { return m_mvp; }
     const Frustum& getFrustum() const { return m_frustum; }
+    void setCameraPosition(const Eigen::Vector3f& p) { m_cameraPosition = p; }
+    Eigen::Vector3f getCameraPosition() const { return m_cameraPosition; }
+    Eigen::Matrix3f getCameraMatrix() const { return m_modelViewMatrix.topLeftCorner(3,3); }
 
     void render(int level) const;
 
@@ -196,6 +204,8 @@ private:
     const Patch* createPatch(int level, double width, double height);
 
     Eigen::Matrix4f m_mvp;
+    Eigen::Matrix4f m_modelViewMatrix;
+    Eigen::Vector3f m_cameraPosition;
     Frustum         m_frustum;
 
     std::vector<std::unique_ptr<Patch>> m_patches;
@@ -283,7 +293,14 @@ Node::render(int level)
     if (!visible())
         return;
 
-    if (level == m_level)
+    float dir = checkDirection();
+
+    if (dir > 0.5) // rear side of the sphere. 0.5 is cos(60deg)
+        return;
+
+    //fmt::print("{}\n", dir);
+
+    if ((level == m_level)/* || (m_level == kMaxLevel -1 && dir > -0.8660307f)*/)
     {
         auto patch = m_qt->getPatch(m_level);
         if (patch == nullptr)
@@ -342,15 +359,21 @@ Node::visible() const // TODO: check patch normal direction
     if (m_level == 0)
         return true;
 
-    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[0]))
-        return true;
-    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[1]))
-        return true;
-    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[2]))
-        return true;
-    if (check_visibility(m_qt->getMVPMatrix(), m_mapped[3]))
-        return true;
-    return false;
+    const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
+
+    return check_visibility(mvp, m_mapped[0]) || check_visibility(mvp, m_mapped[1])
+           || check_visibility(mvp, m_mapped[2]) || check_visibility(mvp, m_mapped[3]);
+}
+
+float
+Node::checkDirection() const
+{
+    Eigen::Vector3f line1((m_mapped[0] - m_mapped[3]).head(3));
+    Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
+    Eigen::Vector3f normal          = line1.cross(line2);
+    Eigen::Vector3f cameraDirection = m_qt->getCameraPosition().normalized() * -1.0f;
+
+    return (m_qt->getCameraMatrix() * normal).dot(cameraDirection);
 }
 
 void
@@ -653,8 +676,10 @@ SDL_Application::getAspectRatio() const
 void
 SDL_Application::updateGL()
 {
-    m_projection = Perspective(45.0f, getAspectRatio(), 0.0f, 1.0f);
+    m_projection = Perspective(FOV, getAspectRatio(), 0.0f, 1.0f);
     m_modelView = Eigen::Matrix4f::Identity() * vecgl::translate(m_cameraPos);
+    m_qt->setCameraPosition(m_cameraPos);
+    m_qt->setModelViewMatrix(Eigen::Matrix4f::Identity());
     m_qt->setMVPMatrix(m_projection * m_modelView);
     m_qt->setFrustum(celestia::engine::Frustum(m_projection * Eigen::Matrix4f::Identity().transpose()));
 
@@ -688,7 +713,7 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
     switch (event.keysym.sym)
     {
     case SDLK_KP_PLUS:
-        m_level = std::min(6, m_level+1);
+        m_level = std::min(kMaxLevel, m_level+1);
         break;
     case SDLK_KP_MINUS:
         m_level = std::max(0, m_level-1);
