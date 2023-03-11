@@ -6,8 +6,9 @@
 
 #include <epoxy/gl.h>
 
-#include <SDL.h>
-#include <SDL_opengl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_image.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -23,6 +24,7 @@
 using namespace celestia;
 
 static int offset = -1;
+static int diffTex = -1;
 
 constexpr int N = 9;
 constexpr int kMaxLevel = 4;
@@ -33,8 +35,12 @@ uniform vec2 offset;
 const float PI = 3.1415927;
 void main(void)
 {
-    float phi   = (gl_Vertex.x + offset.x) * PI;         // longitude
-    float theta = (0.5 - (gl_Vertex.y + offset.y)) * PI; // latitude
+    gl_TexCoord[0].st = gl_MultiTexCoord0.st + vec2(offset.x * 0.5, offset.y);
+
+    vec2 modelPos = gl_Vertex.xy + offset;
+
+    float phi   = modelPos.x * PI;         // longitude
+    float theta = (0.5 - modelPos.y) * PI; // latitude
 
     float sphi   = sin(phi);
     float cphi   = cos(phi);
@@ -47,9 +53,12 @@ void main(void)
 )glsl";
 
 static const char FragmentShader[] = R"glsl(
+uniform sampler2D diffTex;
+
 void main(void)
 {
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    vec4 diff = texture2D(diffTex, gl_TexCoord[0].st);
+    gl_FragColor = diff;
 }
 )glsl";
 
@@ -181,7 +190,7 @@ class QuadTree
 public:
     QuadTree(double startX, double startY, double endX, double endY);
 
-    const Node* getNode()  const { return m_node.get(); }
+//    const Node* getNode()  const { return m_node.get(); }
 
 //    double getError() const { return m_error; }
 //    void setError(double error) { m_error = error; }
@@ -197,7 +206,7 @@ public:
 
     void render(int level) const;
 
-    void debug() const { m_node->debug(); }
+    void debug() const { /*m_node->debug();*/ }
 
 private:
     const Patch* getPatch(int level) const;
@@ -210,7 +219,8 @@ private:
 
     std::vector<std::unique_ptr<Patch>> m_patches;
 
-    std::unique_ptr<Node> m_node;
+    std::unique_ptr<Node> m_nodeFront;
+    std::unique_ptr<Node> m_nodeRear;
 
     friend class Node;
 };
@@ -224,7 +234,8 @@ namespace
 } // anonymous namespace
 
 QuadTree::QuadTree(double startX, double startY, double endX, double endY) :
-    m_node(std::make_unique<Node>(this, 0, startX, startY, endX, endY))
+    m_nodeFront(std::make_unique<Node>(this, 0, startX, startY, endX/2.0, endY)),
+    m_nodeRear(std::make_unique<Node>(this, 0, endX/2.0, startY, endX, endY))
 {
 }
 
@@ -240,6 +251,8 @@ QuadTree::getPatch(int level) const
 const Patch*
 QuadTree::createPatch(int level, double width, double height)
 {
+    fmt::print("Level {}: {}x{}\n", level, width, height);
+
     if (m_patches.size() < level + 1)
     {
         while (m_patches.size() < level)
@@ -257,7 +270,8 @@ QuadTree::createPatch(int level, double width, double height)
 void
 QuadTree::render(int level) const
 {
-    m_node->render(level);
+    m_nodeFront->render(level);
+    m_nodeRear->render(level);
 }
 
 void
@@ -389,21 +403,29 @@ Node::debug() const
     }
 }
 
+struct Vertex
+{
+    float pos[2];
+    float texCoord[2];
+};
+
 Patch::Patch(double width, double height) :
     m_width(width),
     m_height(height)
 {
-    std::vector<Eigen::Vector2f> vertices;
+    std::vector<Vertex> vertices;
     vertices.reserve(N*N);
 
     double stepX = m_width / static_cast<double>(N);
     double stepY = m_height / static_cast<double>(N);
 
-    for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
+    int i = 0;
+    for (double y = 0.0; y < m_height + stepY * 0.1; y += stepY)
     {
-        for (double y = 0.0; y < m_height + stepY * 0.1; y += stepY)
+        for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
         {
-            vertices.emplace_back((float) x, (float) y);
+            vertices.push_back({{(float) x, (float) y}, {float(0.5 * m_width * x), float(m_height * y)}});
+            fmt::print("{}: position [{}; {}], texture [{}; {}]\n", i++, x, y, 0.5 * m_width * x, m_height * y);
         }
     }
 
@@ -456,10 +478,15 @@ Patch::render(double offsetX, double offsetY) const
     glPrimitiveRestartIndex(65535);
     float v[2] = { (float) offsetX, (float) offsetY };
     glUniform2fv(offset, 1, v);
+    glUniform1i(diffTex, 0);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 0, nullptr);
+    glVertexPointer(2, GL_FLOAT, 2*2*sizeof(float), (void*)offsetof(Vertex, pos));
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glClientActiveTexture(GL_TEXTURE0);
+    glTexCoordPointer(2, GL_FLOAT, 2*2*sizeof(float), (void*) offsetof(Vertex, texCoord));
     glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
     glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_PRIMITIVE_RESTART);
 
     rendered++;
@@ -513,7 +540,7 @@ class SDL_Application
         m_windowWidth   { w },
         m_windowHeight  { h }
     {
-            m_qt = std::make_unique<celestia::engine::QuadTree>(0.0, 0.0, 1.0, 1.0);
+            m_qt = std::make_unique<celestia::engine::QuadTree>(0.0, 0.0, 2.0, 1.0);
     }
     ~SDL_Application();
 
@@ -560,6 +587,8 @@ class SDL_Application
 
     SDL_Window   *m_mainWindow  { nullptr };
     SDL_GLContext m_glContext   { nullptr };
+
+    GLenum m_mode               { GL_FILL };
 
     std::unique_ptr<celestia::engine::QuadTree> m_qt;
 
@@ -712,6 +741,10 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
 {
     switch (event.keysym.sym)
     {
+    case SDLK_w:
+        m_mode = (m_mode == GL_FILL ? GL_LINE : GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, m_mode);
+        break;
     case SDLK_KP_PLUS:
         m_level = std::min(kMaxLevel, m_level+1);
         break;
@@ -741,6 +774,10 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
     case SDLK_PAGEUP:
         m_cameraPos.y() += 0.1f;
         updateGL();
+        break;
+    case SDLK_LEFTBRACKET:
+        break;
+    case SDLK_RIGHTBRACKET:
         break;
     default:
         break;
@@ -985,9 +1022,44 @@ int main()
         return 1;
     }
 
+    diffTex = glGetUniformLocation(id, "diffTex");
+    if (diffTex == -1)
+    {
+        fmt::print("Failed to get `diffTex` uniform location!\n");
+        return 1;
+    }
+
     glUseProgram(id);
-    glFrontFace(GL_CCW);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glFrontFace(GL_CW);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    const char texturePath[] = "../../textures/medres/earth.png";
+    SDL_Surface *surface = IMG_Load(texturePath);
+    if (surface == nullptr)
+    {
+        fmt::print("Failed to load image {}!\n", texturePath);
+    }
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 8);
+#if 1
+    glGenerateMipmap(GL_TEXTURE_2D);
+#else
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+#endif
+    if (glGetError() != 0)
+    {
+        fmt::print("Failed to create texture from {}!\n", texturePath);
+    }
+    SDL_FreeSurface(surface);
 
     app->run();
 }
