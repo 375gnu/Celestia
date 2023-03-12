@@ -35,11 +35,11 @@ uniform vec2 offset;
 const float PI = 3.1415927;
 void main(void)
 {
-    gl_TexCoord[0].st = vec2(1.0 - gl_MultiTexCoord0.s - offset.x * 0.5, gl_MultiTexCoord0.t + offset.y);
+    gl_TexCoord[0].st = vec2(1.0 - (gl_MultiTexCoord0.s + offset.x * 0.5), gl_MultiTexCoord0.t + offset.y);
 
     vec2 modelPos = gl_Vertex.xy + offset;
 
-    float theta = (modelPos.x - 0.5) * PI;         // longitude
+    float theta = (modelPos.x - 0.5) * PI; // longitude
     float phi   = (0.5 - modelPos.y) * PI; // latitude
 
     float sphi   = sin(phi);
@@ -70,14 +70,14 @@ namespace
 Eigen::Vector4f MapToSphere(double x, double y)
 {
     //fmt::print("MapToSphere({}, {})\n", x, y);
-    double phi   = x * double(PI);         // longitude
-    double theta = (0.5 - y) * double(PI); // latitude
+    double theta = (x - 0.5) * double(PI); // longitude
+    double phi   = (0.5 - y) * double(PI); // latitude
 
     double sphi, cphi, stheta, ctheta;
     sincos(phi, &sphi, &cphi);
     sincos(theta, &stheta, &ctheta);
 
-    return Eigen::Vector4d(ctheta * cphi, stheta, -ctheta * sphi, 1.0).cast<float>();
+    return Eigen::Vector4d(cphi * ctheta, sphi, cphi * stheta, 1.0).cast<float>();
 } // anonymous namespace
 }
 
@@ -169,7 +169,6 @@ private:
     void split();
     bool splitable() const;
     float checkDirection() const;
-
 
     std::array<std::unique_ptr<Node>, 4> m_nodes;
 
@@ -304,28 +303,36 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
 void
 Node::render(int level)
 {
+#if 0
     if (!visible())
         return;
+#endif
 
+#if 0
     float dir = checkDirection();
 
-    if (dir > 0.5) // rear side of the sphere. 0.5 is cos(60deg)
+    fmt::print("[{} {}] -> {}\n", m_startX, m_startY, dir);
+
+    if (dir > 0.0f) // rear side of the sphere. 0.5 is cos(60deg)
         return;
+#endif
 
-    //fmt::print("{}\n", dir);
-
-    if ((level == m_level)/* || (m_level == kMaxLevel -1 && dir > -0.8660307f)*/)
+    if (level == m_level)
     {
         auto patch = m_qt->getPatch(m_level);
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
+        return;
     }
-    else
-    {
-        split();
-        std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
-    }
+
+#if 0
+    if ((level == m_level + 1) && !visible())
+        return;
+#endif
+
+    split();
+    std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
 }
 
 void
@@ -424,8 +431,8 @@ Patch::Patch(double width, double height) :
     {
         for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
         {
-            vertices.push_back({{(float) x, (float) y}, {float(0.5 * m_width * x), float(m_height * y)}});
-            fmt::print("{}: position [{}; {}], texture [{}; {}]\n", i++, x, y, 0.5 * m_width * x, m_height * y);
+            vertices.push_back({{(float) x, (float) y}, {float(0.5 * x /* * m_width */), float(y /* * m_height*/)}});
+            //fmt::print("{}: position [{}; {}], texture [{}; {}]\n", i++, x, y, 0.5 * m_width * x, m_height * y);
         }
     }
 
