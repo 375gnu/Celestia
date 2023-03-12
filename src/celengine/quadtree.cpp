@@ -19,7 +19,7 @@
 #include "vecgl.h"
 
 #define PI (0x1.921fb54442d18469898cc51701b839a2p1)
-#define FOV 30.0f
+#define FOV 45.0f
 
 using namespace celestia;
 
@@ -35,19 +35,19 @@ uniform vec2 offset;
 const float PI = 3.1415927;
 void main(void)
 {
-    gl_TexCoord[0].st = gl_MultiTexCoord0.st + vec2(offset.x * 0.5, offset.y);
+    gl_TexCoord[0].st = vec2(1.0 - gl_MultiTexCoord0.s - offset.x * 0.5, gl_MultiTexCoord0.t + offset.y);
 
     vec2 modelPos = gl_Vertex.xy + offset;
 
-    float phi   = modelPos.x * PI;         // longitude
-    float theta = (0.5 - modelPos.y) * PI; // latitude
+    float theta = (modelPos.x - 0.5) * PI;         // longitude
+    float phi   = (0.5 - modelPos.y) * PI; // latitude
 
     float sphi   = sin(phi);
     float cphi   = cos(phi);
     float stheta = sin(theta);
     float ctheta = cos(theta);
 
-    vec4 pos = vec4(ctheta * cphi, stheta, ctheta * sphi, 1.0);
+    vec4 pos = vec4(cphi * ctheta, sphi, cphi * stheta, 1.0);
     gl_Position = gl_ModelViewProjectionMatrix * pos;
 }
 )glsl";
