@@ -28,6 +28,15 @@ static int diffTex = -1;
 
 constexpr int N = 9;
 constexpr int kMaxLevel = 4;
+/*
+ * screensize level
+ *   >= 4096    4
+ *   >= 1024    3
+ *   >=  256    2
+ *   >=   64    1
+ *      else    0
+ */
+
 
 static const char VertexShader[] = R"glsl(
 uniform vec2 offset;
@@ -63,11 +72,8 @@ void main(void)
 )glsl";
 
 
-namespace celestia::engine
-{
-namespace
-{
-Eigen::Vector4f MapToSphere(double x, double y)
+Eigen::Vector4f
+MapToSphere(double x, double y)
 {
     //fmt::print("MapToSphere({}, {})\n", x, y);
     double theta = (x - 0.5) * double(PI); // longitude
@@ -78,7 +84,18 @@ Eigen::Vector4f MapToSphere(double x, double y)
     sincos(theta, &stheta, &ctheta);
 
     return Eigen::Vector4d(cphi * ctheta, sphi, cphi * stheta, 1.0).cast<float>();
-} // anonymous namespace
+}
+
+float
+CalculateScreenSize(const Eigen::Matrix4f &mvp, int w, int h)
+{
+    Eigen::Vector4f v1 = mvp * MapToSphere(0.5, 1.0);
+    Eigen::Vector4f v0 = mvp * MapToSphere(0.5, 0.0);
+    Eigen::Vector2f ndc1(v1.head(2) / v1.w());
+    Eigen::Vector2f ndc0(v0.head(2) / v0.w());
+    Eigen::Vector2f dev(static_cast<float>(w), static_cast<float>(h));
+    // ac - bc <=> (a - b)c
+    return 0.5f * (ndc1 - ndc0).cwiseProduct(dev).norm();
 }
 
 class QuadTree;
@@ -223,14 +240,6 @@ private:
 
     friend class Node;
 };
-} // namespace celestia::engine
-
-
-namespace celestia::engine
-{
-namespace
-{
-} // anonymous namespace
 
 QuadTree::QuadTree(double startX, double startY, double endX, double endY) :
     m_nodeFront(std::make_unique<Node>(this, 0, startX, startY, endX/2.0, endY)),
@@ -303,10 +312,8 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
 void
 Node::render(int level)
 {
-#if 0
     if (!visible())
         return;
-#endif
 
 #if 0
     float dir = checkDirection();
@@ -371,7 +378,8 @@ bool check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point)
 {
     Eigen::Vector4f pos = mvp * point;
     //fmt::print("{}\n", pos.transpose());
-    return (pos.x() >= -pos.w() && pos.x() <= pos.w() && pos.y() >= -pos.w() && pos.y() <= pos.w());
+    float w = 1.1f * pos.w();
+    return (pos.x() >= -w && pos.x() <= w && pos.y() >= -w && pos.y() <= w);
 }
 
 bool
@@ -499,10 +507,6 @@ Patch::render(double offsetX, double offsetY) const
     rendered++;
 }
 
-} // namespace celestia::engine
-
-namespace
-{
 template<typename T> inline constexpr T degToRad(T d)
 {
     return d / static_cast<T>(180) * (T)PI;
@@ -547,7 +551,7 @@ class SDL_Application
         m_windowWidth   { w },
         m_windowHeight  { h }
     {
-            m_qt = std::make_unique<celestia::engine::QuadTree>(0.0, 0.0, 2.0, 1.0);
+            m_qt = std::make_unique<QuadTree>(0.0, 0.0, 2.0, 1.0);
     }
     ~SDL_Application();
 
@@ -597,7 +601,7 @@ class SDL_Application
 
     GLenum m_mode               { GL_FILL };
 
-    std::unique_ptr<celestia::engine::QuadTree> m_qt;
+    std::unique_ptr<QuadTree> m_qt;
 
     Eigen::Matrix4f m_projection { Eigen::Matrix4f::Identity() };
     Eigen::Matrix4f m_modelView  { Eigen::Matrix4f::Identity() };
@@ -716,8 +720,11 @@ SDL_Application::updateGL()
     m_modelView = Eigen::Matrix4f::Identity() * vecgl::translate(m_cameraPos);
     m_qt->setCameraPosition(m_cameraPos);
     m_qt->setModelViewMatrix(Eigen::Matrix4f::Identity());
-    m_qt->setMVPMatrix(m_projection * m_modelView);
-    m_qt->setFrustum(celestia::engine::Frustum(m_projection * Eigen::Matrix4f::Identity().transpose()));
+    Eigen::Matrix4f mvp = m_projection * m_modelView;
+    m_qt->setMVPMatrix(mvp);
+    m_qt->setFrustum(Frustum(m_projection * Eigen::Matrix4f::Identity().transpose()));
+
+    //fmt::print("{}\n", CalculateScreenSize(mvp, m_windowWidth, m_windowHeight));
 
     glViewport(0, 0, m_windowWidth, m_windowHeight);
     glMatrixMode(GL_PROJECTION);
@@ -729,7 +736,6 @@ SDL_Application::updateGL()
 void
 SDL_Application::display()
 {
-    using celestia::engine::Patch;
     int oldPatches = Patch::rendered;
     Patch::rendered = 0;
 
@@ -740,7 +746,7 @@ SDL_Application::display()
     SDL_GL_SwapWindow(m_mainWindow);
 
     if (oldPatches != Patch::rendered)
-        fmt::print("Rendered {} patches\n", Patch::rendered);
+        fmt::print("Rendered {} patches at level {}\n", Patch::rendered, m_level);
 }
 
 void
@@ -974,8 +980,6 @@ SDL_Application::handleWindowEvent(const SDL_WindowEvent &event)
     }
 }
 
-
-}
 
 int main()
 {
