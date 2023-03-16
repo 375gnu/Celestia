@@ -27,7 +27,7 @@ static int offset = -1;
 static int diffTex = -1;
 
 constexpr int N = 9;
-constexpr int kMaxLevel = 4;
+constexpr int kMaxLevel = 15;
 /*
  * screensize level
  *   >= 4096    4
@@ -37,6 +37,8 @@ constexpr int kMaxLevel = 4;
  *      else    0
  */
 
+
+GLuint shader = 0;
 
 static const char VertexShader[] = R"glsl(
 uniform vec2 offset;
@@ -48,7 +50,7 @@ void main(void)
 
     vec2 modelPos = gl_Vertex.xy + offset;
 
-    float theta = (modelPos.x - 0.5) * PI; // longitude
+    float theta = (modelPos.x - 0.0) * PI; // longitude XXX: 0.5
     float phi   = (0.5 - modelPos.y) * PI; // latitude
 
     float sphi   = sin(phi);
@@ -76,7 +78,7 @@ Eigen::Vector4f
 MapToSphere(double x, double y)
 {
     //fmt::print("MapToSphere({}, {})\n", x, y);
-    double theta = (x - 0.5) * double(PI); // longitude
+    double theta = (x - 0.0) * double(PI); // longitude XXX: 0.5
     double phi   = (0.5 - y) * double(PI); // latitude
 
     double sphi, cphi, stheta, ctheta;
@@ -279,7 +281,7 @@ void
 QuadTree::render(int level) const
 {
     m_nodeFront->render(level);
-    m_nodeRear->render(level);
+    //m_nodeRear->render(level);
 }
 
 void
@@ -330,6 +332,12 @@ Node::render(int level)
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
+        glUseProgram(0);
+        glBegin(GL_LINE_LOOP);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        std::for_each(std::begin(m_mapped), std::end(m_mapped), [](const auto &v) { glVertex4fv(v.data()); });
+        glEnd();
+        glUseProgram(shader);
         return;
     }
 
@@ -595,6 +603,7 @@ class SDL_Application
     bool m_fullscreen           { false };
 
     int m_level                 { 0 };
+    bool m_distChanged          { false };
 
     SDL_Window   *m_mainWindow  { nullptr };
     SDL_GLContext m_glContext   { nullptr };
@@ -667,6 +676,7 @@ SDL_Application::run()
     bool quit = false;
     while (!quit)
     {
+        m_distChanged = false;
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0)
         {
@@ -745,8 +755,29 @@ SDL_Application::display()
     m_qt->render(m_level);
     SDL_GL_SwapWindow(m_mainWindow);
 
-    if (oldPatches != Patch::rendered)
-        fmt::print("Rendered {} patches at level {}\n", Patch::rendered, m_level);
+    if (oldPatches != Patch::rendered || m_distChanged)
+        fmt::print("Rendered {} patches at level {}, distance {}\n", Patch::rendered, m_level, m_cameraPos.norm());
+}
+
+float
+step(float z)
+{
+    if (z < -5)
+        return 1.0f;
+    if (z < -3)
+        return 0.1f;
+    if (z < -2)
+        return 0.02f;
+    if (z < -1.5)
+        return 0.01f;
+    if (z < -1.3)
+        return 0.005f;
+    if (z < -1.2)
+        return 0.002f;
+    if (z < -1.1)
+        return 0.001f;
+    return 0.0005f;
+
 }
 
 void
@@ -765,27 +796,33 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
         m_level = std::max(0, m_level-1);
         break;
     case SDLK_UP:
-        m_cameraPos.z() += 0.1f;
+        m_cameraPos.z() += step(m_cameraPos.z());
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_DOWN:
-        m_cameraPos.z() -= 0.1f;
+        m_cameraPos.z() -= step(m_cameraPos.z());
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_LEFT:
         m_cameraPos.x() -= 0.1f;
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_RIGHT:
         m_cameraPos.x() += 0.1f;
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_PAGEDOWN:
         m_cameraPos.y() -= 0.1f;
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_PAGEUP:
         m_cameraPos.y() += 0.1f;
+        m_distChanged = true;
         updateGL();
         break;
     case SDLK_LEFTBRACKET:
@@ -1041,6 +1078,7 @@ int main()
     }
 
     glUseProgram(id);
+    shader = id;
     glFrontFace(GL_CW);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
