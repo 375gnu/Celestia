@@ -50,6 +50,8 @@ static const char VertexShader[] = R"glsl(
 uniform vec2 offset;
 
 const float PI = 3.1415927;
+
+varying vec4 color;
 void main(void)
 {
 /*
@@ -70,16 +72,19 @@ void main(void)
 */
     gl_TexCoord[0].st = gl_MultiTexCoord0.st;
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+    color = gl_Color;
 }
 )glsl";
 
 static const char FragmentShader[] = R"glsl(
 uniform sampler2D diffTex;
 
+varying vec4 color;
+
 void main(void)
 {
     vec4 diff = texture2D(diffTex, gl_TexCoord[0].st);
-    gl_FragColor = diff;
+    gl_FragColor = diff * color;
 }
 )glsl";
 
@@ -356,12 +361,36 @@ Node::render(int level)
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
-        //glUseProgram(0);
-        //glBegin(GL_LINE_LOOP);
-        //glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        //std::for_each(std::begin(m_mapped), std::end(m_mapped), [](const auto &v) { glVertex4fv(v.data()); });
-        //glEnd();
-        //glUseProgram(shader);
+        /*
+        glUseProgram(0);
+        glBegin(GL_LINE_STRIP);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        double stepX = (m_endX - m_startX) / N;
+        for (int i = i; i <= N; i++)
+        {
+            double x = m_startX + i * stepX;
+            glVertex4fv(MapToSphere(x, m_startY).data());
+        }
+        double stepY = (m_endY - m_startY) / N;
+        for (int i = i; i <= N; i++)
+        {
+            double y = m_startY + i * stepY;
+            glVertex4fv(MapToSphere(m_endX, y).data());
+        }
+        for (int i = i; i <= N; i++)
+        {
+            double x = m_endX - i * stepX;
+            glVertex4fv(MapToSphere(x, m_endY).data());
+        }
+        for (int i = i; i <= N; i++)
+        {
+            double y = m_endY - i * stepY;
+            glVertex4fv(MapToSphere(m_startX, y).data());
+        }
+
+        glEnd();
+        glUseProgram(shader);
+        */
         return;
     }
 
@@ -601,6 +630,11 @@ Patch::render(double offsetX, double offsetY) const
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glClientActiveTexture(GL_TEXTURE0);
     glTexCoordPointer(2, GL_FLOAT, stride, (void*) offsetof(MappedVtx, texCoord));
+    float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    int i = rendered%4;
+    if (i < 3)
+        color[i] = 0.0f;
+    glColor4fv(color);
     glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1184,6 +1218,9 @@ int main()
     glFrontFace(GL_CW);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
 
     const char texturePath[] = "../../textures/medres/earth.png";
     SDL_Surface *surface = IMG_Load(texturePath);
