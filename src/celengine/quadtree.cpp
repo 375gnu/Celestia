@@ -50,7 +50,7 @@ void main(void)
 
     vec2 modelPos = gl_Vertex.xy + offset;
 
-    float theta = (modelPos.x - 0.0) * PI; // longitude XXX: 0.5
+    float theta = (modelPos.x - 0.5) * PI; // longitude
     float phi   = (0.5 - modelPos.y) * PI; // latitude
 
     float sphi   = sin(phi);
@@ -78,7 +78,7 @@ Eigen::Vector4f
 MapToSphere(double x, double y)
 {
     //fmt::print("MapToSphere({}, {})\n", x, y);
-    double theta = (x - 0.0) * double(PI); // longitude XXX: 0.5
+    double theta = (x - 0.5) * double(PI); // longitude
     double phi   = (0.5 - y) * double(PI); // latitude
 
     double sphi, cphi, stheta, ctheta;
