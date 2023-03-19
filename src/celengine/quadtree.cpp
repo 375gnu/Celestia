@@ -26,7 +26,7 @@ using namespace celestia;
 static int offset = -1;
 static int diffTex = -1;
 
-constexpr int N = 36;
+constexpr int N = 9;
 constexpr int kMaxLevel = 15;
 /*
  * N            9      36
@@ -36,6 +36,11 @@ constexpr int kMaxLevel = 15;
  *   >=  256    2      0
  *   >=   64    1     -1
  *      else    0     -2
+ *
+ *   >= 2048           3
+ *   >= 1536           2
+ *   >= 1024           1
+ *   >=  512           0
  */
 
 
