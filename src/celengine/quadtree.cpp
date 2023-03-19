@@ -442,13 +442,13 @@ Patch::Patch(double width, double height) :
     m_width(width),
     m_height(height)
 {
+#if 1
     //std::vector<Vertex> vertices;
     vertices.reserve(N*N);
 
     double stepX = m_width / static_cast<double>(N);
     double stepY = m_height / static_cast<double>(N);
 
-    int i = 0;
     for (double y = 0.0; y < m_height + stepY * 0.1; y += stepY)
     {
         for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
@@ -456,6 +456,7 @@ Patch::Patch(double width, double height) :
             vertices.push_back({{(float) x, (float) y}, {float(0.5 * x), float(y)}});
         }
     }
+#endif
 
     glGenBuffers(1, &m_vbo);
     //glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -497,15 +498,69 @@ Patch::render(double offsetX, double offsetY) const
         Eigen::Vector2f texCoord;
     };
 
-    std::vector<MappedVtx> mapped;
-    mapped.reserve(vertices.size());
+    struct SinCos
+    {
+        double s, c;
+    };
 
+    std::vector<MappedVtx> mapped, mapped_old;
+    mapped.reserve((N+1)*(N+1)); mapped_old.reserve((N+1)*(N+1));
+
+    std::vector<SinCos> sincosX(N+1), sincosY(N+1);
+
+    const double stepX = m_width / static_cast<double>(N);
+    const double stepY = m_height / static_cast<double>(N);
+
+    double x = 0, y = 0;
+    for (int i = 0; i <= N; i++)
+    {
+        sincos(x * double(PI), &sincosX[i].s, &sincosX[i].c);
+        sincos(-y * double(PI), &sincosY[i].s, &sincosY[i].c);
+        x += stepX;
+        y += stepY;
+    }
+
+    // sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
+    // cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
+
+    //double theta = (x - 0.5) * double(PI); // longitude
+    // x = offsetX + x' => theta x' * PI + (offsetX-0.5) * PI
+    //double phi   = (0.5 - y) * double(PI); // latitude
+    // y = offsetY + y' => phi = (0.5-offsetY) * PI + (-y') * PI
+
+    SinCos offsetXsc; sincos((offsetX - 0.5) * double(PI), &offsetXsc.s, &offsetXsc.c);
+    SinCos offsetYsc; sincos((0.5 - offsetY) * double(PI), &offsetYsc.s, &offsetYsc.c);
+
+    for (int j = 0; j <= N; j++)
+    {
+        double sphi = offsetYsc.s * sincosY[j].c + offsetYsc.c * sincosY[j].s;
+        double cphi = offsetYsc.c * sincosY[j].c - offsetYsc.s * sincosY[j].s;
+
+        for (int i = 0; i <= N; i++)
+        {
+            double stheta = offsetXsc.s * sincosX[i].c + offsetXsc.c * sincosX[i].s;
+            double ctheta = offsetXsc.c * sincosX[i].c - offsetXsc.s * sincosX[i].s;
+
+            Eigen::Vector4f pos = Eigen::Vector4d(cphi * ctheta, sphi, cphi * stheta, 1.0).cast<float>();
+            Eigen::Vector2f texCoord(1.0f - (i * stepX + offsetX) * 0.5f, j * stepY + offsetY);
+            mapped.push_back({pos, texCoord});
+        }
+    }
+
+/*
     for (const auto &v : vertices)
     {
         Eigen::Vector4f pos = MapToSphere(v.pos[0] + offsetX, v.pos[1] + offsetY);
         Eigen::Vector2f texCoord(1.0f - (v.texCoord[0] + offsetX * 0.5f), v.texCoord[1] + offsetY);
-        mapped.push_back({pos, texCoord});
+        mapped_old.push_back({pos, texCoord});
     }
+
+
+    fmt::print("---- {} {}\n", mapped.size(), mapped_old.size());
+    for (int i = 0; i < N*N; i++)
+        fmt::print("[{}], [{}] vs [{}], [{}]\n", mapped[i].pos.transpose(), mapped[i].texCoord.transpose(), mapped_old[i].pos.transpose(), mapped_old[i].texCoord.transpose());
+*/
+
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, mapped.size()*sizeof(mapped[0]), mapped.data(), GL_STREAM_DRAW);
 #endif
