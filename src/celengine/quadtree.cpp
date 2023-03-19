@@ -281,7 +281,7 @@ void
 QuadTree::render(int level) const
 {
     m_nodeFront->render(level);
-    //m_nodeRear->render(level);
+    m_nodeRear->render(level);
 }
 
 void
@@ -332,12 +332,12 @@ Node::render(int level)
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
-        glUseProgram(0);
-        glBegin(GL_LINE_LOOP);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        std::for_each(std::begin(m_mapped), std::end(m_mapped), [](const auto &v) { glVertex4fv(v.data()); });
-        glEnd();
-        glUseProgram(shader);
+        //glUseProgram(0);
+        //glBegin(GL_LINE_LOOP);
+        //glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        //std::for_each(std::begin(m_mapped), std::end(m_mapped), [](const auto &v) { glVertex4fv(v.data()); });
+        //glEnd();
+        //glUseProgram(shader);
         return;
     }
 
