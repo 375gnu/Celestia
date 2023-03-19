@@ -882,6 +882,8 @@ step(float z)
         return 0.002f;
     if (z < -1.1)
         return 0.001f;
+    if (z < -1.01)
+        return 0.0001f;
     return 0.0005f;
 
 }
