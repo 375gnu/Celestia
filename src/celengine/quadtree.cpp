@@ -26,7 +26,7 @@ using namespace celestia;
 static int offset = -1;
 static int diffTex = -1;
 
-constexpr int N = 36;
+constexpr int N = 9;
 constexpr int kMaxLevel = 15;
 /*
  * N            9      36
@@ -47,6 +47,7 @@ uniform vec2 offset;
 const float PI = 3.1415927;
 void main(void)
 {
+/*
     gl_TexCoord[0].st = vec2(1.0 - (gl_MultiTexCoord0.s + offset.x * 0.5), gl_MultiTexCoord0.t + offset.y);
 
     vec2 modelPos = gl_Vertex.xy + offset;
@@ -61,6 +62,9 @@ void main(void)
 
     vec4 pos = vec4(cphi * ctheta, sphi, cphi * stheta, 1.0);
     gl_Position = gl_ModelViewProjectionMatrix * pos;
+*/
+    gl_TexCoord[0].st = gl_MultiTexCoord0.st;
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 }
 )glsl";
 
@@ -158,12 +162,19 @@ public:
     void render(double offsetX, double offsetY) const;
 
 private:
+    struct Vertex
+    {
+        float pos[2];
+        float texCoord[2];
+    };
+
     double m_width;
     double m_height;
 
     GLuint m_vbo { 0 };
     static GLuint m_ibo;
     static int m_idxCount;
+    std::vector<Vertex> vertices;
 
 public:
     static int rendered;
@@ -427,17 +438,11 @@ Node::debug() const
     }
 }
 
-struct Vertex
-{
-    float pos[2];
-    float texCoord[2];
-};
-
 Patch::Patch(double width, double height) :
     m_width(width),
     m_height(height)
 {
-    std::vector<Vertex> vertices;
+    //std::vector<Vertex> vertices;
     vertices.reserve(N*N);
 
     double stepX = m_width / static_cast<double>(N);
@@ -453,8 +458,8 @@ Patch::Patch(double width, double height) :
     }
 
     glGenBuffers(1, &m_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(vertices[0]), vertices.data(), GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    //glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(vertices[0]), vertices.data(), GL_STATIC_DRAW);
 
     if (m_ibo == 0)
     {
@@ -485,27 +490,38 @@ Patch::Patch(double width, double height) :
 void
 Patch::render(double offsetX, double offsetY) const
 {
-#if 0
-    std::vector<Eigen::Vector4f> mapped;
-    mapped.reserve(m_vertices.size());
-
-    for (const auto &v : m_vertices)
+#if 1
+    struct MappedVtx
     {
-        mapped.push_back(MapToSphere(v.x() + offsetX, v.y() + offsetY));
+        Eigen::Vector4f pos;
+        Eigen::Vector2f texCoord;
+    };
+
+    std::vector<MappedVtx> mapped;
+    mapped.reserve(vertices.size());
+
+    for (const auto &v : vertices)
+    {
+        Eigen::Vector4f pos = MapToSphere(v.pos[0] + offsetX, v.pos[1] + offsetY);
+        Eigen::Vector2f texCoord(1.0f - (v.texCoord[0] + offsetX * 0.5f), v.texCoord[1] + offsetY);
+        mapped.push_back({pos, texCoord});
     }
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, mapped.size()*sizeof(mapped[0]), mapped.data(), GL_STREAM_DRAW);
 #endif
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    //glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
 
-    float v[2] = { (float) offsetX, (float) offsetY };
-    glUniform2fv(offset, 1, v);
+    //float v[2] = { (float) offsetX, (float) offsetY };
+    //glUniform2fv(offset, 1, v);
     glUniform1i(diffTex, 0);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(2, GL_FLOAT, 2*2*sizeof(float), (void*)offsetof(Vertex, pos));
+    const int stride = sizeof(MappedVtx);
+    glVertexPointer(4, GL_FLOAT, stride, (void*)offsetof(MappedVtx, pos));
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glClientActiveTexture(GL_TEXTURE0);
-    glTexCoordPointer(2, GL_FLOAT, 2*2*sizeof(float), (void*) offsetof(Vertex, texCoord));
+    glTexCoordPointer(2, GL_FLOAT, stride, (void*) offsetof(MappedVtx, texCoord));
     glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1068,12 +1084,14 @@ int main()
         return 1;
     }
 
+#if 0
     offset = glGetUniformLocation(id, "offset");
     if (offset == -1)
     {
         fmt::print("Failed to get `offset` uniform location!\n");
         return 1;
     }
+#endif
 
     diffTex = glGetUniformLocation(id, "diffTex");
     if (diffTex == -1)
