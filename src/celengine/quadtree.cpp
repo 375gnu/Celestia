@@ -26,7 +26,7 @@ using namespace celestia;
 static int offset = -1;
 static int diffTex = -1;
 
-constexpr int N = 9;
+constexpr int N = 36;
 constexpr int kMaxLevel = 15;
 /*
  * screensize level
@@ -756,7 +756,14 @@ SDL_Application::display()
     SDL_GL_SwapWindow(m_mainWindow);
 
     if (oldPatches != Patch::rendered || m_distChanged)
-        fmt::print("Rendered {} patches at level {}, distance {}\n", Patch::rendered, m_level, m_cameraPos.norm());
+    {
+        fmt::print(
+            "Rendered {} patches at level {}, distance {}, screensize {}\n",
+            Patch::rendered,
+            m_level,
+            m_cameraPos.norm(),
+            CalculateScreenSize(m_projection * m_modelView, m_windowWidth, m_windowHeight));
+    }
 }
 
 float
