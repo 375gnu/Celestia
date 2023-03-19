@@ -29,12 +29,13 @@ static int diffTex = -1;
 constexpr int N = 36;
 constexpr int kMaxLevel = 15;
 /*
- * screensize level
- *   >= 4096    4
- *   >= 1024    3
- *   >=  256    2
- *   >=   64    1
- *      else    0
+ * N            9      36
+ * screensize level  level
+ *   >= 2048    4      2
+ *   >= 1024    3      1
+ *   >=  256    2      0
+ *   >=   64    1     -1
+ *      else    0     -2
  */
 
 
@@ -447,8 +448,7 @@ Patch::Patch(double width, double height) :
     {
         for (double x = 0.0; x < m_width + stepX * 0.1; x += stepX)
         {
-            vertices.push_back({{(float) x, (float) y}, {float(0.5 * x /* * m_width */), float(y /* * m_height*/)}});
-            //fmt::print("{}: position [{}; {}], texture [{}; {}]\n", i++, x, y, 0.5 * m_width * x, m_height * y);
+            vertices.push_back({{(float) x, (float) y}, {float(0.5 * x), float(y)}});
         }
     }
 
@@ -464,15 +464,16 @@ Patch::Patch(double width, double height) :
         {
             int baseVertex = i * (N+1);
 
-            //if (i != 0) m_indices.push_back(baseVertex);
+            if (i > 0)
+                indices.push_back(baseVertex);
             for (int j = 0; j <= N; j++)
             {
                 int v = baseVertex + j;
                 indices.push_back(v);
                 indices.push_back(v + N + 1);
             }
-            indices.push_back(65535);
-            //if (i != N-1) m_indices.push_back(m_indices.back());
+            if (i < N-1)
+                indices.push_back(indices.back());
         }
         glGenBuffers(1, &m_ibo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
@@ -497,8 +498,6 @@ Patch::render(double offsetX, double offsetY) const
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
 
-    glEnable(GL_PRIMITIVE_RESTART);
-    glPrimitiveRestartIndex(65535);
     float v[2] = { (float) offsetX, (float) offsetY };
     glUniform2fv(offset, 1, v);
     glUniform1i(diffTex, 0);
@@ -510,7 +509,6 @@ Patch::render(double offsetX, double offsetY) const
     glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_PRIMITIVE_RESTART);
 
     rendered++;
 }
