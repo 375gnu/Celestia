@@ -361,36 +361,6 @@ Node::render(int level)
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
-        /*
-        glUseProgram(0);
-        glBegin(GL_LINE_STRIP);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        double stepX = (m_endX - m_startX) / N;
-        for (int i = i; i <= N; i++)
-        {
-            double x = m_startX + i * stepX;
-            glVertex4fv(MapToSphere(x, m_startY).data());
-        }
-        double stepY = (m_endY - m_startY) / N;
-        for (int i = i; i <= N; i++)
-        {
-            double y = m_startY + i * stepY;
-            glVertex4fv(MapToSphere(m_endX, y).data());
-        }
-        for (int i = i; i <= N; i++)
-        {
-            double x = m_endX - i * stepX;
-            glVertex4fv(MapToSphere(x, m_endY).data());
-        }
-        for (int i = i; i <= N; i++)
-        {
-            double y = m_endY - i * stepY;
-            glVertex4fv(MapToSphere(m_startX, y).data());
-        }
-
-        glEnd();
-        glUseProgram(shader);
-        */
         return;
     }
 
