@@ -26,7 +26,7 @@ using namespace celestia;
 static int offset = -1;
 static int diffTex = -1;
 
-constexpr int N = 9;
+constexpr int N = 36;
 constexpr int kMaxLevel = 15;
 /*
  * N            9      36
@@ -168,13 +168,20 @@ private:
         float texCoord[2];
     };
 
+    struct SinCos
+    {
+        double s, c;
+    };
+
     double m_width;
     double m_height;
 
     GLuint m_vbo { 0 };
     static GLuint m_ibo;
     static int m_idxCount;
-    std::vector<Vertex> vertices;
+    //std::vector<Vertex> vertices;
+    std::vector<SinCos> sincosX;
+    std::vector<SinCos> sincosY;
 
 public:
     static int rendered;
@@ -440,9 +447,11 @@ Node::debug() const
 
 Patch::Patch(double width, double height) :
     m_width(width),
-    m_height(height)
+    m_height(height),
+    sincosX(N+1),
+    sincosY(N+1)
 {
-#if 1
+#if 0
     //std::vector<Vertex> vertices;
     vertices.reserve(N*N);
 
@@ -457,6 +466,25 @@ Patch::Patch(double width, double height) :
         }
     }
 #endif
+    const double stepX = m_width / static_cast<double>(N);
+    const double stepY = m_height / static_cast<double>(N);
+
+    // sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
+    // cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
+
+    //double theta = (x - 0.5) * double(PI); // longitude
+    // x = offsetX + x' => theta x' * PI + (offsetX-0.5) * PI
+    //double phi   = (0.5 - y) * double(PI); // latitude
+    // y = offsetY + y' => phi = (0.5-offsetY) * PI + (-y') * PI
+
+    double x = 0, y = 0;
+    for (int i = 0; i <= N; i++)
+    {
+        sincos(x * double(PI), &sincosX[i].s, &sincosX[i].c);
+        sincos(-y * double(PI), &sincosY[i].s, &sincosY[i].c);
+        x += stepX;
+        y += stepY;
+    }
 
     glGenBuffers(1, &m_vbo);
     //glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -498,15 +526,8 @@ Patch::render(double offsetX, double offsetY) const
         Eigen::Vector2f texCoord;
     };
 
-    struct SinCos
-    {
-        double s, c;
-    };
-
-    std::vector<MappedVtx> mapped, mapped_old;
-    mapped.reserve((N+1)*(N+1)); mapped_old.reserve((N+1)*(N+1));
-
-    std::vector<SinCos> sincosX(N+1), sincosY(N+1);
+    std::vector<MappedVtx> mapped;
+    mapped.reserve((N+1)*(N+1));;
 
     const double stepX = m_width / static_cast<double>(N);
     const double stepY = m_height / static_cast<double>(N);
@@ -521,15 +542,6 @@ Patch::render(double offsetX, double offsetY) const
 
     SinCos offsetXsc; sincos((offsetX - 0.5) * double(PI), &offsetXsc.s, &offsetXsc.c);
     SinCos offsetYsc; sincos((0.5 - offsetY) * double(PI), &offsetYsc.s, &offsetYsc.c);
-
-    double x = 0, y = 0;
-    for (int i = 0; i <= N; i++)
-    {
-        sincos(x * double(PI), &sincosX[i].s, &sincosX[i].c);
-        sincos(-y * double(PI), &sincosY[i].s, &sincosY[i].c);
-        x += stepX;
-        y += stepY;
-    }
 
     std::vector<SinCos> sincosXX(N+1);
     for (int i = 0; i <= N; i++)
