@@ -27,7 +27,7 @@ static int offset = -1;
 static int diffTex = -1;
 
 constexpr int N = 9;
-constexpr int kMaxLevel = 15;
+constexpr int kMaxLevel = 16;
 /*
  * N            9      36
  * screensize level  level
@@ -346,13 +346,15 @@ Node::render(int level)
     if (!visible())
         return;
 
-#if 0
-    float dir = checkDirection();
-
-    fmt::print("[{} {}] -> {}\n", m_startX, m_startY, dir);
-
-    if (dir > 0.0f) // rear side of the sphere. 0.5 is cos(60deg)
-        return;
+#if 1
+    if (m_level > 0)
+    {
+        float dir = checkDirection();
+        bool vis = dir < 0.25f; // TODO: last value perhaps depends on fov
+        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
+        if (!vis) // rear side of the sphere
+            return;
+    }
 #endif
 
     if (level == m_level)
