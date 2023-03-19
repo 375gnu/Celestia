@@ -511,15 +511,6 @@ Patch::render(double offsetX, double offsetY) const
     const double stepX = m_width / static_cast<double>(N);
     const double stepY = m_height / static_cast<double>(N);
 
-    double x = 0, y = 0;
-    for (int i = 0; i <= N; i++)
-    {
-        sincos(x * double(PI), &sincosX[i].s, &sincosX[i].c);
-        sincos(-y * double(PI), &sincosY[i].s, &sincosY[i].c);
-        x += stepX;
-        y += stepY;
-    }
-
     // sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
     // cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
 
@@ -531,6 +522,22 @@ Patch::render(double offsetX, double offsetY) const
     SinCos offsetXsc; sincos((offsetX - 0.5) * double(PI), &offsetXsc.s, &offsetXsc.c);
     SinCos offsetYsc; sincos((0.5 - offsetY) * double(PI), &offsetYsc.s, &offsetYsc.c);
 
+    double x = 0, y = 0;
+    for (int i = 0; i <= N; i++)
+    {
+        sincos(x * double(PI), &sincosX[i].s, &sincosX[i].c);
+        sincos(-y * double(PI), &sincosY[i].s, &sincosY[i].c);
+        x += stepX;
+        y += stepY;
+    }
+
+    std::vector<SinCos> sincosXX(N+1);
+    for (int i = 0; i <= N; i++)
+    {
+        sincosXX[i].s = offsetXsc.s * sincosX[i].c + offsetXsc.c * sincosX[i].s;
+        sincosXX[i].c = offsetXsc.c * sincosX[i].c - offsetXsc.s * sincosX[i].s;
+    }
+
     for (int j = 0; j <= N; j++)
     {
         double sphi = offsetYsc.s * sincosY[j].c + offsetYsc.c * sincosY[j].s;
@@ -538,8 +545,8 @@ Patch::render(double offsetX, double offsetY) const
 
         for (int i = 0; i <= N; i++)
         {
-            double stheta = offsetXsc.s * sincosX[i].c + offsetXsc.c * sincosX[i].s;
-            double ctheta = offsetXsc.c * sincosX[i].c - offsetXsc.s * sincosX[i].s;
+            double stheta = sincosXX[i].s;
+            double ctheta = sincosXX[i].c;
 
             Eigen::Vector4f pos = Eigen::Vector4d(cphi * ctheta, sphi, cphi * stheta, 1.0).cast<float>();
             Eigen::Vector2f texCoord(1.0f - (i * stepX + offsetX) * 0.5f, j * stepY + offsetY);
