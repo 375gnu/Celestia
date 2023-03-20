@@ -26,8 +26,8 @@ using namespace celestia;
 static int offset = -1;
 static int diffTex = -1;
 
-constexpr int N = 9;
-constexpr int kMaxLevel = 16;
+constexpr int N = 36;
+static int kMaxLevel = 16;
 /*
  * N            9      36
  * screensize level  level
@@ -359,16 +359,12 @@ Node::render(int level)
     if (!visible())
         return;
 
-    //m_size = (m_screenSpace[1] - m_screenSpace[0]).norm();
-
-    //fmt::print("patch size = {}\n", m_size);
-
-#if 1
-    if (m_level > 0)
+#if 0
+    if (m_level > 2) // 0 for 9
     {
         float dir = checkDirection();
-        bool vis = dir < 0.25f; // TODO: last value perhaps depends on fov
-        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
+        bool vis = dir < 0.6f; // TODO: last value perhaps depends on fov, 0.25 for 9
+        fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
         if (!vis) // rear side of the sphere
             return;
     }
@@ -380,21 +376,28 @@ Node::render(int level)
     Eigen::Vector2f s1(v1.x() / v1.w() * m_qt->getViewport().x(), v1.y() / v1.w() * m_qt->getViewport().y());
     int screensize = (int) (s0 - s1).norm();
 
-//    fmt::print("node {} screen size {}\n", m_level, screensize);
+    bool draw = (kMaxLevel == m_level) || (screensize <= 32*N /*int(1.2f*N)*/);
 
-    if (kMaxLevel == m_level || screensize <= 640)
+    //fmt::print("node: {}, screen size: {}, draw: {}\n", m_level, screensize, draw);
+
+    if (draw)
     {
+#if 1
+    if (m_level > 2) // 0 for 9
+    {
+        float dir = checkDirection();
+        bool vis = dir < 0.25f; // TODO: last value perhaps depends on fov, 0.25 for 9
+        fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
+        if (!vis) // rear side of the sphere
+            return;
+    }
+#endif
         auto patch = m_qt->getPatch(m_level);
         if (patch == nullptr)
             patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
         patch->render(m_startX, m_startY);
         return;
     }
-
-#if 0
-    if ((level == m_level + 1) && !visible())
-        return;
-#endif
 
     split();
     std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
@@ -458,8 +461,8 @@ Node::checkDirection() const
 {
     Eigen::Vector3f line1((m_mapped[0] - m_mapped[3]).head(3));
     Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
-    Eigen::Vector3f normal          = line1.cross(line2);
-    Eigen::Vector3f cameraDirection = m_qt->getCameraPosition().normalized() * -1.0f;
+    Eigen::Vector3f normal          = line1.cross(line2).normalized();
+    Eigen::Vector3f cameraDirection = /*m_qt->getCameraPosition().normalized() * -1.0f*/ {0,0,1};
 
     return (m_qt->getCameraMatrix() * normal).dot(cameraDirection);
 }
@@ -872,6 +875,7 @@ SDL_Application::updateGL()
 void
 SDL_Application::display()
 {
+    //fmt::print("------------\n");
     int oldPatches = Patch::rendered;
     Patch::rendered = 0;
 
@@ -886,7 +890,7 @@ SDL_Application::display()
         fmt::print(
             "Rendered {} patches at level {}, distance {}, screensize {}\n",
             Patch::rendered,
-            m_level,
+            kMaxLevel,
             m_cameraPos.norm(),
             CalculateScreenSize(m_projection * m_modelView, m_windowWidth, m_windowHeight));
     }
@@ -925,10 +929,10 @@ SDL_Application::handleKeyPressEvent(const SDL_KeyboardEvent &event)
         glPolygonMode(GL_FRONT_AND_BACK, m_mode);
         break;
     case SDLK_KP_PLUS:
-        m_level = std::min(kMaxLevel, m_level+1);
+        kMaxLevel = std::min(16, kMaxLevel+1);
         break;
     case SDLK_KP_MINUS:
-        m_level = std::max(0, m_level-1);
+        kMaxLevel = std::max(0, kMaxLevel-1);
         break;
     case SDLK_UP:
         m_cameraPos.z() += step(m_cameraPos.z());
