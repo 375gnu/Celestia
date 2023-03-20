@@ -27,7 +27,7 @@ static int offset = -1;
 static int diffTex = -1;
 
 constexpr int N = 36;
-static int kMaxLevel = 16;
+static int kMaxLevel = 4;
 /*
  * N            9      36
  * screensize level  level
@@ -217,7 +217,8 @@ private:
     void split();
     bool splitable() const;
     float checkDirection() const;
-    bool check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
+
+    std::pair<int,int> check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
 
     std::array<std::unique_ptr<Node>, 4> m_nodes;
 
@@ -315,7 +316,9 @@ QuadTree::createPatch(int level, double width, double height)
 void
 QuadTree::render(int level) const
 {
+    //fmt::print("Front:\n");
     m_nodeFront->render(level);
+    //fmt::print("Rear:\n");
     m_nodeRear->render(level);
 }
 
@@ -359,35 +362,53 @@ Node::render(int level)
     if (!visible())
         return;
 
-#if 0
-    if (m_level > 2) // 0 for 9
+#if 1
+    if (m_level > 0) // 0 for 9
     {
         float dir = checkDirection();
-        bool vis = dir < 0.6f; // TODO: last value perhaps depends on fov, 0.25 for 9
-        fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
+        bool vis = dir < 0.f; // TODO: last value perhaps depends on fov, 0.25 for 9
+        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
         if (!vis) // rear side of the sphere
             return;
     }
 #endif
 
-    Eigen::Vector4f v0 = m_qt->getMVPMatrix() * m_mapped[1];
-    Eigen::Vector4f v1 = m_qt->getMVPMatrix() * m_mapped[0];
-    Eigen::Vector2f s0(v0.x() / v0.w() * m_qt->getViewport().x(), v0.y() / v0.w() * m_qt->getViewport().y());
-    Eigen::Vector2f s1(v1.x() / v1.w() * m_qt->getViewport().x(), v1.y() / v1.w() * m_qt->getViewport().y());
-    int screensize = (int) (s0 - s1).norm();
+    bool draw = (kMaxLevel == m_level);
 
-    bool draw = (kMaxLevel == m_level) || (screensize <= 32*N /*int(1.2f*N)*/);
+    if (!draw)
+    {
+        const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
 
-    //fmt::print("node: {}, screen size: {}, draw: {}\n", m_level, screensize, draw);
+        int i0, i1;
+        if (m_startY >= 0.5f)
+        {
+            i0 = 0;
+            i1 = 1;
+        }
+        else
+        {
+            i0 = 3;
+            i1 = 2;
+        }
+
+        Eigen::Vector4f v0 = mvp * m_mapped[i0];
+        Eigen::Vector4f v1 = mvp * m_mapped[i1];
+        Eigen::Vector2f s0(v0.x() / v0.w() * m_qt->getViewport().x(), v0.y() / v0.w() * m_qt->getViewport().y());
+        Eigen::Vector2f s1(v1.x() / v1.w() * m_qt->getViewport().x(), v1.y() / v1.w() * m_qt->getViewport().y());
+        int screensize = (int) (s0 - s1).norm();
+
+        draw = screensize <= 38*N; // 32 + 20%
+        //fmt::print("level: {}, screen size: {}, draw: {}\n", m_level, screensize, draw);
+    }
 
     if (draw)
     {
-#if 1
-    if (m_level > 2) // 0 for 9
+#if 0
+    if (m_level > 0) // 0 for 9
     {
         float dir = checkDirection();
-        bool vis = dir < 0.25f; // TODO: last value perhaps depends on fov, 0.25 for 9
-        fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
+        bool vis = dir < 0.f; // TODO: last value perhaps depends on fov, 0.25 for 9
+        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
         if (!vis) // rear side of the sphere
             return;
     }
@@ -435,13 +456,15 @@ Node::getPatch() const
     return m_qt->getPatch(m_level);
 }
 
-bool
+std::pair<int,int>
 Node::check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const
 {
     Eigen::Vector4f pos = mvp * point;
     //fmt::print("{}\n", pos.transpose());
-    float w = 1.1f * pos.w();
-    return pos.x() >= -w && pos.x() <= w && pos.y() >= -w && pos.y() <= w;
+    float w = pos.w();
+    int x = pos.x() < -w ? -1 : pos.x() > w ? 1 : 0;
+    int y = pos.y() < -w ? -1 : pos.y() > w ? 1 : 0;
+    return {x, y};
 }
 
 bool
@@ -452,8 +475,30 @@ Node::visible() const
 
     const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
 
-    return std::any_of(m_mapped.begin(), m_mapped.end(),
-                       [this,&mvp](const auto &p){ return check_visibility(mvp, p); });
+    std::array<std::pair<int,int>, 4> positions;
+/*
+    std::transform(m_mapped.begin(), m_mapped.end(), positions.begin(),
+                   [this,&mvp](const auto &p){ return check_visibility(mvp, p); });
+*/
+    int x = 0, y =0;
+    for (int i = 0; i < 4; i++)
+    {
+        positions[i] = check_visibility(mvp, m_mapped[i]);
+        if (positions[i] == std::pair(0, 0))
+            return true;
+        x += positions[i].first;
+        y += positions[i].second;
+    }
+    /*
+    if (std::any_of(positions.begin(), positions.end(),
+                    [](auto const &v) { return v.first == 0 && v.second == 0;}))
+        return true;
+
+    int x = positions[0].first + positions[1].first + positions[2].first + positions[3].first;
+    int y = positions[0].second + positions[1].second + positions[2].second + positions[3].second;
+    */
+
+    return (x > -4 && x < 4) && (y > -4 && y < 4);
 }
 
 float
@@ -463,6 +508,7 @@ Node::checkDirection() const
     Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
     Eigen::Vector3f normal          = line1.cross(line2).normalized();
     Eigen::Vector3f cameraDirection = /*m_qt->getCameraPosition().normalized() * -1.0f*/ {0,0,1};
+    //fmt::print("line1 [{}], line2 [{}], normal [{}]\n", line1.transpose(), line2.transpose(), normal.transpose());
 
     return (m_qt->getCameraMatrix() * normal).dot(cameraDirection);
 }
@@ -857,7 +903,7 @@ SDL_Application::updateGL()
     m_projection = Perspective(FOV, getAspectRatio(), 0.0f, 1.0f);
     m_modelView = Eigen::Matrix4f::Identity() * vecgl::translate(m_cameraPos);
     m_qt->setCameraPosition(m_cameraPos);
-    m_qt->setModelViewMatrix(Eigen::Matrix4f::Identity());
+    m_qt->setModelViewMatrix(/*Eigen::Matrix4f::Identity()*/m_modelView);
     m_qt->setViewport(m_windowWidth, m_windowHeight);
     Eigen::Matrix4f mvp = m_projection * m_modelView;
     m_qt->setMVPMatrix(mvp);
@@ -888,9 +934,8 @@ SDL_Application::display()
     if (oldPatches != Patch::rendered || m_distChanged)
     {
         fmt::print(
-            "Rendered {} patches at level {}, distance {}, screensize {}\n",
+            "Rendered {} patches, distance {}, screensize {}\n",
             Patch::rendered,
-            kMaxLevel,
             m_cameraPos.norm(),
             CalculateScreenSize(m_projection * m_modelView, m_windowWidth, m_windowHeight));
     }
