@@ -217,7 +217,7 @@ private:
     void split();
     bool splitable() const;
     float checkDirection() const;
-    bool check_visibility() const;
+    bool check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
 
     std::array<std::unique_ptr<Node>, 4> m_nodes;
 
@@ -229,7 +229,7 @@ private:
     double m_endY;
 
     std::array<Eigen::Vector4f, 4> m_mapped;
-    atd::array<Eigen::Vector2i, 4> m_screenSpace;
+    std::array<Eigen::Vector2i, 4> m_screenSpace;
     int m_size { 0 };
 
     int m_level;
@@ -332,7 +332,7 @@ QuadTree::setFrustum(const Frustum &frustum)
 }
 
 void
-setViewport(int w, int h)
+QuadTree::setViewport(int w, int h)
 {
     m_viewport.x() = w;
     m_viewport.y() = h;
@@ -359,9 +359,9 @@ Node::render(int level)
     if (!visible())
         return;
 
-    m_size = (m_screenSpace[1] - m_screenSpace[0]).norm();
+    //m_size = (m_screenSpace[1] - m_screenSpace[0]).norm();
 
-    fmt::print("patch size = {}\n", m_size);
+    //fmt::print("patch size = {}\n", m_size);
 
 #if 1
     if (m_level > 0)
@@ -374,7 +374,15 @@ Node::render(int level)
     }
 #endif
 
-    if (level == m_level)
+    Eigen::Vector4f v0 = m_qt->getMVPMatrix() * m_mapped[1];
+    Eigen::Vector4f v1 = m_qt->getMVPMatrix() * m_mapped[0];
+    Eigen::Vector2f s0(v0.x() / v0.w() * m_qt->getViewport().x(), v0.y() / v0.w() * m_qt->getViewport().y());
+    Eigen::Vector2f s1(v1.x() / v1.w() * m_qt->getViewport().x(), v1.y() / v1.w() * m_qt->getViewport().y());
+    int screensize = (int) (s0 - s1).norm();
+
+//    fmt::print("node {} screen size {}\n", m_level, screensize);
+
+    if (kMaxLevel == m_level || screensize <= 640)
     {
         auto patch = m_qt->getPatch(m_level);
         if (patch == nullptr)
@@ -425,45 +433,24 @@ Node::getPatch() const
 }
 
 bool
-Node::check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point, Eigen::Vector2i &screenPos)
+Node::check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const
 {
     Eigen::Vector4f pos = mvp * point;
     //fmt::print("{}\n", pos.transpose());
     float w = 1.1f * pos.w();
-    bool vis = (pos.x() >= -w && pos.x() <= w && pos.y() >= -w && pos.y() <= w);
-
-    if (vis)
-    {
-        pos *= 1.0f/pos.w();
-        screenPos.x() = pos.x() * m_qt->getViewport().x();
-        screenPos.y() = pos.y() * m_qt->getViewport().y();
-    }
-    return vis;
+    return pos.x() >= -w && pos.x() <= w && pos.y() >= -w && pos.y() <= w;
 }
 
 bool
-Node::visible() const // TODO: check patch normal direction
+Node::visible() const
 {
     if (m_level == 0)
         return true;
 
     const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
 
-    bool vis = false;
-    int i = 0;
-    for (i = 0; i < 4; i++)
-    {
-        if (check_visibility(mvp, m_mapped[i], m_screenSpace[i]))
-        {
-            vis = true;
-            break;
-        }
-    }
-
-    if (vis && i == 0)
-        check_visibility(mvp, m_mapped[1], m_screenSpace[1]); // get screen coordinates
-
-    return vis;
+    return std::any_of(m_mapped.begin(), m_mapped.end(),
+                       [this,&mvp](const auto &p){ return check_visibility(mvp, p); });
 }
 
 float
