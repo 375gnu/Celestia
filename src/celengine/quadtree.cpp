@@ -27,7 +27,7 @@ static int offset = -1;
 static int diffTex = -1;
 
 constexpr int N = 36;
-static int kMaxLevel = 4;
+static int kMaxLevel = 16;
 /*
  * N            9      36
  * screensize level  level
@@ -207,18 +207,17 @@ public:
     Node(QuadTree *qt, int level, double startX, double startY, double endX, double endY);
     ~Node() = default;
 
-    const Patch*    getPatch()  const;
-    bool            visible()   const;
-    void            render(int level);
+    const Patch* getPatch()  const;
+    const Patch* createPatch();
 
-    void debug() const;
+    bool visible() const;
+    void render();
 
 private:
     void split();
-    bool splitable() const;
     float checkDirection() const;
 
-    std::pair<int,int> check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
+    std::pair<int,int> checkVisibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
 
     std::array<std::unique_ptr<Node>, 4> m_nodes;
 
@@ -230,8 +229,6 @@ private:
     double m_endY;
 
     std::array<Eigen::Vector4f, 4> m_mapped;
-    std::array<Eigen::Vector2i, 4> m_screenSpace;
-    int m_size { 0 };
 
     int m_level;
 };
@@ -252,14 +249,13 @@ public:
     const Eigen::Matrix4f& getMVPMatrix() const { return m_mvp; }
     const Frustum& getFrustum() const { return m_frustum; }
     void setCameraPosition(const Eigen::Vector3f& p) { m_cameraPosition = p; }
-    Eigen::Vector3f getCameraPosition() const { return m_cameraPosition; }
+    const Eigen::Vector3f& getCameraPosition() const { return m_cameraPosition; }
+    const Eigen::Vector3f& getCameraDirection() const { return m_cameraDirection; }
     Eigen::Matrix3f getCameraMatrix() const { return m_modelViewMatrix.topLeftCorner(3,3); }
     void setViewport(int w, int h);
     const Eigen::Vector2i getViewport() const { return m_viewport; }
 
-    void render(int level) const;
-
-    void debug() const { /*m_node->debug();*/ }
+    void render() const;
 
 private:
     const Patch* getPatch(int level) const;
@@ -268,6 +264,7 @@ private:
     Eigen::Matrix4f m_mvp;
     Eigen::Matrix4f m_modelViewMatrix;
     Eigen::Vector3f m_cameraPosition;
+    Eigen::Vector3f m_cameraDirection{ 0.0f, 0.0f, 1.0f };
     Eigen::Vector2i m_viewport;
     Frustum         m_frustum;
 
@@ -314,12 +311,12 @@ QuadTree::createPatch(int level, double width, double height)
 }
 
 void
-QuadTree::render(int level) const
+QuadTree::render() const
 {
     //fmt::print("Front:\n");
-    m_nodeFront->render(level);
+    m_nodeFront->render();
     //fmt::print("Rear:\n");
-    m_nodeRear->render(level);
+    m_nodeRear->render();
 }
 
 void
@@ -357,45 +354,29 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
 }
 
 void
-Node::render(int level)
+Node::render()
 {
     if (!visible())
         return;
-
-#if 1
-    if (m_level > 0) // 0 for 9
-    {
-        float dir = checkDirection();
-        bool vis = dir < 0.f; // TODO: last value perhaps depends on fov, 0.25 for 9
-        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
-        if (!vis) // rear side of the sphere
-            return;
-    }
-#endif
 
     bool draw = (kMaxLevel == m_level);
 
     if (!draw)
     {
         const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
-
-        int i0, i1;
-        if (m_startY >= 0.5f)
-        {
-            i0 = 0;
-            i1 = 1;
-        }
-        else
-        {
-            i0 = 3;
-            i1 = 2;
-        }
+        auto [i0, i1] = m_startY >= 0.5f ? std::pair(0, 1) : std::pair(3, 2);
 
         Eigen::Vector4f v0 = mvp * m_mapped[i0];
         Eigen::Vector4f v1 = mvp * m_mapped[i1];
-        Eigen::Vector2f s0(v0.x() / v0.w() * m_qt->getViewport().x(), v0.y() / v0.w() * m_qt->getViewport().y());
-        Eigen::Vector2f s1(v1.x() / v1.w() * m_qt->getViewport().x(), v1.y() / v1.w() * m_qt->getViewport().y());
-        int screensize = (int) (s0 - s1).norm();
+        auto viewport = m_qt->getViewport();
+        Eigen::Vector2f s0(v0.x() * viewport.x(), v0.y() * viewport.y());
+        s0 *= 1.0f / v0.w();
+        Eigen::Vector2f s1(v1.x() * viewport.x(), v1.y() * viewport.y());
+        s1 *= 1.0f / v1.w();
+        int screensize = static_cast<int>((s0 - s1).norm());
+
+        if (m_endX==2.0 && m_endY==0.5)
+            fmt::print("level: {}, screen size: {}\n", m_level, screensize);
 
         draw = screensize <= 38*N; // 32 + 20%
         //fmt::print("level: {}, screen size: {}, draw: {}\n", m_level, screensize, draw);
@@ -403,25 +384,15 @@ Node::render(int level)
 
     if (draw)
     {
-#if 0
-    if (m_level > 0) // 0 for 9
-    {
-        float dir = checkDirection();
-        bool vis = dir < 0.f; // TODO: last value perhaps depends on fov, 0.25 for 9
-        //fmt::print("[{},{}x{},{}] -> {}, visibility: {}\n", m_startX, m_startY, m_endX, m_endY, dir, vis);
-        if (!vis) // rear side of the sphere
-            return;
-    }
-#endif
-        auto patch = m_qt->getPatch(m_level);
+        auto patch = getPatch();
         if (patch == nullptr)
-            patch = m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
+            patch = createPatch();
         patch->render(m_startX, m_startY);
         return;
     }
 
     split();
-    std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
+    std::for_each(m_nodes.begin(), m_nodes.end(), [](const auto &node) { node->render(); });
 }
 
 void
@@ -443,28 +414,37 @@ Node::split()
     m_nodes[3] = std::make_unique<Node>(m_qt, level, halfX, halfY, m_endX, m_endY);
 }
 
-bool
-Node::splitable() const
-{
-    //return (m_endX - m_startX > m_qt->getError()) && (m_endY - m_startY > m_qt->getError());
-    return true;
-}
-
 const Patch*
 Node::getPatch() const
 {
     return m_qt->getPatch(m_level);
 }
 
+const Patch*
+Node::createPatch()
+{
+    return m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
+}
+
 std::pair<int,int>
-Node::check_visibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const
+Node::checkVisibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const
 {
     Eigen::Vector4f pos = mvp * point;
     //fmt::print("{}\n", pos.transpose());
-    float w = pos.w();
+    float w = 1.1f * pos.w();
     int x = pos.x() < -w ? -1 : pos.x() > w ? 1 : 0;
     int y = pos.y() < -w ? -1 : pos.y() > w ? 1 : 0;
     return {x, y};
+}
+
+float
+Node::checkDirection() const
+{
+    Eigen::Vector3f line1((m_mapped[0] - m_mapped[3]).head(3));
+    Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
+    Eigen::Vector3f normal(line1.cross(line2).normalized());
+
+    return (m_qt->getCameraMatrix() * normal).dot(m_qt->getCameraDirection());
 }
 
 bool
@@ -476,54 +456,20 @@ Node::visible() const
     const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
 
     std::array<std::pair<int,int>, 4> positions;
-/*
-    std::transform(m_mapped.begin(), m_mapped.end(), positions.begin(),
-                   [this,&mvp](const auto &p){ return check_visibility(mvp, p); });
-*/
     int x = 0, y =0;
     for (int i = 0; i < 4; i++)
     {
-        positions[i] = check_visibility(mvp, m_mapped[i]);
+        positions[i] = checkVisibility(mvp, m_mapped[i]);
         if (positions[i] == std::pair(0, 0))
             return true;
         x += positions[i].first;
         y += positions[i].second;
     }
-    /*
-    if (std::any_of(positions.begin(), positions.end(),
-                    [](auto const &v) { return v.first == 0 && v.second == 0;}))
-        return true;
 
-    int x = positions[0].first + positions[1].first + positions[2].first + positions[3].first;
-    int y = positions[0].second + positions[1].second + positions[2].second + positions[3].second;
-    */
+    if (!(x > -4 && x < 4) && (y > -4 && y < 4))
+        return false;
 
-    return (x > -4 && x < 4) && (y > -4 && y < 4);
-}
-
-float
-Node::checkDirection() const
-{
-    Eigen::Vector3f line1((m_mapped[0] - m_mapped[3]).head(3));
-    Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
-    Eigen::Vector3f normal          = line1.cross(line2).normalized();
-    Eigen::Vector3f cameraDirection = /*m_qt->getCameraPosition().normalized() * -1.0f*/ {0,0,1};
-    //fmt::print("line1 [{}], line2 [{}], normal [{}]\n", line1.transpose(), line2.transpose(), normal.transpose());
-
-    return (m_qt->getCameraMatrix() * normal).dot(cameraDirection);
-}
-
-void
-Node::debug() const
-{
-    bool _split = splitable();
-    //fmt::print("start=[{}, {}], end=[{}, {}], level={}, split={}.\n", m_startX, m_startY, m_endX, m_endY, m_level, _split);
-
-    if (_split)
-    {
-        for (const auto &node : m_nodes)
-            if (node != nullptr) node->debug();
-    }
+    return checkDirection() < 0.2f;
 }
 
 Patch::Patch(double width, double height) :
@@ -810,7 +756,6 @@ SDL_Application::init(std::string_view name, int w, int h)
 
 SDL_Application::~SDL_Application()
 {
-    //m_qt->debug();
     if (m_glContext != nullptr)
         SDL_GL_DeleteContext(m_glContext);
     if (m_mainWindow != nullptr)
@@ -928,7 +873,7 @@ SDL_Application::display()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_qt->render(m_level);
+    m_qt->render();
     SDL_GL_SwapWindow(m_mainWindow);
 
     if (oldPatches != Patch::rendered || m_distChanged)
