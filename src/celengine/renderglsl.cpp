@@ -350,7 +350,7 @@ void renderEllipsoid_GLSL(const RenderInfo& ri,
 
     auto endTextures = std::remove(textures.begin(), textures.end(), nullptr);
     textures.erase(endTextures, textures.end());
-    g_lodSphere->render(attributes,
+    g_lodSphere->render(renderer, attributes,
                         frustum, ri.pixWidth,
                         textures.data(), static_cast<int>(textures.size()));
 }
@@ -637,7 +637,7 @@ void renderClouds_GLSL(const RenderInfo& ri,
 
     auto endTextures = std::remove(textures.begin(), textures.end(), nullptr);
     textures.erase(endTextures, textures.end());
-    g_lodSphere->render(attributes,
+    g_lodSphere->render(renderer, attributes,
                         frustum, ri.pixWidth,
                         textures.data(), static_cast<int>(textures.size()));
 

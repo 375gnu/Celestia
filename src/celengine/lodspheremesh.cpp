@@ -15,209 +15,488 @@
 #include <cmath>
 #include <limits>
 
+#include <fmt/format.h>
+
 #include <celcompat/numbers.h>
+#include <celengine/render.h>
 #include <celengine/shadermanager.h>
 #include <celengine/texture.h>
 #include <celmath/frustum.h>
 #include <celmath/mathlib.h>
-#include <celutil/arrayvector.h>
 #include <celutil/array_view.h>
+#include <celutil/arrayvector.h>
+
+using celestia::numbers::pi;
+using celmath::sincos;
+using celmath::Frustum;
 
 namespace
 {
 
-constexpr const int maxDivisions   = 16384;
-constexpr const int thetaDivisions = maxDivisions;
-constexpr const int phiDivisions   = maxDivisions / 2;
-constexpr const int minStep        = 128;
+constexpr int N = 36;
+constexpr int kMaxLevel = 4;
 
-constexpr int maxThetaSteps = thetaDivisions / minStep;
-constexpr int maxPhiSteps   = phiDivisions / minStep;
-constexpr int maxVertices   = (maxPhiSteps + 1) * (maxThetaSteps + 1);
-constexpr int nIndices      = maxPhiSteps * 2 * (maxThetaSteps + 2) - 2;
-static_assert(nIndices < std::numeric_limits<unsigned short>::max());
-
-// largest vertex:
-//     position   - 3 floats, (re-used for normals)
-//     tangent    - 3 floats,
-//     tex coords - 2 floats * MAX_SPHERE_MESH_TEXTURES
-constexpr const int MaxVertexSize = 3 + 3 + LODSphereMesh::MAX_SPHERE_MESH_TEXTURES * 2;
-
-
-using ThetaArray = std::array<float, thetaDivisions + 1>;
-using PhiArray   = std::array<float, phiDivisions + 1>;
-
-
-void
-createThetaArrays(ThetaArray& sinTheta, ThetaArray& cosTheta)
+Eigen::Vector4f
+MapToSphere(double x, double y)
 {
-    static_assert((thetaDivisions % 4) == 0);
-    constexpr auto thetaDivisionsDbl = static_cast<double>(thetaDivisions);
-    constexpr int thetaDivisions_2 = thetaDivisions / 2;
-    constexpr int thetaDivisions_4 = thetaDivisions / 4;
-    int i = 0;
-    for (;;)
-    {
-        double stheta;
-        double ctheta;
-        // Ensure values at multiples of 90 degrees are exact
-        if (i == 0)
-        {
-            stheta = 0;
-            ctheta = 1;
-        }
-        else if (i == thetaDivisions_4)
-        {
-            stheta = 1;
-            ctheta = 0;
-        }
-        else
-        {
-            double theta = static_cast<double>(i) / thetaDivisionsDbl * 2.0 * celestia::numbers::pi;
-            celmath::sincos(theta, stheta, ctheta);
-        }
+    double theta = (x - 0.5) * pi; // longitude
+    double phi   = (0.5 - y) * pi; // latitude
 
-        sinTheta[i] = static_cast<float>(stheta);
-        cosTheta[i] = static_cast<float>(ctheta);
+    double sphi, cphi, stheta, ctheta;
+    sincos(phi, sphi, cphi);
+    sincos(theta, stheta, ctheta);
 
-        // Populate other quadrants by symmetry
-        // Ensure that the 360 degrees value has same sign of signed zero as 0 degrees
-        sinTheta[thetaDivisions - i] = i == 0 ? sinTheta[i] : -sinTheta[i];
-        cosTheta[thetaDivisions - i] = cosTheta[i];
-
-        if (i == thetaDivisions_4)
-            break;
-
-        sinTheta[thetaDivisions_2 - i] =  sinTheta[i];
-        cosTheta[thetaDivisions_2 - i] = -cosTheta[i];
-
-        if (i != 0)
-        {
-            sinTheta[thetaDivisions_2 + i] = -sinTheta[i];
-            cosTheta[thetaDivisions_2 + i] = -cosTheta[i];
-        }
-
-        ++i;
-    }
+    return Eigen::Vector4f(
+        static_cast<float>(cphi * ctheta),
+        static_cast<float>(sphi),
+        static_cast<float>(cphi * stheta),
+        1.0f);
 }
 
+} // namespace
 
-void
-createPhiArrays(PhiArray& sinPhi, PhiArray& cosPhi)
+class Node;
+class Patch;
+
+/* QuadTree
+*/
+
+class QuadTree
 {
-    static_assert((phiDivisions % 2) == 0);
-    constexpr auto phiDivisionsDbl = static_cast<double>(phiDivisions);
-    constexpr int phiDivisions_2 = phiDivisions / 2;
-    int i = 0;
-    for (;;)
-    {
-        double sphi;
-        double cphi;
-        // Ensure values at multiples of 90 degrees are exact
-        if (i == 0)
-        {
-            sphi = -1;
-            cphi = 0;
-        }
-        else if (i == phiDivisions_2)
-        {
-            sphi = 0;
-            cphi = 1;
-        }
-        else
-        {
-            double phi = (static_cast<double>(i) / phiDivisionsDbl - 0.5) * celestia::numbers::pi;
-            celmath::sincos(phi, sphi, cphi);
-        }
+public:
+    QuadTree(double startX, double startY, double endX, double endY);
 
-        sinPhi[i] = static_cast<float>(sphi);
-        cosPhi[i] = static_cast<float>(cphi);
-        if (i == phiDivisions_2)
-            break;
+    void setMVPMatrix(const Eigen::Matrix4f&);
+    void setModelViewMatrix(const Eigen::Matrix4f& m) { m_modelViewMatrix = m; }
+    void setFrustum(const Frustum&);
+    const Eigen::Matrix4f& getMVPMatrix() const { return m_mvp; }
+    const Frustum* getFrustum() const { return m_frustum; }
+    void setCameraPosition(const Eigen::Vector3f& p) { m_cameraPosition = p; }
+    const Eigen::Vector3f& getCameraPosition() const { return m_cameraPosition; }
+    const Eigen::Vector3f& getCameraDirection() const { return m_cameraDirection; }
+    Eigen::Matrix3f getCameraMatrix() const { return m_modelViewMatrix.topLeftCorner(3,3); }
+    void setViewport(int w, int h);
+    const Eigen::Vector2i getViewport() const { return m_viewport; }
 
-        // Populate other quadrant by symmetry
-        sinPhi[phiDivisions - i] = -sinPhi[i];
-        cosPhi[phiDivisions - i] =  cosPhi[i];
+    void render() const;
 
-        ++i;
-    }
-}
+private:
+    const Patch* getPatch(int level) const;
+    const Patch* createPatch(int level, double width, double height);
 
+    Eigen::Matrix4f m_mvp;
+    Eigen::Matrix4f m_modelViewMatrix;
+    Eigen::Vector3f m_cameraPosition;
+    Eigen::Vector3f m_cameraDirection{ 0.0f, 0.0f, 1.0f };
+    Eigen::Vector2i m_viewport;
 
-struct TrigArrays
-{
-    TrigArrays();
-    TrigArrays(const TrigArrays&) = delete;
-    TrigArrays& operator=(const TrigArrays&) = delete;
-    TrigArrays(TrigArrays&&) = delete;
-    TrigArrays& operator=(TrigArrays&&) = delete;
+    const Frustum *m_frustum{ nullptr };
 
-    ThetaArray sinTheta;
-    ThetaArray cosTheta;
-    PhiArray   sinPhi;
-    PhiArray   cosPhi;
+    std::vector<std::unique_ptr<Patch>> m_patches;
+
+    std::unique_ptr<Node> m_nodeFront;
+    std::unique_ptr<Node> m_nodeRear;
+
+    friend class Node;
 };
 
+/* Node
+*/
 
-TrigArrays::TrigArrays()
+class Node
 {
-    createThetaArrays(sinTheta, cosTheta);
-    createPhiArrays(sinPhi, cosPhi);
+public:
+    Node(QuadTree *qt, int level, double startX, double startY, double endX, double endY);
+    ~Node() = default;
+
+    const Patch* getPatch() const;
+    const Patch* createPatch();
+
+    bool visible() const;
+    void render();
+
+private:
+    void split();
+    float checkDirection() const;
+
+    std::pair<int,int> checkVisibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const;
+
+    std::array<std::unique_ptr<Node>, 4> m_nodes;
+
+    QuadTree *m_qt;
+
+    double m_startX;
+    double m_startY;
+    double m_endX;
+    double m_endY;
+
+    std::array<Eigen::Vector4f, 4> m_mapped;
+
+    int m_level;
+};
+
+/* Patch
+*/
+
+class Patch
+{
+public:
+    Patch(double width, double height);
+    ~Patch() = default;
+
+    void render(double offsetX, double offsetY) const;
+
+private:
+    struct Vertex
+    {
+        float pos[2];
+        float texCoord[2];
+    };
+
+    struct SinCos
+    {
+        double s, c;
+    };
+
+    double m_width;
+    double m_height;
+
+    GLuint m_vbo { 0 };
+    static GLuint m_ibo;
+    static int m_idxCount;
+
+    std::vector<SinCos> sincosX;
+    std::vector<SinCos> sincosY;
+
+public:
+    static int rendered;
+};
+
+/* QuadTree
+*/
+
+QuadTree::QuadTree(double startX, double startY, double endX, double endY) :
+    m_nodeFront(std::make_unique<Node>(this, 0, startX, startY, endX/2.0, endY)),
+    m_nodeRear(std::make_unique<Node>(this, 0, endX/2.0, startY, endX, endY))
+{
 }
 
-
-const TrigArrays trigArrays;
-
-
-// TODO: figure out how to use std eigen's methods instead
-Eigen::Vector3f
-intersect3(const celmath::Frustum::PlaneType& p0,
-           const celmath::Frustum::PlaneType& p1,
-           const celmath::Frustum::PlaneType& p2)
+const Patch*
+QuadTree::getPatch(int level) const
 {
-    Eigen::Matrix3f m;
-    m.row(0) = p0.normal();
-    m.row(1) = p1.normal();
-    m.row(2) = p2.normal();
-    float d = m.determinant();
+    if (m_patches.size() < level + 1)
+        return nullptr;
 
-    return (p0.offset() * p1.normal().cross(p2.normal()) +
-            p1.offset() * p2.normal().cross(p0.normal()) +
-            p2.offset() * p0.normal().cross(p1.normal())) * (1.0f / d);
+    return m_patches[level].get();
 }
 
-
-int
-getSphereLOD(float discSizeInPixels)
+const Patch*
+QuadTree::createPatch(int level, double width, double height)
 {
-    if (discSizeInPixels < 10)
-        return -3;
-    if (discSizeInPixels < 20)
-        return -2;
-    if (discSizeInPixels < 50)
-        return -1;
-    if (discSizeInPixels < 200)
-        return 0;
-    if (discSizeInPixels < 1200)
-        return 1;
-    if (discSizeInPixels < 7200)
-        return 2;
-    if (discSizeInPixels < 53200)
-        return 3;
+    if (m_patches.size() < level + 1)
+    {
+        while (m_patches.size() < level)
+            m_patches.emplace_back(nullptr);
+        m_patches.emplace_back(std::make_unique<Patch>(width, height));
+    }
 
-    return 4;
+    if (auto *patch = m_patches[level].get(); patch != nullptr)
+        return patch;
+
+    m_patches[level] = std::make_unique<Patch>(width, height);
+    return m_patches[level].get();
 }
 
-
-
-Eigen::Vector3f
-spherePoint(int theta, int phi)
+void
+QuadTree::render() const
 {
-    return Eigen::Vector3f(trigArrays.cosPhi[phi] * trigArrays.cosTheta[theta],
-                           trigArrays.sinPhi[phi],
-                           trigArrays.cosPhi[phi] * trigArrays.sinTheta[theta]);
+    m_nodeFront->render();
+    m_nodeRear->render();
 }
 
+void
+QuadTree::setMVPMatrix(const Eigen::Matrix4f &mvp)
+{
+    m_mvp = mvp;
+}
+
+void
+QuadTree::setFrustum(const Frustum &frustum)
+{
+    m_frustum = &frustum;
+}
+
+void
+QuadTree::setViewport(int w, int h)
+{
+    m_viewport.x() = w;
+    m_viewport.y() = h;
+}
+
+Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, double endY) :
+    m_qt(qt),
+    m_level(level),
+    m_startX(startX),
+    m_startY(startY),
+    m_endX(endX),
+    m_endY(endY)
+{
+    //fmt::print("{} {}\n", m_startX,m_endX);
+    m_mapped[0] = MapToSphere(m_startX, m_startY);
+    m_mapped[1] = MapToSphere(m_startX, m_endY);
+    m_mapped[2] = MapToSphere(m_endX, m_startY);
+    m_mapped[3] = MapToSphere(m_endX, m_endY);
+}
+
+void
+Node::render()
+{
+    if (!visible())
+        return;
+
+    bool draw = (kMaxLevel == m_level);
+
+    if (!draw)
+    {
+        const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
+        auto [i0, i1] = m_startY >= 0.5f ? std::pair(0, 1) : std::pair(3, 2);
+
+        Eigen::Vector4f v0 = mvp * m_mapped[i0];
+        Eigen::Vector4f v1 = mvp * m_mapped[i1];
+        auto viewport = m_qt->getViewport();
+        Eigen::Vector2f s0(v0.x() * viewport.x(), v0.y() * viewport.y());
+        s0 *= 1.0f / v0.w();
+        Eigen::Vector2f s1(v1.x() * viewport.x(), v1.y() * viewport.y());
+        s1 *= 1.0f / v1.w();
+        int screensize = static_cast<int>((s0 - s1).norm());
+
+        draw = screensize <= 38*N; // 32 + 20%
+    }
+
+    if (draw)
+    {
+        auto patch = getPatch();
+        if (patch == nullptr)
+            patch = createPatch();
+        patch->render(m_startX, m_startY);
+        return;
+    }
+
+    split();
+    std::for_each(m_nodes.begin(), m_nodes.end(), [](const auto &node) { node->render(); });
+}
+
+void
+Node::split()
+{
+    // endY     +---------+---------+
+    //          |    2    |    3    |
+    // halfY    +---------+---------+
+    //          |    0    |    1    |
+    // startY   +---------+---------+
+    //        startX    halfX      endX
+    double halfX = (m_startX + m_endX) * 0.5;
+    double halfY = (m_startY + m_endY) * 0.5;
+    int    level = m_level + 1;
+
+    m_nodes[0] = std::make_unique<Node>(m_qt, level, m_startX, m_startY, halfX, halfY);
+    m_nodes[1] = std::make_unique<Node>(m_qt, level, halfX, m_startY, m_endX, halfY);
+    m_nodes[2] = std::make_unique<Node>(m_qt, level, m_startX, halfY, halfX, m_endY);
+    m_nodes[3] = std::make_unique<Node>(m_qt, level, halfX, halfY, m_endX, m_endY);
+}
+
+const Patch*
+Node::getPatch() const
+{
+    return m_qt->getPatch(m_level);
+}
+
+const Patch*
+Node::createPatch()
+{
+    return m_qt->createPatch(m_level, m_endX - m_startX, m_endY - m_startY);
+}
+
+std::pair<int,int>
+Node::checkVisibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) const
+{
+    Eigen::Vector4f pos = mvp * point;
+    float w = 1.1f * pos.w();
+    fmt::print("[{}, {}, {}, {}]\n", pos.x(), pos.y(), pos.z(), pos.w());
+    int x = pos.x() < -w ? -1 : pos.x() > w ? 1 : 0;
+    int y = pos.y() < -w ? -1 : pos.y() > w ? 1 : 0;
+    return {x, y};
+}
+
+float
+Node::checkDirection() const
+{
+    return -1.0f;
+    Eigen::Vector3f line1((m_mapped[0] - m_mapped[3]).head(3));
+    Eigen::Vector3f line2((m_mapped[1] - m_mapped[2]).head(3));
+    Eigen::Vector3f normal(line1.cross(line2).normalized());
+
+    return (m_qt->getCameraMatrix() * normal).dot(m_qt->getCameraDirection());
+}
+
+bool
+Node::visible() const
+{
+    if (m_level == 0)
+        return true;
+
+    const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
+
+    std::array<std::pair<int,int>, 4> positions;
+    int x = 0, y =0;
+    for (int i = 0; i < 4; i++)
+    {
+        positions[i] = checkVisibility(mvp, m_mapped[i]);
+        if (positions[i] == std::pair(0, 0))
+            return true;
+        x += positions[i].first;
+        y += positions[i].second;
+    }
+
+    if (!(x > -4 && x < 4) && (y > -4 && y < 4))
+        return false;
+
+    return checkDirection() < 0.2f;
+}
+
+int Patch::rendered = 0;
+GLuint Patch::m_ibo = 0;
+int Patch::m_idxCount = 0;
+
+Patch::Patch(double width, double height) :
+    m_width(width),
+    m_height(height),
+    sincosX(N+1),
+    sincosY(N+1)
+{
+    const double stepX = m_width / static_cast<double>(N);
+    const double stepY = m_height / static_cast<double>(N);
+
+    double x = 0, y = 0;
+    for (int i = 0; i <= N; i++)
+    {
+        sincos(x * pi, sincosX[i].s, sincosX[i].c);
+        sincos(-y * pi, sincosY[i].s, sincosY[i].c);
+        x += stepX;
+        y += stepY;
+    }
+
+    glGenBuffers(1, &m_vbo);
+
+    if (m_ibo == 0)
+    {
+        std::vector<unsigned short> indices;
+        indices.reserve(2*N*(N+1) + 2*N - 2);
+        for (int i = 0; i < N; i++)
+        {
+            int baseVertex = i * (N+1);
+
+            if (i > 0)
+                indices.push_back(baseVertex);
+            for (int j = 0; j <= N; j++)
+            {
+                int v = baseVertex + j;
+                indices.push_back(v);
+                indices.push_back(v + N + 1);
+            }
+            if (i < N-1)
+                indices.push_back(indices.back());
+        }
+        glGenBuffers(1, &m_ibo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(indices[0]), indices.data(), GL_STATIC_DRAW);
+        m_idxCount = indices.size();
+    }
+}
+
+void
+Patch::render(double offsetX, double offsetY) const
+{
+    struct MappedVtx
+    {
+        Eigen::Vector4f pos;
+        Eigen::Vector2f texCoord;
+    };
+
+    std::vector<MappedVtx> mapped;
+    mapped.reserve((N+1)*(N+1));;
+
+    const double stepX = m_width / static_cast<double>(N);
+    const double stepY = m_height / static_cast<double>(N);
+
+    /*
+     * sin(a + b) = sin(a)cos(b) + cos(a)sin(b)
+     * cos(a + b) = cos(a)cos(b) - sin(a)sin(b)
+     */
+
+    /*
+     * double theta = (x - 0.5) * double(PI); // longitude
+     * x = offsetX + x' => theta x' * PI + (offsetX-0.5) * PI
+     * double phi   = (0.5 - y) * double(PI); // latitude
+     * y = offsetY + y' => phi = (0.5-offsetY) * PI + (-y') * PI
+     */
+
+    SinCos offsetXsc; sincos((offsetX - 0.5) * pi, &offsetXsc.s, &offsetXsc.c);
+    SinCos offsetYsc; sincos((0.5 - offsetY) * pi, &offsetYsc.s, &offsetYsc.c);
+
+    std::vector<SinCos> sincosXX(N+1);
+    sincosXX.reserve(N+1);
+    for (int i = 0; i <= N; i++)
+    {
+        sincosXX[i].s = offsetXsc.s * sincosX[i].c + offsetXsc.c * sincosX[i].s;
+        sincosXX[i].c = offsetXsc.c * sincosX[i].c - offsetXsc.s * sincosX[i].s;
+    }
+
+    for (int j = 0; j <= N; j++)
+    {
+        double sphi = offsetYsc.s * sincosY[j].c + offsetYsc.c * sincosY[j].s;
+        double cphi = offsetYsc.c * sincosY[j].c - offsetYsc.s * sincosY[j].s;
+
+        for (int i = 0; i <= N; i++)
+        {
+            double stheta = sincosXX[i].s;
+            double ctheta = sincosXX[i].c;
+
+            Eigen::Vector4f pos(
+                static_cast<float>(cphi * ctheta),
+                static_cast<float>(sphi),
+                static_cast<float>(cphi * stheta),
+                1.0f);
+            Eigen::Vector2f texCoord(1.0f - (i * stepX + offsetX) * 0.5f, j * stepY + offsetY);
+            mapped.push_back({pos, texCoord});
+        }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, mapped.size()*sizeof(mapped[0]), nullptr, GL_STREAM_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, mapped.size()*sizeof(mapped[0]), mapped.data());
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+
+    constexpr int stride = sizeof(MappedVtx);
+
+    glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
+    glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
+                          4, GL_FLOAT, GL_FALSE,
+                          stride, (void*)offsetof(MappedVtx, pos));
+
+    glEnableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
+    glVertexAttribPointer(CelestiaGLProgram::TextureCoord0AttributeIndex,
+                          2, GL_FLOAT, GL_FALSE,
+                          stride, (void*) offsetof(MappedVtx, texCoord));
+
+    glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
+
+    glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
+    glDisableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
+
+    rendered++;
+}
 
 struct TextureCoords
 {
@@ -236,68 +515,26 @@ struct TextureCoords
 };
 
 
-template<bool HasTangents>
-void
-createVertices(std::vector<float>& vertices,
-               int phi0, int phi1,
-               int theta0, int theta1,
-               int step,
-               const TextureCoords& tc)
-{
-    for (int phi = phi0; phi <= phi1; phi += step)
-    {
-        float cphi = trigArrays.cosPhi[phi];
-        float sphi = trigArrays.sinPhi[phi];
-
-        for (int theta = theta0; theta <= theta1; theta += step)
-        {
-            float ctheta = trigArrays.cosTheta[theta];
-            float stheta = trigArrays.sinTheta[theta];
-
-            vertices.push_back(cphi * ctheta);
-            vertices.push_back(sphi);
-            vertices.push_back(cphi * stheta);
-
-            if constexpr (HasTangents)
-            {
-                // Compute the tangent--required for bump mapping
-                vertices.push_back(stheta);
-                vertices.push_back(0.0f);
-                vertices.push_back(-ctheta);
-            }
-
-            for (int tex = 0; tex < tc.nTexturesUsed; tex++)
-            {
-                vertices.push_back(tc.u0[tex] - static_cast<float>(theta) * tc.du[tex]);
-                vertices.push_back(tc.v0[tex] - static_cast<float>(phi)   * tc.dv[tex]);
-            }
-        }
-    }
-}
-
-
-} // end unnamed namespace
-
-
 LODSphereMesh::~LODSphereMesh()
 {
-    glDeleteBuffers(vertexBuffers.size(), vertexBuffers.data());
-    glDeleteBuffers(1, &indexBuffer);
+    delete m_qt;
 }
 
 
 void
-LODSphereMesh::render(const celmath::Frustum& frustum,
+LODSphereMesh::render(const Renderer *renderer,
+                      const celmath::Frustum& frustum,
                       float pixWidth,
                       Texture** tex,
                       int nTextures)
 {
-    render(Normals, frustum, pixWidth, tex, nTextures);
+    render(renderer, Normals, frustum, pixWidth, tex, nTextures);
 }
 
 
 void
-LODSphereMesh::render(unsigned int attributes,
+LODSphereMesh::render(const Renderer *renderer,
+                      unsigned int attributes,
                       const celmath::Frustum& frustum,
                       float pixWidth,
                       Texture* tex0,
@@ -314,438 +551,29 @@ LODSphereMesh::render(unsigned int attributes,
         tex.try_push_back(tex2);
     if (tex3 != nullptr)
         tex.try_push_back(tex3);
-    render(attributes, frustum, pixWidth,
+    render(renderer, attributes, frustum, pixWidth,
            tex.data(), static_cast<int>(tex.size()));
 }
 
 
-void LODSphereMesh::render(unsigned int attributes,
+void LODSphereMesh::render(const Renderer *renderer,
+                           unsigned int attributes,
                            const celmath::Frustum& frustum,
                            float pixWidth,
                            Texture** tex,
                            int nTextures)
 {
-    int lod = 64;
-    int lodBias = getSphereLOD(pixWidth);
+    if (m_qt == nullptr)
+        m_qt = new QuadTree(0.0, 0.0, 2.0, 1.0);
 
-    if (lodBias < 0)
-        lod /= (1 << (-lodBias));
-    else if (lodBias > 0)
-        lod *= (1 << lodBias);
-    lod = std::clamp(lod, 2, maxDivisions);
+    Patch::rendered = 0;
+    m_qt->setModelViewMatrix(renderer->getCurrentModelViewMatrix());
+    m_qt->setMVPMatrix(renderer->getCurrentProjectionMatrix() * renderer->getCurrentModelViewMatrix());
+    int w, h; // NOSONAR
+    renderer->getViewport(nullptr, nullptr, &w, &h);
+    m_qt->setViewport(w, h);
 
-    int step = maxDivisions / lod;
-    int thetaExtent = maxDivisions;
-    int phiExtent = thetaExtent / 2;
+    m_qt->render();
 
-    int split = 1;
-    if (step < minStep)
-    {
-        split = minStep / step;
-        thetaExtent /= split;
-        phiExtent /= split;
-    }
-
-    if (tex == nullptr)
-        nTextures = 0;
-
-    RenderInfo ri(step, attributes, frustum);
-
-    // If one of the textures is split into subtextures, we may have to
-    // use extra patches, since there can be at most one subtexture per patch.
-    int i;
-    int minSplit = 1;
-    for (i = 0; i < nTextures; i++)
-    {
-        double pixelsPerTexel = pixWidth * 2.0f /
-            (static_cast<float>(tex[i]->getWidth()) / 2.0f);
-        double l = std::log2(pixelsPerTexel);
-
-        // replacing below with std::clamp will fail if l < 0
-        ri.texLOD[i] = std::max(std::min(tex[i]->getLODCount() - 1, static_cast<int>(l)), 0);
-        if (tex[i]->getUTileCount(ri.texLOD[i]) > minSplit)
-            minSplit = tex[i]->getUTileCount(ri.texLOD[i]);
-        if (tex[i]->getVTileCount(ri.texLOD[i]) > minSplit)
-            minSplit = tex[i]->getVTileCount(ri.texLOD[i]);
-    }
-
-    if (split < minSplit)
-    {
-        thetaExtent /= (minSplit / split);
-        phiExtent /= (minSplit / split);
-        split = minSplit;
-        if (phiExtent <= ri.step)
-            ri.step /= ri.step / phiExtent;
-    }
-
-    // Set the current textures
-    nTexturesUsed = nTextures;
-    for (i = 0; i < nTextures; i++)
-    {
-        tex[i]->beginUsage();
-        textures[i] = tex[i];
-        subtextures[i] = 0;
-        if (nTextures > 1)
-            glActiveTexture(GL_TEXTURE0 + i);
-    }
-
-    if (!vertexBuffersInitialized)
-    {
-        // TODO: assumes that the same context is used every time we
-        // render.  Valid now, but not necessarily in the future.  Still,
-        // would only cause problems if we rendered in two different contexts
-        // and only one had vertex buffer objects.
-        while(glGetError() != GL_NO_ERROR);
-        glGenBuffers(vertexBuffers.size(), vertexBuffers.data());
-        if (glGetError() != GL_NO_ERROR)
-            return;
-        vertexBuffersInitialized = true;
-        for (auto vertexBuffer : vertexBuffers)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-            glBufferData(GL_ARRAY_BUFFER,
-                         maxVertices * MaxVertexSize * sizeof(float),
-                         nullptr,
-                         GL_STREAM_DRAW);
-        }
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glGenBuffers(1, &indexBuffer);
-        if (glGetError() != GL_NO_ERROR)
-            return;
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                     nIndices * sizeof(unsigned short),
-                     nullptr,
-                     GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-    currentVB = 0;
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[currentVB]);
-
-    // Set up the mesh vertices
-    int nRings = phiExtent / ri.step;
-    int nSlices = thetaExtent / ri.step;
-
-    indices.clear();
-    int expectedIndices = nRings * (nSlices + 2) * 2 - std::max(nRings, 2);
-    indices.reserve(expectedIndices);
-    for (i = 0; i < nRings; i++)
-    {
-        if (i > 0)
-        {
-            indices.push_back(static_cast<unsigned short>(i * (nSlices + 1) + 0));
-        }
-        for (int j = 0; j <= nSlices; j++)
-        {
-            indices.push_back(static_cast<unsigned short>(i * (nSlices + 1) + j));
-            indices.push_back(static_cast<unsigned short>((i + 1) * (nSlices + 1) + j));
-        }
-        if (i < nRings - 1)
-        {
-            indices.push_back(static_cast<unsigned short>((i + 1) * (nSlices + 1) + nSlices));
-        }
-    }
-
-    assert(expectedIndices == indices.size());
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
-                    0,
-                    indices.size() * sizeof(unsigned short),
-                    indices.data());
-
-    // Compute the size of a vertex
-    vertexSize = 3;
-    if ((attributes & Tangents) != 0)
-        vertexSize += 3;
-    for (i = 0; i < nTextures; i++)
-        vertexSize += 2;
-
-    glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
-    if ((attributes & Normals) != 0)
-        glEnableVertexAttribArray(CelestiaGLProgram::NormalAttributeIndex);
-
-    for (i = 0; i < nTextures; i++)
-    {
-        glEnableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex + i);
-    }
-
-    if ((attributes & Tangents) != 0)
-        glEnableVertexAttribArray(CelestiaGLProgram::TangentAttributeIndex);
-
-    if (split == 1)
-    {
-        renderSection(0, 0, thetaExtent, ri);
-    }
-    else
-    {
-        // Render the sphere section by section.
-        //
-        // Compute the vertices of the view frustum.  These will be used for
-        // culling patches.
-        ri.fp[0] = intersect3(frustum.plane(celmath::Frustum::Near),
-                              frustum.plane(celmath::Frustum::Top),
-                              frustum.plane(celmath::Frustum::Left));
-        ri.fp[1] = intersect3(frustum.plane(celmath::Frustum::Near),
-                              frustum.plane(celmath::Frustum::Top),
-                              frustum.plane(celmath::Frustum::Right));
-        ri.fp[2] = intersect3(frustum.plane(celmath::Frustum::Near),
-                              frustum.plane(celmath::Frustum::Bottom),
-                              frustum.plane(celmath::Frustum::Left));
-        ri.fp[3] = intersect3(frustum.plane(celmath::Frustum::Near),
-                              frustum.plane(celmath::Frustum::Bottom),
-                              frustum.plane(celmath::Frustum::Right));
-        ri.fp[4] = intersect3(frustum.plane(celmath::Frustum::Far),
-                              frustum.plane(celmath::Frustum::Top),
-                              frustum.plane(celmath::Frustum::Left));
-        ri.fp[5] = intersect3(frustum.plane(celmath::Frustum::Far),
-                              frustum.plane(celmath::Frustum::Top),
-                              frustum.plane(celmath::Frustum::Right));
-        ri.fp[6] = intersect3(frustum.plane(celmath::Frustum::Far),
-                              frustum.plane(celmath::Frustum::Bottom),
-                              frustum.plane(celmath::Frustum::Left));
-        ri.fp[7] = intersect3(frustum.plane(celmath::Frustum::Far),
-                              frustum.plane(celmath::Frustum::Bottom),
-                              frustum.plane(celmath::Frustum::Right));
-
-        const int extent = maxDivisions / 2;
-        for (int i = 0; i < 2; i++)
-        {
-            for (int j = 0; j < 2; j++)
-            {
-                renderPatches(i * extent / 2, j * extent,
-                              extent, split / 2, ri);
-            }
-        }
-    }
-
-    glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
-    if ((attributes & Normals) != 0)
-        glDisableVertexAttribArray(CelestiaGLProgram::NormalAttributeIndex);
-
-    if ((attributes & Tangents) != 0)
-        glDisableVertexAttribArray(CelestiaGLProgram::TangentAttributeIndex);
-
-    for (i = 0; i < nTextures; i++)
-    {
-        tex[i]->endUsage();
-        glDisableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex + i);
-    }
-
-    if (nTextures > 1)
-    {
-        glActiveTexture(GL_TEXTURE0);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    fmt::print("Rendered {} patches\n", Patch::rendered);
 }
-
-
-void
-LODSphereMesh::renderPatches(int phi0, int theta0,
-                             int extent,
-                             int level,
-                             const RenderInfo& ri)
-{
-    int thetaExtent = extent;
-    int phiExtent = extent / 2;
-
-    // Compute the plane separating this section of the sphere from
-    // the rest of the sphere.  If the view frustum lies entirely
-    // on the side of the plane that does not contain the sphere
-    // patch, we cull the patch.
-    Eigen::Vector3f p0 = spherePoint(theta0, phi0);
-    Eigen::Vector3f p1 = spherePoint(theta0 + thetaExtent, phi0);
-    Eigen::Vector3f p2 = spherePoint(theta0 + thetaExtent,
-                                     phi0 + phiExtent);
-    Eigen::Vector3f p3 = spherePoint(theta0, phi0 + phiExtent);
-    Eigen::Vector3f v0 = p1 - p0;
-    Eigen::Vector3f v2 = p3 - p2;
-    Eigen::Vector3f normal;
-
-    if (v0.squaredNorm() > v2.squaredNorm())
-        normal = (p0 - p3).cross(v0);
-    else
-        normal = (p2 - p1).cross(v2);
-
-    // If the normal is near zero length, something's going wrong
-    assert(normal.norm() != 0.0f);
-    normal.normalize();
-    celmath::Frustum::PlaneType separatingPlane(normal, p0);
-
-    for (int k = 0; k < 8; k++)
-    {
-        if (separatingPlane.absDistance(ri.fp[k]) <= 0.0f)
-        {
-            // If this patch is outside the view frustum,
-            // so are all of its subpatches
-            return;
-        }
-    }
-
-    // Second cull test uses the bounding sphere of the patch
-#if 0
-    // Is this a better choice for the patch center?
-    Eigen::Vector3f patchCenter = spherePoint(theta0 + thetaExtent / 2,
-                                              phi0 + phiExtent / 2);
-#else
-    // . . . or is the average of the points better?
-    Eigen::Vector3f patchCenter = (p0 + p1 + p2 + p3) * 0.25f;
-#endif
-
-    if (float boundingRadius = std::max({(patchCenter - p0).norm(),
-                                     (patchCenter - p1).norm(),
-                                     (patchCenter - p2).norm(),
-                                     (patchCenter - p3).norm()});
-        ri.frustum.testSphere(patchCenter, boundingRadius) == celmath::Frustum::Outside)
-        return;
-
-    if (level == 1)
-    {
-        renderSection(phi0, theta0, thetaExtent, ri);
-        return;
-    }
-
-    for (int i = 0; i < 2; i++)
-    {
-        for (int j = 0; j < 2; j++)
-        {
-            renderPatches(phi0 + phiExtent / 2 * i,
-                          theta0 + thetaExtent / 2 * j,
-                          extent / 2,
-                          level / 2,
-                          ri);
-        }
-    }
-}
-
-
-void
-LODSphereMesh::renderSection(int phi0, int theta0, int extent,
-                             const RenderInfo& ri)
-
-{
-    auto stride = static_cast<GLsizei>(vertexSize * sizeof(float));
-    int texCoordOffset = ((ri.attributes & Tangents) != 0) ? 6 : 3;
-    float* vertexBase = nullptr;
-
-    glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
-                          3, GL_FLOAT, GL_FALSE,
-                          stride, vertexBase);
-    if ((ri.attributes & Normals) != 0)
-    {
-        glVertexAttribPointer(CelestiaGLProgram::NormalAttributeIndex,
-                              3, GL_FLOAT, GL_FALSE,
-                              stride, vertexBase);
-    }
-
-    for (int tc = 0; tc < nTexturesUsed; tc++)
-    {
-        glVertexAttribPointer(CelestiaGLProgram::TextureCoord0AttributeIndex + tc,
-                              2, GL_FLOAT, GL_FALSE,
-                              stride, vertexBase + (tc * 2) + texCoordOffset);
-    }
-
-    if ((ri.attributes & Tangents) != 0)
-    {
-        glVertexAttribPointer(CelestiaGLProgram::TangentAttributeIndex,
-                              3, GL_FLOAT, GL_FALSE,
-                              stride, vertexBase + 3); // 3 == tangentOffset
-    }
-
-    // assert(ri.step >= minStep);
-    // assert(phi0 + extent <= maxDivisions);
-    // assert(theta0 + extent / 2 < maxDivisions);
-    // assert(isPow2(extent));
-    int thetaExtent = extent;
-    int phiExtent = extent / 2;
-    int theta1 = theta0 + thetaExtent;
-    int phi1 = phi0 + phiExtent;
-
-    TextureCoords tc{ nTexturesUsed };
-
-    // Set the current texture.  This is necessary because the texture
-    // may be split into subtextures.
-    for (int tex = 0; tex < nTexturesUsed; tex++)
-    {
-        tc.du[tex] = 1.0f / static_cast<float>(thetaDivisions);
-        tc.dv[tex] = 1.0f / static_cast<float>(phiDivisions);
-        tc.u0[tex] = 1.0f;
-        tc.v0[tex] = 1.0f;
-
-        if (textures[tex] != nullptr)
-        {
-            int uTexSplit = textures[tex]->getUTileCount(ri.texLOD[tex]);
-            int vTexSplit = textures[tex]->getVTileCount(ri.texLOD[tex]);
-            int patchSplit = maxDivisions / extent;
-            assert(patchSplit >= uTexSplit && patchSplit >= vTexSplit);
-
-            int u = theta0 / thetaExtent;
-            int v = phi0 / phiExtent;
-            int patchesPerUSubtex = patchSplit / uTexSplit;
-            int patchesPerVSubtex = patchSplit / vTexSplit;
-
-            tc.du[tex] *= static_cast<float>(uTexSplit);
-            tc.dv[tex] *= static_cast<float>(vTexSplit);
-            tc.u0[tex] = 1.0f - (static_cast<float>(u % patchesPerUSubtex) /
-                                 static_cast<float>(patchesPerUSubtex));
-            tc.v0[tex] = 1.0f - (static_cast<float>(v % patchesPerVSubtex) /
-                                 static_cast<float>(patchesPerVSubtex));
-            tc.u0[tex] += static_cast<float>(theta0) * tc.du[tex];
-            tc.v0[tex] += static_cast<float>(phi0) * tc.dv[tex];
-
-            u /= patchesPerUSubtex;
-            v /= patchesPerVSubtex;
-
-            if (nTexturesUsed > 1)
-                glActiveTexture(GL_TEXTURE0 + tex);
-            TextureTile tile = textures[tex]->getTile(ri.texLOD[tex],
-                                                      uTexSplit - u - 1,
-                                                      vTexSplit - v - 1);
-            tc.du[tex] *= tile.du;
-            tc.dv[tex] *= tile.dv;
-            tc.u0[tex] = tc.u0[tex] * tile.du + tile.u;
-            tc.v0[tex] = tc.v0[tex] * tile.dv + tile.v;
-
-            // We track the current texture to avoid unnecessary and costly
-            // texture state changes.
-            if (tile.texID != subtextures[tex])
-            {
-                glBindTexture(GL_TEXTURE_2D, tile.texID);
-                subtextures[tex] = tile.texID;
-            }
-        }
-    }
-
-    vertices.clear();
-    int perVertexFloats = (ri.attributes & Tangents) == 0 ? 3 : 6;
-    int expectedVertices = ((phi1 - phi0) / ri.step + 1) *
-                           ((theta1 - theta0) / ri.step + 1) * (perVertexFloats + nTexturesUsed * 2);
-    assert(expectedVertices <= maxVertices * MaxVertexSize);
-    vertices.reserve(expectedVertices);
-    if ((ri.attributes & Tangents) == 0)
-        createVertices<false>(vertices, phi0, phi1, theta0, theta1, ri.step, tc);
-    else
-        createVertices<true>(vertices, phi0, phi1, theta0, theta1, ri.step, tc);
-
-    assert(expectedVertices == vertices.size());
-
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), vertices.data());
-
-    int nRings = phiExtent / ri.step;
-    int nSlices = thetaExtent / ri.step;
-    glDrawElements(GL_TRIANGLE_STRIP,
-                   nRings * (nSlices + 2) * 2 - 2,
-                   GL_UNSIGNED_SHORT,
-                   nullptr);
-
-    // Cycle through the vertex buffers
-    currentVB++;
-    if (currentVB == NUM_SPHERE_VERTEX_BUFFERS)
-        currentVB = 0;
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[currentVB]);
-}
-

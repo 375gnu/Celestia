@@ -1877,7 +1877,7 @@ static void renderSphereUnlit(const RenderInfo& ri,
     ps.depthTest = true;
     r->setPipelineState(ps);
 
-    g_lodSphere->render(frustum, ri.pixWidth,
+    g_lodSphere->render(r, frustum, ri.pixWidth,
                         textures.data(), static_cast<int>(textures.size()));
 }
 
@@ -1907,7 +1907,7 @@ static void renderCloudsUnlit(const RenderInfo& ri,
     ps.depthTest = true;
     r->setPipelineState(ps);
 
-    g_lodSphere->render(frustum, ri.pixWidth, &cloudTex, 1);
+    g_lodSphere->render(r, frustum, ri.pixWidth, &cloudTex, 1);
 }
 
 void

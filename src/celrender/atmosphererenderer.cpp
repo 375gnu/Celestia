@@ -408,7 +408,8 @@ AtmosphereRenderer::render(
     ps.depthTest = true;
     m_renderer.setPipelineState(ps);
 
-    g_lodSphere->render(LODSphereMesh::Normals,
+    g_lodSphere->render(&m_renderer,
+                        LODSphereMesh::Normals,
                         frustum,
                         ri.pixWidth,
                         nullptr);
