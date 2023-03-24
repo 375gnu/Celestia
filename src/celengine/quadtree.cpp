@@ -16,12 +16,10 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "vecgl.h"
+#include <celmath/vecgl.h>
 
 #define PI (0x1.921fb54442d18469898cc51701b839a2p1)
 #define FOV 45.0f
-
-using namespace celestia;
 
 static int offset = -1;
 static int diffTex = -1;
@@ -364,7 +362,7 @@ Node::render()
     if (!draw)
     {
         const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
-        auto [i0, i1] = m_startY >= 0.5f ? std::pair(0, 1) : std::pair(3, 2);
+        auto [i0, i1] = m_startY >= 0.5f ? std::pair(3, 2) : std::pair(0, 1);
 
         Eigen::Vector4f v0 = mvp * m_mapped[i0];
         Eigen::Vector4f v1 = mvp * m_mapped[i1];
@@ -846,7 +844,7 @@ void
 SDL_Application::updateGL()
 {
     m_projection = Perspective(FOV, getAspectRatio(), 0.0f, 1.0f);
-    m_modelView = Eigen::Matrix4f::Identity() * vecgl::translate(m_cameraPos);
+    m_modelView = Eigen::Matrix4f::Identity() * celmath::translate(m_cameraPos);
     m_qt->setCameraPosition(m_cameraPos);
     m_qt->setModelViewMatrix(/*Eigen::Matrix4f::Identity()*/m_modelView);
     m_qt->setViewport(m_windowWidth, m_windowHeight);

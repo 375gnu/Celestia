@@ -259,7 +259,7 @@ Node::render()
     if (!draw)
     {
         const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
-        auto [i0, i1] = m_startY >= 0.5f ? std::pair(0, 1) : std::pair(3, 2);
+        auto [i0, i1] = m_startY >= 0.5f ? std::pair(3, 2) : std::pair(0, 1);
 
         Eigen::Vector4f v0 = mvp * m_mapped[i0];
         Eigen::Vector4f v1 = mvp * m_mapped[i1];
@@ -483,6 +483,10 @@ Patch::render(double offsetX, double offsetY) const
     glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
     glVertexAttribPointer(CelestiaGLProgram::VertexCoordAttributeIndex,
                           4, GL_FLOAT, GL_FALSE,
+                          stride, (void*)offsetof(MappedVtx, pos));
+
+    glVertexAttribPointer(CelestiaGLProgram::NormalAttributeIndex,
+                          3, GL_FLOAT, GL_FALSE,
                           stride, (void*)offsetof(MappedVtx, pos));
 
     glEnableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);

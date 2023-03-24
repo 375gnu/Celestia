@@ -340,8 +340,8 @@ void renderEllipsoid_GLSL(const RenderInfo& ri,
         prog->setEclipseShadowParameters(ls, semiAxes, planetOrientation);
 
     unsigned int attributes = LODSphereMesh::Normals;
-    if (ri.bumpTex != nullptr)
-        attributes |= LODSphereMesh::Tangents;
+//    if (ri.bumpTex != nullptr)
+//        attributes |= LODSphereMesh::Tangents;
 
     Renderer::PipelineState ps;
     ps.depthMask = true;
@@ -626,8 +626,8 @@ void renderClouds_GLSL(const RenderInfo& ri,
         prog->setEclipseShadowParameters(ls, semiAxes, planetOrientation);
 
     unsigned int attributes = LODSphereMesh::Normals;
-    if (cloudNormalMap != nullptr)
-        attributes |= LODSphereMesh::Tangents;
+//    if (cloudNormalMap != nullptr)
+//        attributes |= LODSphereMesh::Tangents;
 
     Renderer::PipelineState ps;
     ps.blending = true;
