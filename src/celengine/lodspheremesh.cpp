@@ -36,6 +36,12 @@ namespace
 constexpr int N = 36;
 constexpr int kMaxLevel = 4;
 
+struct MappedVtx
+{
+    Eigen::Vector4f pos;
+    Eigen::Vector2f texCoord;
+};
+
 Eigen::Vector4f
 MapToSphere(double x, double y)
 {
@@ -167,6 +173,8 @@ private:
 
     std::vector<SinCos> sincosX;
     std::vector<SinCos> sincosY;
+
+    mutable std::vector<MappedVtx> mapped;
 
 public:
     static int rendered;
@@ -374,6 +382,8 @@ Patch::Patch(double width, double height) :
     sincosX(N+1),
     sincosY(N+1)
 {
+    mapped.reserve((N+1)*(N+1));
+
     const double stepX = m_width / static_cast<double>(N);
     const double stepY = m_height / static_cast<double>(N);
 
@@ -417,15 +427,6 @@ Patch::Patch(double width, double height) :
 void
 Patch::render(double offsetX, double offsetY) const
 {
-    struct MappedVtx
-    {
-        Eigen::Vector4f pos;
-        Eigen::Vector2f texCoord;
-    };
-
-    std::vector<MappedVtx> mapped;
-    mapped.reserve((N+1)*(N+1));;
-
     const double stepX = m_width / static_cast<double>(N);
     const double stepY = m_height / static_cast<double>(N);
 
@@ -441,7 +442,7 @@ Patch::render(double offsetX, double offsetY) const
      * y = offsetY + y' => phi = (0.5-offsetY) * PI + (-y') * PI
      */
 
-    SinCos offsetXsc; sincos((offsetX - 0.5) * pi, &offsetXsc.s, &offsetXsc.c);
+    SinCos offsetXsc; sincos(offsetX * pi, &offsetXsc.s, &offsetXsc.c);
     SinCos offsetYsc; sincos((0.5 - offsetY) * pi, &offsetYsc.s, &offsetYsc.c);
 
     std::vector<SinCos> sincosXX(N+1);
@@ -485,6 +486,7 @@ Patch::render(double offsetX, double offsetY) const
                           4, GL_FLOAT, GL_FALSE,
                           stride, (void*)offsetof(MappedVtx, pos));
 
+    glEnableVertexAttribArray(CelestiaGLProgram::NormalAttributeIndex);
     glVertexAttribPointer(CelestiaGLProgram::NormalAttributeIndex,
                           3, GL_FLOAT, GL_FALSE,
                           stride, (void*)offsetof(MappedVtx, pos));
@@ -497,9 +499,11 @@ Patch::render(double offsetX, double offsetY) const
     glDrawElements(GL_TRIANGLE_STRIP, m_idxCount, GL_UNSIGNED_SHORT, nullptr);
 
     glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
+    glDisableVertexAttribArray(CelestiaGLProgram::NormalAttributeIndex);
     glDisableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
 
     rendered++;
+    mapped.clear();
 }
 
 struct TextureCoords
@@ -570,6 +574,12 @@ void LODSphereMesh::render(const Renderer *renderer,
     if (m_qt == nullptr)
         m_qt = new QuadTree(0.0, 0.0, 2.0, 1.0);
 
+    for (int i = 0; i < nTextures; i++)
+    {
+        glActiveTexture(GL_TEXTURE0+i);
+        tex[i]->bind();
+    }
+
     Patch::rendered = 0;
     m_qt->setModelViewMatrix(renderer->getCurrentModelViewMatrix());
     m_qt->setMVPMatrix(renderer->getCurrentProjectionMatrix() * renderer->getCurrentModelViewMatrix());
@@ -577,7 +587,9 @@ void LODSphereMesh::render(const Renderer *renderer,
     renderer->getViewport(nullptr, nullptr, &w, &h);
     m_qt->setViewport(w, h);
 
+    glFrontFace(GL_CW);
     m_qt->render();
+    glFrontFace(GL_CCW);
 
     fmt::print("Rendered {} patches\n", Patch::rendered);
 }
