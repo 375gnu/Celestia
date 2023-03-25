@@ -1742,7 +1742,7 @@ ShaderProperties::isViewDependent() const
 bool
 ShaderProperties::usesTangentSpaceLighting() const
 {
-    return (texUsage & NormalTexture) != 0;
+    return false; //(texUsage & NormalTexture) != 0;
 }
 
 

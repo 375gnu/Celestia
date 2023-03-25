@@ -34,7 +34,7 @@ namespace
 {
 
 constexpr int N = 36;
-constexpr int kMaxLevel = 4;
+constexpr int kMaxLevel = 5;
 
 struct MappedVtx
 {
@@ -84,7 +84,7 @@ public:
     void setViewport(int w, int h);
     const Eigen::Vector2i getViewport() const { return m_viewport; }
 
-    void render() const;
+    void render(int level) const;
 
 private:
     const Patch* getPatch(int level) const;
@@ -119,7 +119,7 @@ public:
     const Patch* createPatch();
 
     bool visible() const;
-    void render();
+    void render(int level);
 
 private:
     void split();
@@ -216,10 +216,10 @@ QuadTree::createPatch(int level, double width, double height)
 }
 
 void
-QuadTree::render() const
+QuadTree::render(int level) const
 {
-    m_nodeFront->render();
-    m_nodeRear->render();
+    m_nodeFront->render(level);
+    m_nodeRear->render(level);
 }
 
 void
@@ -249,7 +249,6 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
     m_endX(endX),
     m_endY(endY)
 {
-    //fmt::print("{} {}\n", m_startX,m_endX);
     m_mapped[0] = MapToSphere(m_startX, m_startY);
     m_mapped[1] = MapToSphere(m_startX, m_endY);
     m_mapped[2] = MapToSphere(m_endX, m_startY);
@@ -257,41 +256,41 @@ Node::Node(QuadTree *qt, int level, double startX, double startY, double endX, d
 }
 
 void
-Node::render()
+Node::render(int level)
 {
     if (!visible())
         return;
 
-    bool draw = (kMaxLevel == m_level);
-
+    bool draw = (level == m_level);
+#if 0
     if (!draw)
     {
         const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
-        auto [i0, i1] = m_startY >= 0.5f ? std::pair(3, 2) : std::pair(0, 1);
 
-        Eigen::Vector4f v0 = mvp * m_mapped[i0];
-        Eigen::Vector4f v1 = mvp * m_mapped[i1];
+        Eigen::Vector4f v0(m_mapped[0]);
+        Eigen::Vector4f v1(m_mapped[1]);
+
         auto viewport = m_qt->getViewport();
-        Eigen::Vector2f s0(v0.x() * viewport.x(), v0.y() * viewport.y());
-        s0 *= 1.0f / v0.w();
-        Eigen::Vector2f s1(v1.x() * viewport.x(), v1.y() * viewport.y());
-        s1 *= 1.0f / v1.w();
+        Eigen::Vector2f s0(v0.x() / v0.w() * viewport.x(), v0.y() / v0.w() * viewport.y());
+        Eigen::Vector2f s1(v1.x() / v1.w() * viewport.x(), v1.y() / v1.w() * viewport.y());
         int screensize = static_cast<int>((s0 - s1).norm());
+        draw = screensize <= 32 * N; 
 
-        draw = screensize <= 38*N; // 32 + 20%
+        fmt::print("level = {}, screensize = {}, draw={}\n", m_level, screensize, draw);
     }
-
+#endif
     if (draw)
     {
         auto patch = getPatch();
         if (patch == nullptr)
             patch = createPatch();
         patch->render(m_startX, m_startY);
-        return;
     }
-
-    split();
-    std::for_each(m_nodes.begin(), m_nodes.end(), [](const auto &node) { node->render(); });
+    else
+    {
+        split();
+        std::for_each(m_nodes.begin(), m_nodes.end(), [level](const auto &node) { node->render(level); });
+    }
 }
 
 void
@@ -330,7 +329,7 @@ Node::checkVisibility(const Eigen::Matrix4f &mvp, const Eigen::Vector4f &point) 
 {
     Eigen::Vector4f pos = mvp * point;
     float w = 1.1f * pos.w();
-    fmt::print("[{}, {}, {}, {}]\n", pos.x(), pos.y(), pos.z(), pos.w());
+    //fmt::print("[{}, {}, {}, {}]\n", pos.x(), pos.y(), pos.z(), pos.w());
     int x = pos.x() < -w ? -1 : pos.x() > w ? 1 : 0;
     int y = pos.y() < -w ? -1 : pos.y() > w ? 1 : 0;
     return {x, y};
@@ -356,7 +355,7 @@ Node::visible() const
     const Eigen::Matrix4f &mvp = m_qt->getMVPMatrix();
 
     std::array<std::pair<int,int>, 4> positions;
-    int x = 0, y =0;
+    int x = 0, y = 0;
     for (int i = 0; i < 4; i++)
     {
         positions[i] = checkVisibility(mvp, m_mapped[i]);
@@ -369,7 +368,7 @@ Node::visible() const
     if (!(x > -4 && x < 4) && (y > -4 && y < 4))
         return false;
 
-    return checkDirection() < 0.2f;
+    return true;//checkDirection() >= -0.2f;
 }
 
 int Patch::rendered = 0;
@@ -563,6 +562,15 @@ LODSphereMesh::render(const Renderer *renderer,
            tex.data(), static_cast<int>(tex.size()));
 }
 
+int getSphereLOD(float discSizeInPixels)
+{
+    if (discSizeInPixels <= 512.0f)
+        return 0;
+    if (discSizeInPixels <= 1024.0f)
+        return 1;
+    return std::min(kMaxLevel, 2 + static_cast<int>(discSizeInPixels / 4096.0f));
+}
+
 
 void LODSphereMesh::render(const Renderer *renderer,
                            unsigned int attributes,
@@ -588,7 +596,9 @@ void LODSphereMesh::render(const Renderer *renderer,
     m_qt->setViewport(w, h);
 
     glFrontFace(GL_CW);
-    m_qt->render();
+    int lod = getSphereLOD(pixWidth);
+    fmt::print("pixWidth={}, lod={}\n", pixWidth, lod);
+    m_qt->render(lod);
     glFrontFace(GL_CCW);
 
     fmt::print("Rendered {} patches\n", Patch::rendered);
