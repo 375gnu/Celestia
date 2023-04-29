@@ -33,9 +33,13 @@ gtk_egl_drawable_set_require_es           (GtkWidget *drawing_area,
                                            gboolean   require_es);
 
 void
+gtk_egl_drawable_set_require_core_profile (GtkWidget *widget,
+                                           gboolean   require_core);
+
+void
 gtk_egl_drawable_set_require_version      (GtkWidget *drawing_area,
-                                           gint major,
-                                           gint minor);
+                                           gint       major,
+                                           gint       minor);
 
 void
 gtk_egl_drawable_set_require_depth_size   (GtkWidget *drawing_area,

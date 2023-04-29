@@ -37,6 +37,7 @@ struct _GtkEGLPrivate
     gint8       require_alpha_size;
     gint8       require_msaa_samples;
     gboolean    require_es    : 1;
+    gboolean    require_core  : 1;
     gboolean    realized      : 1;
 };
 
@@ -47,6 +48,7 @@ gtk_egl_private_init(GtkEGLPrivate *private)
 {
     private->realized               = FALSE;
     private->require_es             = FALSE;
+    private->require_core           = FALSE;
     private->require_version_major  = 0;
     private->require_version_minor  = 0;
     private->require_depth_size     = 0;
@@ -182,7 +184,7 @@ gtk_widget_set_egl_capability(GtkWidget *widget)
 }
 
 /**
- * Request OpenGL ES or desktop OpenGL usage a in EGL capable widget.
+ * Request OpenGL ES or desktop OpenGL usage in a EGL capable widget.
  *
  * @param widget a EGL capable GtkWidget.
  * @param require_es if TRUE then use OpenGL ES, else use OpenGL.
@@ -198,7 +200,23 @@ gtk_egl_drawable_set_require_es(GtkWidget *widget,
 }
 
 /**
- * Request OpenGL ES version to use in a EGL capable widget.
+ * Request desktop OpenGL core profile in a EGL capable widget.
+ *
+ * @param widget a EGL capable GtkWidget.
+ * @param require_core if TRUE then use core profile.
+ */
+void
+gtk_egl_drawable_set_require_core_profile(GtkWidget *widget,
+                                          gboolean   require_core)
+{
+    GtkEGLPrivate *private = GTK_EGL_GET_PRIVATE(widget);
+    g_assert(private != NULL);
+
+    private->require_core = require_core;
+}
+
+/**
+ * Request OpenGL / OpenGL ES version to use in a EGL capable widget.
  *
  * Currently can be called to request OpenGL ES 2.0 context
  * instead of 1.1 created by default.
@@ -209,8 +227,8 @@ gtk_egl_drawable_set_require_es(GtkWidget *widget,
  */
 void
 gtk_egl_drawable_set_require_version(GtkWidget *widget,
-                                     gint major,
-                                     gint minor)
+                                     gint       major,
+                                     gint       minor)
 {
     GtkEGLPrivate *private = GTK_EGL_GET_PRIVATE(widget);
     g_assert(private != NULL);
@@ -304,7 +322,7 @@ gtk_egl_build_screen_attributes_list(GtkEGLPrivate *private,
     attributes[i++] = EGL_RENDERABLE_TYPE;
     if (private->require_es)
     {
-        if (private->require_version_major == 2)
+        if (private->require_version_major >= 2)
             attributes[i] = EGL_OPENGL_ES2_BIT;
         else
             attributes[i] = EGL_OPENGL_ES_BIT;
@@ -355,14 +373,17 @@ gtk_egl_build_context_attributes_list(GtkEGLPrivate *private,
                                       EGLint        *attributes,
                                       int            count)
 {
-    g_assert(count >= 3);
+    g_assert(count >= 5);
     int i = 0;
-    if (private->require_es && private->require_version_major == 2)
+    if ((private->require_core && !private->require_es) ||
+        (private->require_es && private->require_version_major >= 2))
     {
-        attributes[0] = EGL_CONTEXT_CLIENT_VERSION;
-        attributes[1] = 2;
-        i = 2;
+        attributes[i++] = EGL_CONTEXT_MAJOR_VERSION;
+        attributes[i++] = private->require_version_major;
+        attributes[i++] = EGL_CONTEXT_MINOR_VERSION;
+        attributes[i++] = private->require_version_minor;
     }
+
     attributes[i] = EGL_NONE;
 }
 

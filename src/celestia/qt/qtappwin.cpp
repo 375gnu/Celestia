@@ -283,6 +283,17 @@ void CelestiaAppWindow::init(const CelestiaCommandLineOptions& options)
     {
         glformat.setSamples(m_appCore->getConfig()->aaSamples);
     }
+#ifdef GL_ES
+    glformat.setRenderableType(QSurfaceFormat::OpenGLES);
+    glformat.setMajorVersion(3);
+    glformat.setMinorVersion(2);
+#else
+    glformat.setRenderableType(QSurfaceFormat::OpenGL);
+    glformat.setMajorVersion(3);
+    glformat.setMinorVersion(3);
+    glformat.setProfile(QSurfaceFormat::CoreProfile);
+#endif
+
     QSurfaceFormat::setDefaultFormat(glformat);
 
     glWidget = new CelestiaGlWidget(nullptr, "Celestia", m_appCore);

@@ -478,7 +478,10 @@ int main(int argc, char* argv[])
     gtk_widget_set_egl_capability(app->glArea);
 #ifdef GL_ES
     gtk_egl_drawable_set_require_es(app->glArea, TRUE);
-    gtk_egl_drawable_set_require_version(app->glArea, 2, 0);
+    gtk_egl_drawable_set_require_version(app->glArea, 3, 2);
+#else
+    gtk_egl_drawable_set_require_core_profile(app->glArea, TRUE);
+    gtk_egl_drawable_set_require_version(app->glArea, 3, 3);
 #endif
     //gtk_egl_drawable_set_require_stencil_size(app->glArea, 1);
     gtk_egl_drawable_set_require_depth_size(app->glArea, 24);
