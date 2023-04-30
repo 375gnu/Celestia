@@ -15,13 +15,18 @@
 #include <cstdint>
 #include <cmath>
 #include <limits>
+#include <map>
 
 #include <celcompat/numbers.h>
 #include <celengine/shadermanager.h>
 #include <celengine/texture.h>
 #include <celmath/frustum.h>
 #include <celmath/mathlib.h>
+#include <celrender/gl/buffer.h>
+#include <celrender/gl/vertexobject.h>
 #include <celutil/arrayvector.h>
+
+namespace gl = celestia::gl;
 
 #define PTR(p) (reinterpret_cast<const void*>(static_cast<std::uintptr_t>(p)))
 
@@ -44,6 +49,90 @@ static_assert(nIndices < std::numeric_limits<unsigned short>::max());
 //     tangent    - 3 floats,
 //     tex coords - 2 floats * MAX_SPHERE_MESH_TEXTURES
 constexpr const int MaxVertexSize = 3 + 3 + LODSphereMesh::MAX_SPHERE_MESH_TEXTURES * 2;
+
+struct VAOParams
+{
+    unsigned int attributes;
+    int          nTextures;
+    GLuint       boId;
+    GLuint       ioId;
+};
+
+class VAOCache
+{
+public:
+    gl::VertexObject& get(unsigned int attributes, int nTextures, const gl::Buffer &bo, const gl::Buffer &io);
+
+private:
+    gl::VertexObject& add(unsigned int attributes, int nTextures, const gl::Buffer &bo, const gl::Buffer &io);
+
+    std::map<VAOParams, gl::VertexObject*> m_vaos;
+};
+
+bool operator<(const VAOParams &p0, const VAOParams &p1)
+{
+    return std::tie(p0.attributes, p0.nTextures, p0.boId, p0.ioId)
+         < std::tie(p1.attributes, p1.nTextures, p1.boId, p1.ioId);
+}
+
+gl::VertexObject&
+VAOCache::get(unsigned int attributes, int nTextures, const gl::Buffer &bo, const gl::Buffer &io)
+{
+    VAOParams p{ attributes, nTextures, bo.id() };
+    
+    if (auto iter = m_vaos.find(p); iter == m_vaos.end())
+        return add(attributes, nTextures, bo, io);
+    else
+        return *iter->second;
+}
+
+gl::VertexObject&
+VAOCache::add(unsigned int attributes, int nTextures, const gl::Buffer &bo, const gl::Buffer &io)
+{
+    auto *vao = new gl::VertexObject(gl::VertexObject::Primitive::TriangleStrip); // NOSONAR
+
+    // Compute the size of a vertex
+    int vertexSize = 3;
+    if ((attributes & LODSphereMesh::Tangents) != 0)
+        vertexSize += 3;
+    for (int i = 0; i < nTextures; i++)
+        vertexSize += 2;
+
+    auto stride = static_cast<GLsizei>(vertexSize * sizeof(float));
+    int texCoordOffset = ((attributes & LODSphereMesh::Tangents) != 0) ? 6 : 3;
+
+    vao->addVertexBuffer(bo, CelestiaGLProgram::VertexCoordAttributeIndex,
+                         3, gl::VertexObject::DataType::Float, false,
+                         stride, 0);
+
+    if ((attributes & LODSphereMesh::Normals) != 0)
+    {
+        vao->addVertexBuffer(bo, CelestiaGLProgram::NormalAttributeIndex,
+                             3, gl::VertexObject::DataType::Float, false,
+                             stride, 0);
+    }
+
+    for (int tc = 0; tc < nTextures; tc++)
+    {
+        vao->addVertexBuffer(bo, CelestiaGLProgram::TextureCoord0AttributeIndex + tc,
+                             2, gl::VertexObject::DataType::Float, false,
+                             stride, ((tc * 2) + texCoordOffset) * sizeof(float));
+    }
+
+    if ((attributes & LODSphereMesh::Tangents) != 0)
+    {
+        vao->addVertexBuffer(bo, CelestiaGLProgram::TangentAttributeIndex,
+                             3, gl::VertexObject::DataType::Float, false,
+                             stride, 3 * sizeof(float)); // 3 == tangentOffset
+    }
+
+    vao->setIndexBuffer(io, 0, gl::VertexObject::IndexType::UnsignedShort);
+
+    VAOParams p{ attributes, nTextures, bo.id(), io.id() };
+    m_vaos.emplace(p, vao);
+
+    return *vao;
+}
 
 
 using ThetaArray = std::array<float, thetaDivisions + 1>;
