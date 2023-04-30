@@ -91,4 +91,6 @@ public:
     GLuint currentVB{ 0 };
     std::array<GLuint, NUM_SPHERE_VERTEX_BUFFERS> vertexBuffers{};
     GLuint indexBuffer{ 0 };
+
+    GLuint vao{ 0 };
 };

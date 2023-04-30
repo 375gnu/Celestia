@@ -396,10 +396,8 @@ void LODSphereMesh::render(unsigned int attributes,
         // render.  Valid now, but not necessarily in the future.  Still,
         // would only cause problems if we rendered in two different contexts
         // and only one had vertex buffer objects.
-        while(glGetError() != GL_NO_ERROR);
         glGenBuffers(vertexBuffers.size(), vertexBuffers.data());
-        if (glGetError() != GL_NO_ERROR)
-            return;
+        glGenVertexArrays(1, &vao);
         vertexBuffersInitialized = true;
         for (auto vertexBuffer : vertexBuffers)
         {
@@ -412,8 +410,6 @@ void LODSphereMesh::render(unsigned int attributes,
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glGenBuffers(1, &indexBuffer);
-        if (glGetError() != GL_NO_ERROR)
-            return;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                      nIndices * sizeof(unsigned short),
@@ -421,6 +417,8 @@ void LODSphereMesh::render(unsigned int attributes,
                      GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
+
+    glBindVertexArray(vao);
 
     currentVB = 0;
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[currentVB]);
