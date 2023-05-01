@@ -84,20 +84,24 @@ getInternalFormat(PixelFormat format)
     case PixelFormat::BGRA:
     case PixelFormat::RGB:
     case PixelFormat::BGR:
-    case PixelFormat::LUM_ALPHA:
-    case PixelFormat::ALPHA:
-    case PixelFormat::LUMINANCE:
     case PixelFormat::DXT1:
     case PixelFormat::DXT3:
     case PixelFormat::DXT5:
-    case PixelFormat::SLUM_ALPHA:
-    case PixelFormat::SLUMINANCE:
     case PixelFormat::SRGB:
     case PixelFormat::SRGBA:
     case PixelFormat::DXT1_SRGBA:
     case PixelFormat::DXT3_SRGBA:
     case PixelFormat::DXT5_SRGBA:
         return static_cast<GLenum>(format);
+    case PixelFormat::LUM_ALPHA:
+        return GL_RG8;
+    case PixelFormat::ALPHA:
+    case PixelFormat::LUMINANCE:
+        return GL_R8;
+    case PixelFormat::SLUMINANCE:
+        return GL_SR8_EXT;
+    case PixelFormat::SLUM_ALPHA:
+        return GL_NONE;
     default:
         return GL_NONE;
     }
@@ -110,23 +114,24 @@ getExternalFormat(PixelFormat format)
 #ifdef GL_ES
     return getInternalFormat(format);
 #else
+    // GL ES supports legacy texture formats
     switch (format)
     {
     case PixelFormat::RGBA:
     case PixelFormat::BGRA:
     case PixelFormat::RGB:
     case PixelFormat::BGR:
-    case PixelFormat::LUM_ALPHA:
-    case PixelFormat::ALPHA:
-    case PixelFormat::LUMINANCE:
     case PixelFormat::DXT1:
     case PixelFormat::DXT3:
     case PixelFormat::DXT5:
         return static_cast<GLenum>(format);
+    case PixelFormat::LUM_ALPHA:
     case PixelFormat::SLUM_ALPHA:
-        return static_cast<GLenum>(PixelFormat::LUM_ALPHA);
+        return GL_RG;
+    case PixelFormat::ALPHA:
+    case PixelFormat::LUMINANCE:
     case PixelFormat::SLUMINANCE:
-        return static_cast<GLenum>(PixelFormat::LUMINANCE);
+        return GL_RED;
     case PixelFormat::SRGB:
         return static_cast<GLenum>(PixelFormat::RGB);
     case PixelFormat::SRGBA:
@@ -174,6 +179,36 @@ getCompressedInternalFormat(int format)
     }
 }
 #endif
+
+void
+SetupTextureSwizzle(GLenum target, PixelFormat format)
+{
+#ifndef GL_ES
+    switch (format)
+    {
+    case PixelFormat::LUM_ALPHA:
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
+        break;
+    case PixelFormat::ALPHA:
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_ZERO);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_ZERO);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_ZERO);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_RED);
+        break;
+    case PixelFormat::LUMINANCE:
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_R, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_G, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_B, GL_RED);
+        glTexParameteri(target, GL_TEXTURE_SWIZZLE_A, GL_ONE);
+        break;
+    default:
+        break;
+    }
+#endif
+}
 
 int
 getCompressedBlockSize(PixelFormat format)
@@ -227,7 +262,7 @@ SetBorderColor(Color borderColor, GLenum target)
 void
 LoadMipmapSet(const Image& img, GLenum target)
 {
-    int internalFormat = getInternalFormat(img.getFormat());
+    GLenum internalFormat = getInternalFormat(img.getFormat());
 #ifndef GL_ES
     glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, img.getMipLevelCount()-1);
 #endif
@@ -249,6 +284,7 @@ LoadMipmapSet(const Image& img, GLenum target)
         }
         else
         {
+            SetupTextureSwizzle(target, img.getFormat());
             glTexImage2D(target,
                          mip,
                          internalFormat,
@@ -265,7 +301,7 @@ LoadMipmapSet(const Image& img, GLenum target)
 void
 LoadMiplessTexture(const Image& img, GLenum target)
 {
-    int internalFormat = getInternalFormat(img.getFormat());
+    GLenum internalFormat = getInternalFormat(img.getFormat());
 
     if (img.isCompressed())
     {
@@ -279,6 +315,7 @@ LoadMiplessTexture(const Image& img, GLenum target)
     }
     else
     {
+        SetupTextureSwizzle(target, img.getFormat());
         glTexImage2D(target,
                      0,
                      internalFormat,
