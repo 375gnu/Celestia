@@ -13,7 +13,7 @@
 #include "vertexobject.h"
 
 #define GLENUM(p) (static_cast<GLenum>(p))
-#define PTR(p) (reinterpret_cast<void*>(p))
+#define PTR(p) (reinterpret_cast<void*>(static_cast<std::uintptr_t>(p)))
 
 namespace
 {
@@ -25,6 +25,16 @@ isVAOSupported()
     return celestia::gl::OES_vertex_array_object;
 #else
     return celestia::gl::ARB_vertex_array_object;
+#endif
+}
+
+[[ nodiscard ]] inline bool
+isDSASupported()
+{
+#ifdef GL_ES
+    return false;
+#else
+    return celestia::gl::EXT_direct_state_access;
 #endif
 }
 
@@ -183,6 +193,8 @@ VertexObject::draw(VertexObject::Primitive primitive, int count, int first)
 
     if (isIndexed())
     {
+        if (isDSASupported()) // EXT version doesn't support index buffers
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_idxBufferId);
         auto offset = static_cast<std::ptrdiff_t>(first * (m_indexType == IndexType::UnsignedShort ? sizeof(GLushort) : sizeof(GLuint)));
         glDrawElements(GLENUM(primitive), count, GLENUM(m_indexType), PTR(offset));
     }
@@ -214,29 +226,45 @@ VertexObject::enableAttribArrays()
     m_currBuff = 0; // other buffer can be mounted externally
     for (const auto& p : m_bufferDesc)
     {
-        if (m_currBuff != p.bufferId)
+        if (!isDSASupported() && m_currBuff != p.bufferId)
         {
             glBindBuffer(GL_ARRAY_BUFFER, p.bufferId);
             m_currBuff = p.bufferId;
         }
-        glEnableVertexAttribArray(p.location);
-        glVertexAttribPointer(p.location, p.elemSize, p.type, p.normalized ? GL_TRUE : GL_FALSE, p.stride, PTR(p.offset));
+        if (isDSASupported())
+        {
+            glEnableVertexArrayAttribEXT(m_id, p.location);
+            glVertexArrayVertexAttribOffsetEXT(m_id, p.bufferId, p.location, p.elemSize, p.type, p.normalized ? GL_TRUE : GL_FALSE, p.stride, p.offset);
+        }
+        else
+        {
+            glEnableVertexAttribArray(p.location);
+            glVertexAttribPointer(p.location, p.elemSize, p.type, p.normalized ? GL_TRUE : GL_FALSE, p.stride, PTR(p.offset));
+        }
     }
 
     if (isIndexed())
+    {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_idxBufferId);
+    }
 }
 
 void
 VertexObject::disableAttribArrays()
 {
-    for (const auto& p : m_bufferDesc)
-        glDisableVertexAttribArray(p.location);
+        for (const auto& p : m_bufferDesc)
+        {
+            if (isDSASupported())
+                glDisableVertexArrayAttribEXT(m_id, p.location);
+            else
+                glDisableVertexAttribArray(p.location);
+        }
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (!isDSASupported())
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    if (isIndexed())
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        if (isIndexed())
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     m_currBuff = 0;
 }

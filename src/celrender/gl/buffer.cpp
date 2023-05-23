@@ -13,6 +13,19 @@
 
 #define GLENUM(p) (static_cast<GLenum>(p))
 
+namespace
+{
+[[ nodiscard ]] inline bool
+isDSASupported()
+{
+#ifdef GL_ES
+    return false;
+#else
+    return celestia::gl::EXT_direct_state_access;
+#endif
+}
+}
+
 namespace celestia::gl
 {
 
@@ -29,7 +42,7 @@ Buffer::Buffer(Buffer::TargetHint targetHint) :
 Buffer::Buffer(Buffer::TargetHint targetHint, util::array_view<const void> data, Buffer::BufferUsage usage) :
     Buffer(targetHint)
 {
-    bind();
+    if (!isDSASupported()) bind();
     setData(data, usage);
 }
 
@@ -99,14 +112,20 @@ Buffer::setData(util::array_view<const void> data, Buffer::BufferUsage usage)
 {
     m_bufferSize = data.size();
     m_usage      = usage;
-    glBufferData(GLENUM(m_targetHint), m_bufferSize, data.data(), GLENUM(m_usage));
+    if (isDSASupported())
+        glNamedBufferDataEXT(m_id, m_bufferSize, data.data(), GLENUM(m_usage));
+    else
+        glBufferData(GLENUM(m_targetHint), m_bufferSize, data.data(), GLENUM(m_usage));
     return *this;
 }
 
 Buffer&
 Buffer::setSubData(GLintptr offset, util::array_view<const void> data)
 {
-    glBufferSubData(GLENUM(m_targetHint), offset, data.size(), data.data());
+    if (isDSASupported())
+        glNamedBufferSubDataEXT(m_id, offset, data.size(), data.data());
+    else
+        glBufferSubData(GLENUM(m_targetHint), offset, data.size(), data.data());
     return *this;
 }
 
@@ -114,7 +133,10 @@ Buffer::setSubData(GLintptr offset, util::array_view<const void> data)
 Buffer&
 Buffer::invalidateData()
 {
-    glBufferData(GLENUM(m_targetHint), m_bufferSize, nullptr, GLENUM(m_usage));
+    if (isDSASupported())
+        glNamedBufferDataEXT(m_id, m_bufferSize, nullptr, GLENUM(m_usage));
+    else
+        glBufferData(GLENUM(m_targetHint), m_bufferSize, nullptr, GLENUM(m_usage));
     return *this;
 }
 

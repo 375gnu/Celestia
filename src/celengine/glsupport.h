@@ -44,6 +44,7 @@ extern bool OES_geometry_shader;
 #else
 extern bool ARB_vertex_array_object;
 extern bool ARB_framebuffer_object;
+extern bool EXT_direct_state_access;
 #endif
 extern GLint maxPointSize;
 extern GLint maxTextureSize;

@@ -11,6 +11,7 @@ bool OES_geometry_shader            = false;
 #else
 bool ARB_vertex_array_object        = false;
 bool ARB_framebuffer_object         = false;
+bool EXT_direct_state_access        = false;
 #endif
 bool ARB_shader_texture_lod         = false;
 bool EXT_texture_compression_s3tc   = false;
@@ -48,6 +49,7 @@ bool init(util::array_view<std::string> ignore) noexcept
 #else
     ARB_vertex_array_object        = check_extension(ignore, "GL_ARB_vertex_array_object");
     ARB_framebuffer_object         = check_extension(ignore, "GL_ARB_framebuffer_object") || check_extension(ignore, "GL_EXT_framebuffer_object");
+    EXT_direct_state_access        = check_extension(ignore, "GL_EXT_direct_state_access");
 #endif
     ARB_shader_texture_lod         = check_extension(ignore, "GL_ARB_shader_texture_lod");
     EXT_texture_compression_s3tc   = check_extension(ignore, "GL_EXT_texture_compression_s3tc");
