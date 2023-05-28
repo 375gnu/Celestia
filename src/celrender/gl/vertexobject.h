@@ -244,13 +244,12 @@ private:
     int m_count{ 0 };
 
     GLuint m_id{ 0 };
-    GLuint m_idxBufferId{ 0 };
+    const Buffer *m_idxBuffer{ nullptr };
 
     IndexType m_indexType{ IndexType::UnsignedShort };
 
     /* additional variables to track the state */
-    GLuint m_currBuff{ 0 };
-    bool   m_initialized{ false };
+    bool m_initialized{ false };
 };
 
 inline VertexObject::Primitive
@@ -268,7 +267,7 @@ VertexObject::count() const
 inline bool
 VertexObject::isIndexed() const
 {
-    return m_idxBufferId != 0;
+    return m_idxBuffer != nullptr;
 }
 
 inline GLuint
