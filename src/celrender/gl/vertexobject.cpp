@@ -9,6 +9,7 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
+#include "binder.h"
 #include "buffer.h"
 #include "vertexobject.h"
 
@@ -49,17 +50,15 @@ VertexObject::VertexObject(VertexObject &&other) noexcept :
     m_primitive(other.m_primitive),
     m_count(other.m_count),
     m_id(other.m_id),
-    m_idxBufferId(other.m_idxBufferId),
+    m_idxBuffer(other.m_idxBuffer),
     m_indexType(other.m_indexType),
-    m_currBuff(other.m_currBuff),
     m_initialized(other.m_initialized)
 {
     other.m_primitive = Primitive::Triangles;
     other.m_count = 0;
     other.m_id = 0;
-    other.m_idxBufferId = 0;
+    other.m_idxBuffer = nullptr;
     other.m_indexType = IndexType::UnsignedShort;
-    other.m_currBuff = 0;
     other.m_initialized = false;
 }
 
@@ -71,17 +70,15 @@ VertexObject& VertexObject::operator=(VertexObject &&other) noexcept
     m_primitive = other.m_primitive;
     m_count = other.m_count;
     m_id = other.m_id;
-    m_idxBufferId = other.m_idxBufferId;
+    m_idxBuffer = other.m_idxBuffer;
     m_indexType = other.m_indexType;
-    m_currBuff = other.m_currBuff;
     m_initialized = other.m_initialized;
 
     other.m_primitive = Primitive::Triangles;
     other.m_count = 0;
     other.m_id = 0;
-    other.m_idxBufferId = 0;
+    other.m_idxBuffer = nullptr;
     other.m_indexType = IndexType::UnsignedShort;
-    other.m_currBuff = 0;
     other.m_initialized = false;
 
     return *this;
@@ -118,14 +115,14 @@ struct VertexObject::BufferDesc
 {
     BufferDesc(
         GLsizeiptr    offset,
-        GLuint        bufferId,
+        const Buffer *buffer,
         std::uint16_t type,
         std::int16_t  location,
         std::uint8_t  elemSize,
         std::uint8_t  stride,
         bool          normalized) :
         offset(offset),
-        bufferId(bufferId),
+        buffer(buffer),
         type(type),
         location(location),
         elemSize(elemSize),
@@ -134,7 +131,7 @@ struct VertexObject::BufferDesc
     {
     }
     GLsizeiptr      offset;
-    GLuint          bufferId;
+    const Buffer   *buffer;
     std::uint16_t   type;           // all constants < 0xFFFF
     std::int16_t    location;
     std::uint8_t    elemSize;       // 1, 2, 3, 4
@@ -150,7 +147,7 @@ VertexObject::addVertexBuffer(const Buffer &buffer, int location, int elemSize, 
 
     m_bufferDesc.emplace_back(
         offset,
-        buffer.id(),
+        &buffer,
         static_cast<std::uint16_t>(type),
         static_cast<std::uint16_t>(location),
         static_cast<std::uint8_t>(elemSize),
@@ -202,7 +199,7 @@ VertexObject::setIndexBuffer(const Buffer &buffer, std::ptrdiff_t /*offset*/, Ve
     if (buffer.targetHint() != Buffer::TargetHint::ElementArray)
         return *this;
 
-    m_idxBufferId = buffer.id();
+    m_idxBuffer = &buffer;
     m_indexType = type;
 
     return *this;
@@ -211,20 +208,16 @@ VertexObject::setIndexBuffer(const Buffer &buffer, std::ptrdiff_t /*offset*/, Ve
 void
 VertexObject::enableAttribArrays()
 {
-    m_currBuff = 0; // other buffer can be mounted externally
     for (const auto& p : m_bufferDesc)
     {
-        if (m_currBuff != p.bufferId)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, p.bufferId);
-            m_currBuff = p.bufferId;
-        }
+        p.buffer->bind();
+
         glEnableVertexAttribArray(p.location);
         glVertexAttribPointer(p.location, p.elemSize, p.type, p.normalized ? GL_TRUE : GL_FALSE, p.stride, PTR(p.offset));
     }
 
     if (isIndexed())
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_idxBufferId);
+        m_idxBuffer->bind();
 }
 
 void
@@ -233,33 +226,28 @@ VertexObject::disableAttribArrays()
     for (const auto& p : m_bufferDesc)
         glDisableVertexAttribArray(p.location);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    Binder::get().unbind(Buffer(util::NoCreateT{}));
 
     if (isIndexed())
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    m_currBuff = 0;
+        m_idxBuffer->unbind();
 }
 
 void
 VertexObject::bind()
 {
+    if (isVAOSupported())
+        Binder::get().bind(*this);
+    else
+        enableAttribArrays();
+
     if (!m_initialized)
     {
         m_initialized = true;
         if (isVAOSupported())
         {
-            glBindVertexArray(m_id);
             enableAttribArrays();
             m_bufferDesc.clear();
         }
-    }
-    else
-    {
-        if (isVAOSupported())
-            glBindVertexArray(m_id);
-        else
-            enableAttribArrays();
     }
 }
 
@@ -267,7 +255,7 @@ void
 VertexObject::unbind()
 {
     if (isVAOSupported())
-        glBindVertexArray(0);
+        Binder::get().unbind(*this);
     else
         disableAttribArrays();
 }

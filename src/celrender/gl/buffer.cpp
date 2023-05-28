@@ -9,6 +9,7 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
+#include "binder.h"
 #include "buffer.h"
 
 #define GLENUM(p) (static_cast<GLenum>(p))
@@ -78,20 +79,26 @@ Buffer::clear() noexcept
 Buffer&
 Buffer::bind()
 {
-    glBindBuffer(GLENUM(m_targetHint), m_id);
+    Binder::get().bind(*this);
     return *this;
+}
+
+void
+Buffer::bind() const
+{
+    Binder::get().bind(*this);
 }
 
 void
 Buffer::unbind() const
 {
-    glBindBuffer(GLENUM(m_targetHint), 0);
+    Binder::get().unbind(*this);
 }
 
 void
 Buffer::unbind(Buffer::TargetHint target)
 {
-    glBindBuffer(GLENUM(target), 0);
+    Binder::get().unbind(Buffer(util::NoCreateT{}).setTargetHint(target));
 }
 
 Buffer&

@@ -146,12 +146,17 @@ public:
     static void unbind(TargetHint target);
 
 private:
+    //! Bind the buffer to use. Const version for internal use.
+    void bind() const;
+
     void clear() noexcept;
 
     GLsizeiptr  m_bufferSize{ 0 };
     GLuint      m_id{ 0 };
     TargetHint  m_targetHint{ TargetHint::Array };
     BufferUsage m_usage{ BufferUsage::StaticDraw };
+
+    friend class VertexObject;
 };
 
 inline GLuint
