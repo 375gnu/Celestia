@@ -350,7 +350,7 @@ GalaxyRenderer::renderGL2(const Galaxy          *galaxy,
         float screenFrac = size / p.norm();
         if (screenFrac < 0.1f)
         {
-            float    a = std::min(255.0f, (0.1f - screenFrac) * b.brightness * brightness);
+            float    a = std::clamp((0.1f - screenFrac) * b.brightness * brightness, 1.0f, 255.0f);
             auto alpha = static_cast<std::uint8_t>(a); // encode as byte
             g_vertices[vertex++] = { p + v0, { std::uint8_t(0),   std::uint8_t(0),   b.colorIndex, alpha } };
             g_vertices[vertex++] = { p + v1, { std::uint8_t(255), std::uint8_t(0),   b.colorIndex, alpha } };
