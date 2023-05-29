@@ -144,6 +144,9 @@ public:
     //! Bind the default buffer (0) to target. @see @ref TargetHint @ref bind()
     static void unbind(TargetHint target);
 
+    //! Wrap an existing OpenGL buffer. @see @ref TargetHint @ref Buffer(TargetHint)
+    static Buffer wrap(GLuint id, TargetHint targetHint = TargetHint::Array);
+
 private:
     //! Bind the buffer to use. Const version for internal use.
     void bind() const;
