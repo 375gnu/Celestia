@@ -132,4 +132,12 @@ Buffer::setTargetHint(Buffer::TargetHint targetHint)
     return *this;
 }
 
+Buffer
+Buffer::wrap(GLuint id, Buffer::TargetHint targetHint)
+{
+    Buffer bo(targetHint);
+    bo.m_id = id;
+    return bo;
+}
+
 } // namespace celestia::gl
