@@ -25,6 +25,7 @@
 
 using celestia::engine::GalacticFormManager;
 using celestia::engine::GalacticForm;
+namespace util = celestia::util;
 
 namespace celestia::render
 {
@@ -66,22 +67,25 @@ struct GalaxyVertex
 };
 static_assert(std::is_standard_layout_v<GalaxyVertex>);
 
-constexpr unsigned int MAX_VERTICES = 1024*1024 / sizeof(GalaxyVertex); // 1MB buffer
+constexpr unsigned int MAX_VERTICES = 1024u * 1024u / sizeof(GalaxyVertex); // 1MB buffer
 constexpr unsigned int MAX_INDICES = RequiredIndexCount(MAX_VERTICES);
 
-void
+std::pair<gl::Buffer*, gl::Buffer*>
 bindVMemBuffers(std::size_t vCount)
 {
     constexpr int nBuffers = 4;
-    static std::array<GLuint, nBuffers> vbos = {};
-    static std::array<GLuint, nBuffers> vios = {};
+    static std::array<gl::Buffer*, nBuffers> vbos;
+    static std::array<gl::Buffer*, nBuffers> vios;
     static std::array<unsigned int, nBuffers> counts = {MAX_VERTICES, MAX_VERTICES / 16 , MAX_VERTICES / 64, MAX_VERTICES / 256}; // 1MB, 64kB, 16kB, 4kB
 
     if (static bool initialized = false; !initialized)
     {
         initialized = true;
-        glGenBuffers(nBuffers, vbos.data());
-        glGenBuffers(nBuffers, vios.data());
+        for (std::size_t i = 0; i < nBuffers; i++)
+        {
+            vbos[i] = new gl::Buffer(gl::Buffer::TargetHint::Array);
+            vios[i] = new gl::Buffer(gl::Buffer::TargetHint::ElementArray);
+        }
     }
 
     // find appropriate buffer size
@@ -95,18 +99,20 @@ bindVMemBuffers(std::size_t vCount)
         }
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbos[buffer]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vios[buffer]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GalaxyVertex) * counts[buffer], nullptr, GL_STREAM_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * RequiredIndexCount(counts[buffer]), nullptr, GL_STREAM_DRAW);
+    vbos[buffer]->setData(util::array_view<GalaxyVertex>(nullptr, counts[buffer]),
+                          gl::Buffer::BufferUsage::StreamDraw);
+    vios[buffer]->setData(util::array_view<GLushort>(nullptr, RequiredIndexCount(counts[buffer])),
+                          gl::Buffer::BufferUsage::StreamDraw);
+
+    return { vbos[buffer], vios[buffer] };
 }
 
 void draw(std::size_t vCount, const GalaxyVertex *v, std::size_t iCount, const GLushort *indices)
 {
-    bindVMemBuffers(vCount);
+    auto [vbo, vio] = bindVMemBuffers(vCount);
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GalaxyVertex) * vCount, v);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLushort) * iCount, indices);
+    vbo->setSubData(0, { v, vCount });
+    vio->setSubData(0, { indices, iCount });
 
     glEnableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
     glEnableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
