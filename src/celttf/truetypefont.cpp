@@ -117,7 +117,7 @@ struct TextureFontPrivate
     bool                    m_shaderInUse{ false };
     std::vector<FontVertex> m_fontVertices;
 
-    gl::VertexObject m_vao;
+    gl::VertexObject m_vao{ gl::VertexObject::Primitive::Triangles };
     gl::Buffer       m_vbo{ gl::Buffer::TargetHint::Array };
     gl::Buffer       m_vio{ gl::Buffer::TargetHint::ElementArray };
 
@@ -508,9 +508,9 @@ TextureFontPrivate::flush()
         indexes.push_back(index + 2);
     }
 
-    m_vbo.bind().invalidateData().setData(m_fontVertices, gl::Buffer::BufferUsage::StreamDraw);
-    m_vio.bind().invalidateData().setData(indexes, gl::Buffer::BufferUsage::StreamDraw);
-    m_vao.draw(gl::VertexObject::Primitive::Triangles, static_cast<int>(indexes.size()));
+    m_vbo.invalidateData().setData(m_fontVertices, gl::Buffer::BufferUsage::StreamDraw);
+    m_vio.invalidateData().setData(indexes, gl::Buffer::BufferUsage::StreamDraw);
+    m_vao.draw(static_cast<int>(indexes.size()));
     m_vbo.unbind();
     m_vio.unbind();
 
