@@ -12,8 +12,6 @@
 #include "binder.h"
 #include "buffer.h"
 
-#define GLENUM(p) (static_cast<GLenum>(p))
-
 namespace celestia::gl
 {
 
@@ -106,14 +104,15 @@ Buffer::setData(util::array_view<const void> data, Buffer::BufferUsage usage)
 {
     m_bufferSize = data.size();
     m_usage      = usage;
-    glBufferData(GLENUM(m_targetHint), m_bufferSize, data.data(), GLENUM(m_usage));
+    bind();
+    glBufferData(GLenum(m_targetHint), m_bufferSize, data.data(), GLenum(m_usage));
     return *this;
 }
 
 Buffer&
 Buffer::setSubData(GLintptr offset, util::array_view<const void> data)
 {
-    glBufferSubData(GLENUM(m_targetHint), offset, data.size(), data.data());
+    glBufferSubData(GLenum(m_targetHint), offset, data.size(), data.data());
     return *this;
 }
 
@@ -121,8 +120,7 @@ Buffer::setSubData(GLintptr offset, util::array_view<const void> data)
 Buffer&
 Buffer::invalidateData()
 {
-    glBufferData(GLENUM(m_targetHint), m_bufferSize, nullptr, GLENUM(m_usage));
-    return *this;
+    return setData(util::array_view<const void>(nullptr, m_bufferSize), m_usage);
 }
 
 Buffer&
