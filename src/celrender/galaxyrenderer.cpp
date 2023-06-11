@@ -206,6 +206,9 @@ GalaxyRenderer::render()
     if (m_objects.empty())
         return;
 
+    std::sort(m_objects.begin(), m_objects.end(),
+        [](const auto &o1, const auto &o2){ return o1.galaxy->getFormId() > o2.galaxy->getFormId(); });
+
 #ifdef GL_ES
     bool useGeomShader = gl::checkVersion(gl::GLES_3_2);
 #else
@@ -303,6 +306,14 @@ GalaxyRenderer::render()
 
     glActiveTexture(GL_TEXTURE0);
     m_objects.clear();
+
+    if (!useGeomShader)
+    {
+        glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
+        glDisableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
 }
 
 void
@@ -377,11 +388,6 @@ GalaxyRenderer::renderGL2(const Galaxy          *galaxy,
 
     if (index > 0)
         draw(vertex, g_vertices.get(), index, g_indices.get());
-
-    glDisableVertexAttribArray(CelestiaGLProgram::VertexCoordAttributeIndex);
-    glDisableVertexAttribArray(CelestiaGLProgram::TextureCoord0AttributeIndex);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void

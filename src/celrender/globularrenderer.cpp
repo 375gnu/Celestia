@@ -558,10 +558,11 @@ GlobularRenderer::render()
     if (tidalProg == nullptr || globProg == nullptr)
         return;
 
-    GlobularFormManager* globularFormManager = GlobularFormManager::get();
+    std::sort(m_objects.begin(), m_objects.end(),
+        [](const auto &o1, const auto &o2){ return o1.globular->getFormId() > o2.globular->getFormId(); });
 
     glActiveTexture(GL_TEXTURE0);
-    globularFormManager->getColorTex()->bind();
+    GlobularFormManager::get()->getColorTex()->bind();
 
     Renderer::PipelineState ps;
     ps.blending = true;
@@ -673,7 +674,7 @@ GlobularRenderer::renderForm(CelestiaGLProgram *tidalProg, CelestiaGLProgram *gl
      * or when distance from globular center decreases.
      */
     glActiveTexture(GL_TEXTURE2);
-    GlobularFormManager::get()->getGlobularTex()->bind();
+    globularFormManager->getGlobularTex()->bind();
 
     Eigen::Matrix3f mx = obj.globular->getOrientation().conjugate().toRotationMatrix() * Eigen::Scaling(tidalSize);
 
