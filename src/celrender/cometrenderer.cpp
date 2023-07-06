@@ -69,7 +69,9 @@ CometRenderer::initGL()
 
     m_vo = std::make_unique<gl::VertexObject>();
     m_bo = std::make_unique<gl::Buffer>(gl::Buffer::TargetHint::Array);
+/*
     m_io = std::make_unique<gl::Buffer>(gl::Buffer::TargetHint::ElementArray);
+*/
 
     m_vo->addVertexBuffer(
             *m_bo,
@@ -95,7 +97,9 @@ CometRenderer::initGL()
             false,
             sizeof(CometTailVertex),
             offsetof(CometTailVertex, brightness))
+        /*
         .setIndexBuffer(*m_io, 0, gl::VertexObject::IndexType::UnsignedShort);
+        */;
 }
 
 void
@@ -235,7 +239,9 @@ CometRenderer::render(const Body &body,
         }
     }
 
+/*
     BuildIndexList(static_cast<ushort>(nTailPoints-1), static_cast<ushort>(nTailSlices), m_indices.get());
+*/
 
     // If fadeDistFromSun = x/x0 >= 1.0, comet tail starts fading,
     // i.e. fadeFactor quickly transits from 1 to 0.
@@ -256,14 +262,21 @@ CometRenderer::render(const Body &body,
     m_bo->bind().invalidateData().setData(
         util::array_view<CometTailVertex>(m_vertices.get(), MaxVertices),
         gl::Buffer::BufferUsage::StreamDraw);
-
+/*
     m_io->bind().invalidateData().setData(
         util::array_view<ushort>(m_indices.get(), MaxIndices),
         gl::Buffer::BufferUsage::StreamDraw);
-
+*/
     glDisable(GL_CULL_FACE);
+/*
     int count = IndexListCapacity(nTailSlices, nTailPoints);
     m_vo->draw(gl::VertexObject::Primitive::TriangleStrip, count);
+*/
+    glEnable(GL_POINT_SPRITE);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    m_vo->draw(gl::VertexObject::Primitive::Points, nTailSlices*nTailPoints);
+    glDisable(GL_POINT_SPRITE);
+    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
     glEnable(GL_CULL_FACE);
 }
 

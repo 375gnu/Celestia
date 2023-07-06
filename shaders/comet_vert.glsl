@@ -10,6 +10,7 @@ varying float shade;
 
 void main(void)
 {
+    gl_PointSize = 16.0;
     shade = abs(dot(viewDir.xyz, in_Normal.xyz) * in_Brightness * fadeFactor);
     set_vp(in_Position);
 }
