@@ -97,6 +97,7 @@ class Renderer
         bool depthMask      { false };
         bool depthTest      { false };
         bool smoothLines    { false };
+        bool pointSprites   { false };
 
         struct
         {

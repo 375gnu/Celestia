@@ -156,22 +156,6 @@ void PointStarVertexBuffer::finish()
     current = nullptr;
 }
 
-void PointStarVertexBuffer::enable()
-{
-#ifndef GL_ES
-    glEnable(GL_POINT_SPRITE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
-}
-
-void PointStarVertexBuffer::disable()
-{
-#ifndef GL_ES
-    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
-    glDisable(GL_POINT_SPRITE);
-#endif
-}
-
 void PointStarVertexBuffer::setTexture(Texture *texture)
 {
     m_texture = texture;

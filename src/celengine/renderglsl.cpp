@@ -544,6 +544,7 @@ void renderGeometry_GLSL(Geometry* geometry,
     Renderer::PipelineState ps;
     ps.depthMask = true;
     ps.depthTest = true;
+    ps.pointSprites = true;
     renderer->setPipelineState(ps);
 
     // Handle material override; a texture specified in an ssc file will
@@ -587,6 +588,7 @@ void renderGeometry_GLSL_Unlit(Geometry* geometry,
     Renderer::PipelineState ps;
     ps.depthMask = true;
     ps.depthTest = true;
+    ps.pointSprites = true;
     renderer->setPipelineState(ps);
 
     // Handle material override; a texture specified in an ssc file will

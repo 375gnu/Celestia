@@ -3869,7 +3869,6 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     starRenderer.glareVertexBuffer->setTexture(gaussianGlareTex);
     starRenderer.glareVertexBuffer->setPointScale(screenDpi / 96.0f);
 
-    PointStarVertexBuffer::enable();
     starRenderer.glareVertexBuffer->startSprites();
     if (starStyle == PointStars)
         starRenderer.starVertexBuffer->startBasicPoints();
@@ -3879,6 +3878,7 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
     Renderer::PipelineState ps;
     ps.blending = true;
     ps.blendFunc = {GL_SRC_ALPHA, GL_ONE};
+    ps.pointSprites = true;
     setPipelineState(ps);
 
 #ifdef OCTREE_DEBUG
@@ -3900,7 +3900,6 @@ void Renderer::renderPointStars(const StarDatabase& starDB,
 
     starRenderer.starVertexBuffer->finish();
     starRenderer.glareVertexBuffer->finish();
-    PointStarVertexBuffer::disable();
 
 #ifndef GL_ES
     if (toggleAA)
@@ -5386,9 +5385,9 @@ Renderer::renderSolarSystemObjects(const Observer &observer,
         ps.blending = true;
         ps.blendFunc = {GL_SRC_ALPHA, GL_ONE};
         ps.depthTest = true;
+        ps.pointSprites = true;
         setPipelineState(ps);
 
-        PointStarVertexBuffer::enable();
         glareVertexBuffer->startSprites();
         glareVertexBuffer->render();
         glareVertexBuffer->finish();
@@ -5398,7 +5397,6 @@ Renderer::renderSolarSystemObjects(const Observer &observer,
             pointStarVertexBuffer->startSprites();
         pointStarVertexBuffer->render();
         pointStarVertexBuffer->finish();
-        PointStarVertexBuffer::disable();
 
         // Render annotations in this interval
         annotation = renderSortedAnnotations(annotation,
@@ -5451,6 +5449,21 @@ Renderer::setPipelineState(const Renderer::PipelineState &ps) noexcept
             glDisable(GL_LINE_SMOOTH);
 #endif
         m_pipelineState.smoothLines = ps.smoothLines;
+    }
+    if (ps.pointSprites != m_pipelineState.pointSprites)
+    {
+#ifndef GL_ES
+        if (ps.pointSprites)
+        {
+            glEnable(GL_POINT_SPRITE);
+            glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        }
+        else
+        {
+            glDisable(GL_POINT_SPRITE);
+            glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        }
+#endif
     }
 }
 

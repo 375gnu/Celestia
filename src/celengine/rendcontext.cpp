@@ -138,34 +138,16 @@ RenderContext::drawGroup(gl::VertexObject &vao, const cmod::PrimitiveGroup& grou
     ResourceHandle emissiveMap = material->getMap(cmod::TextureSemantic::EmissiveMap);
 
     if (renderPass == EmissivePass && emissiveMap == InvalidResource)
-    {
         return;
-    }
 
-#ifndef GL_ES
-    bool drawPoints = false;
-#endif
     if (group.prim == cmod::PrimitiveGroupType::SpriteList || group.prim == cmod::PrimitiveGroupType::PointList)
     {
         if (group.prim == cmod::PrimitiveGroupType::PointList)
             glVertexAttrib1f(CelestiaGLProgram::PointSizeAttributeIndex, 1.0f);
-#ifndef GL_ES
-        drawPoints = true;
-        glEnable(GL_POINT_SPRITE);
-        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
         glActiveTexture(GL_TEXTURE0);
     }
 
     vao.draw(convert(group.prim), group.indicesCount, group.indicesOffset);
-
-#ifndef GL_ES
-    if (drawPoints)
-    {
-        glDisable(GL_POINT_SPRITE);
-        glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
-    }
-#endif
 }
 
 

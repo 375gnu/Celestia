@@ -562,21 +562,13 @@ GlobularRenderer::render()
     ps.blending = true;
     ps.blendFunc = {GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA};
     ps.smoothLines = true;
+    ps.pointSprites = true;
     m_renderer.setPipelineState(ps);
-
-#ifndef GL_ES
-    glEnable(GL_POINT_SPRITE);
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
 
     for (const auto &obj : m_objects)
         renderForm(tidalProg, globProg, obj);
 
     m_objects.clear();
-#ifndef GL_ES
-    glDisable(GL_POINT_SPRITE);
-    glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
-#endif
     glActiveTexture(GL_TEXTURE0);
 }
 

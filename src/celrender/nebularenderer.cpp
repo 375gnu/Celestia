@@ -89,7 +89,7 @@ NebulaRenderer::renderNebula(const Object &obj) const
         pr = m_renderer.getProjectionMatrix();
 
     Renderer::PipelineState ps;
-    ps.smoothLines = true;
+    ps.pointSprites = true;
     m_renderer.setPipelineState(ps);
 
     float radius = obj.nebula->getRadius();
