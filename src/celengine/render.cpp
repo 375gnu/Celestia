@@ -12,6 +12,8 @@
 #define DEBUG_SECONDARY_ILLUMINATION 0
 #define DEBUG_ORBIT_CACHE            0
 
+#define GL3
+
 #include <Eigen/Geometry>
 
 #include <fmt/format.h>
@@ -5455,12 +5457,16 @@ Renderer::setPipelineState(const Renderer::PipelineState &ps) noexcept
 #ifndef GL_ES
         if (ps.pointSprites)
         {
+#ifndef GL3
             glEnable(GL_POINT_SPRITE);
+#endif
             glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
         }
         else
         {
+#ifndef GL3
             glDisable(GL_POINT_SPRITE);
+#endif
             glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
         }
 #endif
