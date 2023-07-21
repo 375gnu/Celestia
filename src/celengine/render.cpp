@@ -5469,10 +5469,9 @@ void Renderer::buildProjectionMatrix(Eigen::Matrix4f &mat, float nearZ, float fa
 // Calculate the matrix used to render the model from the
 // perspective of the light.
 static Eigen::Matrix4f
-DirectionalLightMatrix(const LightSource &lightSource)
+DirectionalLightMatrix(const Eigen::Vector3f& lightDirection)
 {
-    // Direction == (Position - [0, 0, 0]).normalized() == Position.normalized()
-    Eigen::Vector3f viewDir = lightSource.position.cast<float>().normalized();
+    const Eigen::Vector3f &viewDir = lightDirection;
     Eigen::Vector3f upDir = viewDir.unitOrthogonal();
     Eigen::Vector3f rightDir = upDir.cross(viewDir);
     Eigen::Matrix4f m = Eigen::Matrix4f::Identity();
@@ -5483,6 +5482,44 @@ DirectionalLightMatrix(const LightSource &lightSource)
 
     return m;
 }
+
+std::vector<RenderListEntry>::const_iterator
+FindClosestBody(const std::vector<RenderListEntry> &renderList)
+{
+    if (renderList.empty())
+        return renderList.cend();
+
+    std::vector<RenderListEntry>::const_iterator closest;
+    closest = std::find_if(renderList.cbegin(),
+                           renderList.cend(),
+                           [](const auto &e) { return e.renderableType == RenderListEntry::RenderableBody; });
+
+    closest = std::min_element(closest,
+                               renderList.cend(),
+                               [](const auto &a, const auto &b) { return a.distance < b.distance; });
+
+    return closest;
+}
+
+
+Eigen::Vector3f
+CalculateLightDirection(const Body& body,
+                        const Eigen::Vector3f& pos,
+                        const Eigen::Vector3d &sunPos,
+                        double now)
+{
+    Eigen::Quaterniond q = body.getRotationModel(now)->spin(now) * body.getEclipticToEquatorial(now);
+    Eigen::Quaternionf orientation = body.getGeometryOrientation() * q.cast<float>();
+
+    Eigen::Vector3d dir = sunPos - pos.cast<double>();
+    Eigen::Vector3f direction_eye = dir.cast<float>().normalized();
+
+    Eigen::Matrix3f m = orientation.toRotationMatrix();
+    Eigen::Vector3f direction_obj = m * direction_eye;
+
+    return direction_obj;
+}
+
 
 static const Eigen::Matrix4f orthoProjMat = celmath::Ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
 
@@ -5503,6 +5540,10 @@ Renderer::renderPlanetDepth(Body& body,
     if (geometry == nullptr)
         return;
 
+    auto *prog = getShaderManager().getShader("depth");
+    if (prog == nullptr)
+        return;
+
     float altitude = distance - body.getRadius();
     float discSizeInPixels = body.getRadius() / (std::max(nearPlaneDistance, altitude) * pixelSize);
 
@@ -5516,16 +5557,16 @@ Renderer::renderPlanetDepth(Body& body,
     Eigen::Quaterniond q = body.getRotationModel(now)->spin(now) * body.getEclipticToEquatorial(now);
     Eigen::Quaternionf orientation = body.getGeometryOrientation() * q.cast<float>();
 
-    Eigen::Matrix4f rotate(Eigen::Matrix4f::Identity());
-    rotate.topLeftCorner(3, 3) = orientation.toRotationMatrix();
+    // FIXME this should be done only once as the m_lightMatrix calculation
+    Eigen::Vector3f direction_obj = CalculateLightDirection(body, pos, lightSourceList[0].position, now);
 
-    auto *prog = getShaderManager().getShader("depth");
-    if (prog == nullptr)
-        return;
+//    Eigen::Matrix4f rotate(Eigen::Matrix4f::Identity());
+//    rotate.topLeftCorner(3, 3) = orientation.toRotationMatrix();
 
     prog->use();
-    Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(lightSourceList[0]);
+    Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
     m_lightMatrix = orthoProjMat * modelViewMat;
+    Eigen::Matrix4f rotate = Eigen::Affine3f(orientation).matrix();
     prog->setMVPMatrices(orthoProjMat, modelViewMat * rotate);
 
     //Vector3f scaleFactors;
@@ -5534,6 +5575,8 @@ Renderer::renderPlanetDepth(Body& body,
     Shadow_RenderContext rc(this);
     geometry->render(rc, now);
 }
+
+#include <fmt/ostream.h>
 
 void
 Renderer::renderDepthPath(const Observer &observer,
@@ -5571,17 +5614,21 @@ Renderer::renderDepthPath(const Observer &observer,
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(.001f, .001f);
 
-    // Render everything that wasn't culled.
-    int i = static_cast<int>(renderList.size()) - 1;
-    int interval = nIntervals - 1;
+    if (auto closest = FindClosestBody(renderList); closest != renderList.cend())
     {
-        currentIntervalIndex = interval;
+        // Render everything that wasn't culled.
+        int i = static_cast<int>(renderList.size()) - 1;
+        int interval = nIntervals - 1;
 
         const float nearPlaneDistance = -depthPartitions[interval].nearZ;
         const float farPlaneDistance = -depthPartitions[interval].farZ;
 
-        Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(lightSourceList[0]);
-        m_lightMatrix = orthoProjMat * modelViewMat;
+        Eigen::Vector3f direction_obj = CalculateLightDirection(*closest->body,
+                                                                closest->position,
+                                                                lightSourceList[0].position,
+                                                                now);
+        m_lightMatrix = orthoProjMat * DirectionalLightMatrix(direction_obj);
+
         // Render just the opaque objects in the first pass
         while (i >= 0 && renderList[i].farZ < depthPartitions[interval].nearZ)
         {
