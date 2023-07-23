@@ -15,6 +15,7 @@
 #include <Eigen/Geometry>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "atmosphere.h"
 #include "body.h"
@@ -2826,6 +2827,10 @@ void Renderer::renderPlanet(Body& body,
                             lights);
         assert(lights.nLights <= MaxLights);
 
+        if (lightSourceList.size() > 0)
+        fmt::print("[renderPlanet]\nBody: {}\n  position: {}\n  sun pos: {}\n  time: {}\n sun direction: {}\n",
+                   body.getName(), pos.transpose(), lightSourceList[0].position.transpose(), now, lights.lights[0].direction_obj.transpose());
+
         lights.ambientColor = ambientColor.toVector3();
 
         // Clear out the list of eclipse shadows
@@ -5501,7 +5506,6 @@ FindClosestBody(const std::vector<RenderListEntry> &renderList)
     return closest;
 }
 
-
 Eigen::Vector3f
 CalculateLightDirection(const Body& body,
                         const Eigen::Vector3f& pos,
@@ -5516,6 +5520,9 @@ CalculateLightDirection(const Body& body,
 
     Eigen::Matrix3f m = orientation.toRotationMatrix();
     Eigen::Vector3f direction_obj = m * direction_eye;
+
+    fmt::print("[CalculateLightDirection]\nBody: {}\n  position: {}\n  sun pos: {}\n  time: {}\nsun direction: {}\n",
+               body.getName(), pos.transpose(), sunPos.transpose(), now, direction_obj.transpose());
 
     return direction_obj;
 }
@@ -5560,9 +5567,6 @@ Renderer::renderPlanetDepth(Body& body,
     // FIXME this should be done only once as the m_lightMatrix calculation
     Eigen::Vector3f direction_obj = CalculateLightDirection(body, pos, lightSourceList[0].position, now);
 
-//    Eigen::Matrix4f rotate(Eigen::Matrix4f::Identity());
-//    rotate.topLeftCorner(3, 3) = orientation.toRotationMatrix();
-
     prog->use();
     Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
     m_lightMatrix = orthoProjMat * modelViewMat;
@@ -5575,8 +5579,6 @@ Renderer::renderPlanetDepth(Body& body,
     Shadow_RenderContext rc(this);
     geometry->render(rc, now);
 }
-
-#include <fmt/ostream.h>
 
 void
 Renderer::renderDepthPath(const Observer &observer,
@@ -5627,7 +5629,9 @@ Renderer::renderDepthPath(const Observer &observer,
                                                                 closest->position,
                                                                 lightSourceList[0].position,
                                                                 now);
-        m_lightMatrix = orthoProjMat * DirectionalLightMatrix(direction_obj);
+
+        Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
+        m_lightMatrix = orthoProjMat * modelViewMat;
 
         // Render just the opaque objects in the first pass
         while (i >= 0 && renderList[i].farZ < depthPartitions[interval].nearZ)
