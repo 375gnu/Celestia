@@ -15,7 +15,6 @@
 #include <Eigen/Geometry>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "atmosphere.h"
 #include "body.h"
@@ -87,7 +86,7 @@
 #endif
 #endif
 
-#define DEBUG_SHADOWS
+// #define DEBUG_SHADOWS
 
 using namespace Eigen;
 using namespace std;
@@ -2827,10 +2826,6 @@ void Renderer::renderPlanet(Body& body,
                             lights);
         assert(lights.nLights <= MaxLights);
 
-        if (lightSourceList.size() > 0)
-        fmt::print("[renderPlanet]\nBody: {}\n  position: {}\n  sun pos: {}\n  time: {}\n sun direction: {}\n",
-                   body.getName(), pos.transpose(), lightSourceList[0].position.transpose(), now, lights.lights[0].direction_obj.transpose());
-
         lights.ambientColor = ambientColor.toVector3();
 
         // Clear out the list of eclipse shadows
@@ -5521,24 +5516,14 @@ CalculateLightDirection(const Body& body,
     Eigen::Matrix3f m = orientation.toRotationMatrix();
     Eigen::Vector3f direction_obj = m * direction_eye;
 
-    fmt::print("[CalculateLightDirection]\nBody: {}\n  position: {}\n  sun pos: {}\n  time: {}\nsun direction: {}\n",
-               body.getName(), pos.transpose(), sunPos.transpose(), now, direction_obj.transpose());
-
     return direction_obj;
 }
 
-
-static const Eigen::Matrix4f orthoProjMat = celmath::Ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
-
 void
-Renderer::renderPlanetDepth(Body& body,
-                            const Eigen::Vector3f& pos,
-                            float distance,
-                            float appMag,
-                            const Observer& observer,
-                            float nearPlaneDistance,
-                            float farPlaneDistance,
-                            const Matrices &m)
+Renderer::renderBodyDepth(Body& body,
+                          float distance,
+                          float nearPlaneDistance,
+                          double now)
 {
     Geometry* geometry = nullptr;
     if (body.getGeometry() != InvalidResource)
@@ -5547,34 +5532,12 @@ Renderer::renderPlanetDepth(Body& body,
     if (geometry == nullptr)
         return;
 
-    auto *prog = getShaderManager().getShader("depth");
-    if (prog == nullptr)
-        return;
-
     float altitude = distance - body.getRadius();
     float discSizeInPixels = body.getRadius() / (std::max(nearPlaneDistance, altitude) * pixelSize);
 
     float maxDiscSize = (starStyle == ScaledDiscStars) ? MaxScaledDiscStarSize : 1.0f;
     if (!(discSizeInPixels >= maxDiscSize && body.hasVisibleGeometry()))
         return;
-
-    //float geometryScale = body.getGeometryScale();
-
-    double now = observer.getTime();
-    Eigen::Quaterniond q = body.getRotationModel(now)->spin(now) * body.getEclipticToEquatorial(now);
-    Eigen::Quaternionf orientation = body.getGeometryOrientation() * q.cast<float>();
-
-    // FIXME this should be done only once as the m_lightMatrix calculation
-    Eigen::Vector3f direction_obj = CalculateLightDirection(body, pos, lightSourceList[0].position, now);
-
-    prog->use();
-    Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
-    m_lightMatrix = orthoProjMat * modelViewMat;
-    Eigen::Matrix4f rotate = Eigen::Affine3f(orientation).matrix();
-    prog->setMVPMatrices(orthoProjMat, modelViewMat * rotate);
-
-    //Vector3f scaleFactors;
-    //bool isNormalized = false;
 
     Shadow_RenderContext rc(this);
     geometry->render(rc, now);
@@ -5585,15 +5548,32 @@ Renderer::renderDepthPath(const Observer &observer,
                           int nIntervals,
                           double now)
 {
-    if (lightSourceList.empty())
+    if (lightSourceList.empty() || renderList.empty())
         return;
 
     auto *shadowBuffer = getShadowFBO(0);
     if (shadowBuffer == nullptr || !shadowBuffer->isValid())
         return;
 
-    std::array<int, 4> viewport;
-    getViewport(viewport);
+    auto *prog = getShaderManager().getShader("depth");
+    if (prog == nullptr)
+        return;
+
+    // We assume that the light is directional and use the closest body
+    // direction to the sun for all bodies.
+    auto closest = FindClosestBody(renderList);
+    if (closest == renderList.cend())
+        return;
+
+    Eigen::Vector3f direction_obj = CalculateLightDirection(
+        *closest->body,
+        closest->position,
+        lightSourceList[0].position,
+        now);
+
+    static const Eigen::Matrix4f orthoProjMat = celmath::Ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f);
+    Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
+    m_lightMatrix = orthoProjMat * modelViewMat;
 
     GLint oldFboId;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFboId);
@@ -5616,42 +5596,24 @@ Renderer::renderDepthPath(const Observer &observer,
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(.001f, .001f);
 
-    if (auto closest = FindClosestBody(renderList); closest != renderList.cend())
+    prog->use();
+    prog->setMVPMatrices(orthoProjMat, modelViewMat);
+
+    // We render only bodies in the closest interval because in other intervals
+    // objects are too far.
+    const float intNearZ = depthPartitions[nIntervals - 1].nearZ;
+
+    // Render just the opaque objects
+    for (std::size_t i = renderList.size() - 1;
+         i >= 0 && renderList[i].farZ < intNearZ;
+         i--)
     {
-        // Render everything that wasn't culled.
-        int i = static_cast<int>(renderList.size()) - 1;
-        int interval = nIntervals - 1;
-
-        const float nearPlaneDistance = -depthPartitions[interval].nearZ;
-        const float farPlaneDistance = -depthPartitions[interval].farZ;
-
-        Eigen::Vector3f direction_obj = CalculateLightDirection(*closest->body,
-                                                                closest->position,
-                                                                lightSourceList[0].position,
-                                                                now);
-
-        Eigen::Matrix4f modelViewMat = DirectionalLightMatrix(direction_obj);
-        m_lightMatrix = orthoProjMat * modelViewMat;
-
-        // Render just the opaque objects in the first pass
-        while (i >= 0 && renderList[i].farZ < depthPartitions[interval].nearZ)
+        // Treat objects that are smaller than one pixel as transparent and skip them.
+        if (renderList[i].isOpaque && renderList[i].discSizeInPixels > 1.0f
+            && renderList[i].renderableType == RenderListEntry::RenderableBody
+            && renderList[i].body->getGeometry() != InvalidResource)
         {
-            // Treat objects that are smaller than one pixel as transparent and
-            // render them in the second pass.
-            if (renderList[i].isOpaque &&
-                renderList[i].discSizeInPixels > 1.0f &&
-                renderList[i].renderableType == RenderListEntry::RenderableBody &&
-                renderList[i].body->getGeometry() != InvalidResource)
-            {
-                renderPlanetDepth(*renderList[i].body,
-                                  renderList[i].position,
-                                  renderList[i].distance,
-                                  renderList[i].appMag,
-                                  observer,
-                                  nearPlaneDistance, farPlaneDistance,
-                                  {&orthoProjMat, &modelViewMat});
-            }
-            i--;
+            renderBodyDepth(*renderList[i].body, renderList[i].distance, -intNearZ, now);
         }
     }
 
@@ -5660,12 +5622,15 @@ Renderer::renderDepthPath(const Observer &observer,
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glCullFace(GL_BACK);
     shadowBuffer->unbind(oldFboId);
-    setViewport(viewport);
+    setViewport(m_viewport);
 }
 
 #ifdef DEBUG_SHADOWS
 void debugDepthTexture(Renderer *r, FramebufferObject *shadowBuffer)
 {
+    if (shadowBuffer == nullptr || !shadowBuffer->isValid())
+        return;
+
     std::array<int, 4> viewport;
     r->getViewport(viewport);
 

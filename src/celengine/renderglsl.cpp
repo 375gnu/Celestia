@@ -394,13 +394,10 @@ void renderGeometry_GLSL(Geometry* geometry,
         rc.setAtmosphere(atmosphere);
     }
 
-    Eigen::Matrix4f lightMatrix;
     auto *shadowBuffer = renderer->getShadowFBO(0);
     if (shadowBuffer != nullptr && shadowBuffer->isValid())
     {
-        Eigen::Matrix4f rotate = Eigen::Affine3f(planetOrientation).matrix();
-        lightMatrix = renderer->getLightMatrix() * rotate;
-        rc.setShadowMap(shadowBuffer->depthTexture(), shadowBuffer->width(), &lightMatrix);
+        rc.setShadowMap(shadowBuffer->depthTexture(), shadowBuffer->width(), &renderer->getLightMatrix());
     }
 
     rc.setCameraOrientation(ri.orientation);

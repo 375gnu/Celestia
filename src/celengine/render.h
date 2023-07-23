@@ -555,14 +555,10 @@ class Renderer
                       float, float,
                       const Matrices&);
 
-    void renderPlanetDepth(Body& body,
-                           const Eigen::Vector3f& pos,
-                           float distance,
-                           float appMag,
-                           const Observer& observer,
-                           float nearPlaneDistance,
-                           float farPlaneDistance,
-                           const Matrices &m);
+    void renderBodyDepth(Body& body,
+                         float distance,
+                         float nearPlaneDistance,
+                         double now);
 
     void renderStar(const Star& star,
                     const Eigen::Vector3f& pos,
