@@ -1829,6 +1829,7 @@ void Renderer::renderObjectAsPoint(const Vector3f& position,
 static void renderSphereUnlit(const RenderInfo& ri,
                               const Frustum& frustum,
                               const Matrices &m,
+                              bool isStar,
                               Renderer *r)
 {
     celestia::util::ArrayVector<Texture*, LODSphereMesh::MAX_SPHERE_MESH_TEXTURES> textures;
@@ -1852,6 +1853,9 @@ static void renderSphereUnlit(const RenderInfo& ri,
         shadprop.texUsage |= ShaderProperties::OverlayTexture;
         textures.try_push_back(ri.overlayTex);
     }
+
+    if (isStar)
+        shadprop.lightModel = ShaderProperties::StarModel;
 
     // Get a shader for the current rendering configuration
     auto* prog = r->getShaderManager().getShader(shadprop);
@@ -2414,7 +2418,7 @@ void Renderer::renderObject(const Vector3f& pos,
         }
         else
         {
-            renderSphereUnlit(ri, viewFrustum, planetMVP, this);
+            renderSphereUnlit(ri, viewFrustum, planetMVP, obj.isStar, this);
         }
     }
     else
@@ -3040,6 +3044,7 @@ void Renderer::renderStar(const Star& star,
         surface.appearanceFlags |= Surface::ApplyBaseTexture;
         surface.appearanceFlags |= Surface::Emissive;
 
+        rp.isStar = true;
         rp.surface = &surface;
         rp.rings = nullptr;
         rp.radius = star.getRadius();

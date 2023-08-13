@@ -26,7 +26,7 @@ class LightingState;
 
 class ShaderProperties
 {
- public:
+public:
     ShaderProperties() = default;
     bool usesShadows() const;
     bool usesFragmentLighting() const;
@@ -54,58 +54,58 @@ class ShaderProperties
     bool hasScattering() const;
     bool isViewDependent() const;
 
- enum
- {
-     DiffuseTexture          =    0x01,
-     SpecularTexture         =    0x02,
-     NormalTexture           =    0x04,
-     NightTexture            =    0x08,
-     SpecularInDiffuseAlpha  =    0x10,
-     RingShadowTexture       =    0x20,
-     OverlayTexture          =    0x40,
-     CloudShadowTexture      =    0x80,
-     CompressedNormalTexture =   0x100,
-     EmissiveTexture         =   0x200,
-     ShadowMapTexture        =   0x400,
-     VertexOpacities         =   0x800,
-     VertexColors            =  0x1000,
-     Scattering              =  0x2000,
-     PointSprite             =  0x4000,
-     SharedTextureCoords     =  0x8000,
-     StaticPointSize         = 0x10000,
-     LineAsTriangles         = 0x20000,
-     TextureCoordTransform   = 0x40000,
- };
+    enum
+    {
+        DiffuseTexture              = 0x00001,
+        SpecularTexture             = 0x00002,
+        NormalTexture               = 0x00004,
+        NightTexture                = 0x00008,
+        SpecularInDiffuseAlpha      = 0x00010,
+        RingShadowTexture           = 0x00020,
+        OverlayTexture              = 0x00040,
+        CloudShadowTexture          = 0x00080,
+        CompressedNormalTexture     = 0x00100,
+        EmissiveTexture             = 0x00200,
+        ShadowMapTexture            = 0x00400,
+        VertexColors                = 0x00800,
+        Scattering                  = 0x01000,
+        PointSprite                 = 0x02000,
+        SharedTextureCoords         = 0x04000,
+        StaticPointSize             = 0x08000,
+        LineAsTriangles             = 0x10000,
+        TextureCoordTransform       = 0x20000,
+    };
 
- enum
- {
-     DiffuseModel          = 0x0001,
-     RingIllumModel        = 0x0004,
-     PerPixelSpecularModel = 0x0008,
-     OrenNayarModel        = 0x0010,
-     AtmosphereModel       = 0x0020,
-     LunarLambertModel     = 0x0040,
-     ParticleDiffuseModel  = 0x0080,
-     EmissiveModel         = 0x0100,
-     ParticleModel         = 0x0200,
-     UnlitModel            = 0x0400,
- };
+    enum
+    {
+        DiffuseModel                = 0x0001,
+        RingIllumModel              = 0x0004,
+        PerPixelSpecularModel       = 0x0008,
+        OrenNayarModel              = 0x0010,
+        AtmosphereModel             = 0x0020,
+        LunarLambertModel           = 0x0040,
+        ParticleDiffuseModel        = 0x0080,
+        EmissiveModel               = 0x0100,
+        ParticleModel               = 0x0200,
+        UnlitModel                  = 0x0400,
+        StarModel                   = 0x0800,
+    };
 
- enum
- {
-     VolumetricScatteringEffect      = 0x0001,
-     VolumetricAbsorptionEffect      = 0x0002,
-     VolumetricEmissionEffect        = 0x0004,
- };
+    enum
+    {
+        VolumetricScatteringEffect  = 0x0001,
+        VolumetricAbsorptionEffect  = 0x0002,
+        VolumetricEmissionEffect    = 0x0004,
+    };
 
- enum
- {
-     FisheyeOverrideModeNone     = 0,
-     FisheyeOverrideModeEnabled  = 1,
-     FisheyeOverrideModeDisabled = 2,
- };
+    enum
+    {
+        FisheyeOverrideModeNone     = 0,
+        FisheyeOverrideModeEnabled  = 1,
+        FisheyeOverrideModeDisabled = 2,
+    };
 
- public:
+public:
     unsigned short nLights{ 0 };
     unsigned short lightModel{ DiffuseModel };
     unsigned long texUsage{ 0 };

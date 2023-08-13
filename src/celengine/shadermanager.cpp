@@ -2551,6 +2551,13 @@ ShaderManager::buildFragmentShader(const ShaderProperties& props)
         source += "gl_FragColor.rgb = gl_FragColor.rgb * scatterEx + scatterColor;\n";
     }
 
+    if (props.lightModel == ShaderProperties::StarModel)
+    {
+//        source += "gl_FragColor.rgb = gl_FragColor.rgb - vec3(1.0 - NV);\n";
+        source += "float theta = 1.0 - dot(normalize(eyePosition), N);\n";
+        source += "gl_FragColor = vec4(normalize(eyePosition), 1.0);\n";
+    }
+
     source += "}\n";
 
     DumpFSSource(source);
