@@ -132,9 +132,15 @@ Image* LoadJPEGImage(const fs::path& filename, int /*unused*/)
     // Here we use the library's state variable cinfo.output_scanline as the
     // loop counter, so that we don't have to keep track ourselves.
 
+#ifdef GL_ES
     PixelFormat format = PixelFormat::RGB;
     if (cinfo.output_components == 1)
         format = PixelFormat::LUMINANCE;
+#else
+    PixelFormat format = PixelFormat::SRGB;
+    if (cinfo.output_components == 1)
+        format = PixelFormat::SLUMINANCE;
+#endif
 
     img = new Image(format, cinfo.image_width, cinfo.image_height);
 

@@ -88,11 +88,11 @@ FramebufferObject::generateColorTexture()
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // Set the texture dimensions
-    // Do we need to set GL_DEPTH_COMPONENT24 here?
-#ifdef GL_ES
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-#else
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+#ifndef GL_ES
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 #endif
 
     // Unbind the texture
@@ -128,7 +128,6 @@ FramebufferObject::generateDepthTexture()
 
     // Set the texture dimensions
     // Do we need to set GL_DEPTH_COMPONENT24 here?
-
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, CEL_DEPTH_FORMAT, nullptr);
 
     // Unbind the texture
