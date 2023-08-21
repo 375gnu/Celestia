@@ -1,12 +1,13 @@
 // color.cpp
 //
-// Copyright (C) 2001-2008, the Celestia Development Team
+// Copyright (C) 2001-present, the Celestia Development Team
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
+#include <cmath>
 #include <map>
 #include <system_error>
 
@@ -294,4 +295,26 @@ bool Color::parse(std::string_view s, Color& c)
     }
 
     return false;
+}
+
+Color& Color::toLinear()
+{
+    for (std::size_t i; i < 4; i++)
+    {
+        float v = static_cast<float>(c[i]) * (1.0f / 255.0f);
+        v = v <= 0.04045f ? v * (1.0f/12.92f) : std::pow((v + 0.055f)/1.055f, 2.4f);
+        c[i] = scaleFloat(v);
+    }
+    return *this;
+}
+
+Color& Color::fromLinear()
+{
+    for (std::size_t i; i < 4; i++)
+    {
+        float v = static_cast<float>(c[i]) * (1.0f / 255.0f);
+        v = v <= 0.0031308f ? 12.92f * v : 1.055f * std::pow(v, 1.0f/2.4f) - 0.055f;
+        c[i] = scaleFloat(v);
+    }
+    return *this;
 }

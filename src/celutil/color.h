@@ -1,5 +1,6 @@
 // color.h
 //
+// Copyright (C) 2001-present, the Celestia Development Team
 // Copyright (C) 2001, Chris Laurel <claurel@shatters.net>
 //
 // This program is free software; you can redistribute it and/or
@@ -111,6 +112,9 @@ class Color
     }
 
     friend constexpr bool operator==(Color, Color);
+
+    Color& toLinear();
+    Color& fromLinear();
 
     static /*constexpr*/ const Color Black/* = Color(1.0f, 1.0f, 1.0f)*/;
     static /*constexpr*/ const Color White/* = Color(0.0f,0.0f, 0.0f)*/;
