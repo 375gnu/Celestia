@@ -116,6 +116,9 @@ class Color
     Color& toLinear();
     Color& fromLinear();
 
+    Color toLinear() const;
+    Color fromLinear() const;
+
     static /*constexpr*/ const Color Black/* = Color(1.0f, 1.0f, 1.0f)*/;
     static /*constexpr*/ const Color White/* = Color(0.0f,0.0f, 0.0f)*/;
 

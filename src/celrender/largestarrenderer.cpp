@@ -38,7 +38,7 @@ LargeStarRenderer::render(
     prog->use();
     prog->samplerParam("starTex") = 0;
     prog->setMVPMatrices(*mvp.projection, *mvp.modelview);
-    prog->vec4Param("color") = color.toVector4();
+    prog->vec4Param("color") = color.toLinear().toVector4();
     prog->vec3Param("center") = position;
     prog->floatParam("pointWidth") = size / m_renderer.getWindowWidth() * 2.0f;
     prog->floatParam("pointHeight") = size / m_renderer.getWindowHeight() * 2.0f;

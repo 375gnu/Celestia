@@ -318,3 +318,15 @@ Color& Color::fromLinear()
     }
     return *this;
 }
+
+Color Color::toLinear() const
+{
+    Color ret(*this);
+    return ret.toLinear();
+}
+
+Color Color::fromLinear() const
+{
+    Color ret(*this);
+    return ret.fromLinear();
+}

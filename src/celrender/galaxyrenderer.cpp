@@ -50,7 +50,7 @@ colorTextureEval(float u, float /*v*/, float /*w*/, std::uint8_t *pixel)
     float hue = (i < 28)
         ? 25.0f * std::tanh(0.0615f * static_cast<float>(27 - i))
         : 245.0f;
-    Color::fromHSV(hue, 0.20f, 1.0f).get(pixel);
+    Color::fromHSV(hue, 0.20f, 1.0f).toLinear().get(pixel);
 }
 
 void
@@ -72,13 +72,8 @@ BindTextures()
 
     if (colorTex == nullptr)
     {
-        celestia::PixelFormat format;
-#ifdef GL_ES
-        format = celestia::PixelFormat::RGBA;
-#else
-        format = celestia::PixelFormat::SRGBA;
-#endif
-        colorTex = CreateProceduralTexture(256, 1, format,
+        colorTex = CreateProceduralTexture(256, 1,
+                                           celestia::PixelFormat::RGBA,
                                            colorTextureEval,
                                            Texture::EdgeClamp,
                                            Texture::NoMipMaps);
